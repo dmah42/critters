@@ -145,6 +145,11 @@ def get_world_view_data():
     start_y = center_y - (height // 2)
     end_y = start_y + height
 
+    critters_in_view = Critter.query.filter(
+        Critter.x.between(start_x, end_x - 1), Critter.y.between(start_y, end_y - 1)
+    ).all()
+    critter_data = [critter.to_dict() for critter in critters_in_view]
+
     overrides_list = TileState.query.filter(
         TileState.x.between(start_x, end_x), TileState.y.between(start_y, end_y)
     ).all()
@@ -170,7 +175,7 @@ def get_world_view_data():
             tile["terrain"] = tile["terrain"].name
             tile_data.append(tile)
 
-    return jsonify(tile_data)
+    return jsonify({"tiles": tile_data, "critters": critter_data})
 
 
 if __name__ == "__main__":

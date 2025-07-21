@@ -117,7 +117,9 @@
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-          const tiles = await response.json();
+          const data = await response.json();
+          const tiles = data.tiles;
+          const critters = data.critters;
 
           // Clear the canvas before drawing
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -145,6 +147,22 @@
               );
             }
           }
+
+          ctx.fillStyle = "red";
+          for (const critter of critters) {
+            const canvasX = (critter.x - x) * tileWidth;
+            const canvasY = (critter.y - y) * tileHeight;
+
+            ctx.beginPath();
+            ctx.arc(
+              canvasX + tileWidth / 2,
+              canvasY + tileHeight / 2,
+              tileWidth / 2.5,
+              0,
+              2 * Math.PI
+            );
+            ctx.fill();
+          }
         } catch (error) {
           console.error("Failed to fetch or draw map:", error);
           alert("Failed to load map data. See console for details.");
@@ -153,6 +171,9 @@
 
       // --- Event Listeners ---
       drawButton.addEventListener("click", fetchAndDrawMap);
+
+      // Auto refresh.
+      setInterval(fetchAndDrawMap, 2000);
 
       // Draw the initial map when the page loads
       window.addEventListener("load", fetchAndDrawMap);

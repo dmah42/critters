@@ -1,11 +1,20 @@
 import enum
+import random
 import noise
-from app.models import TileState
+from app.models import Critter, TileState
 from app import db
 
+# Terrain constants
 DEFAULT_GRASS_FOOD = 10.0
 GRASS_REGROWTH_RATE = 0.1
 DIRT_TO_GRASS_RATIO = 0.0
+
+# Critter constants
+HUNGER_PER_TICK = 0.1
+THIRST_PER_TICK = 0.15
+BASE_ENERGY_COST_PER_MOVE = 1.0
+UPHILL_ENERGY_MULTIPLIER = 1.5
+DOWNHILL_ENERGY_MULTIPLIER = 0.75
 
 
 class TerrainType(enum.Enum):
@@ -15,10 +24,11 @@ class TerrainType(enum.Enum):
     MOUNTAIN = "mountain"
 
 
-def run_simulation_tick():
+def run_simulation_tick(world):
     """Process one tick of the world simulation. Called periodically."""
     print("tick")
     _process_tile_regrowth()
+    _process_critter_ai(world)
     print("end tick")
 
 
@@ -46,6 +56,45 @@ def _process_tile_regrowth():
     print(
         f"Processed regrowth for {len(depleted_tiles)} tiles.  Deleted {len(tiles_to_delete)} tiles"
     )
+
+
+def _process_critter_ai(world):
+    """Handles the state changes and actions for living critters"""
+    all_critters = Critter.query.all()
+
+    for critter in all_critters:
+        # Update basic needs
+        critter.hunger += HUNGER_PER_TICK
+        critter.thirst += THIRST_PER_TICK
+
+        current_tile = world.generate_tile(critter.x, critter.y)
+
+        # TODO: have their needs hit thresholds?
+        # TODO: can they smell something nearby?
+
+        for i in range(critter.speed):
+            dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+            new_x, new_y = critter.x + dx, critter.y + dy
+
+            destination_tile = world.generate_tile(new_x, new_y)
+
+            # Don't move into water
+            # TODO: drink if next to water and it's needed
+            if destination_tile["terrain"] != TerrainType.WATER:
+                height_diff = destination_tile["height"] - current_tile["height"]
+                energy_cost = BASE_ENERGY_COST_PER_MOVE
+                if height_diff > 0:
+                    energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
+                elif height_diff < 0:
+                    energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+
+                critter.energy -= energy_cost
+
+                critter.x = new_x
+                critter.y = new_y
+
+    db.session.commit()
+    print(f"Processed AI for {len(all_critters)} critters.")
 
 
 class World:

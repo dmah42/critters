@@ -8,6 +8,7 @@ class CauseOfDeath(enum.Enum):
     THIRST = "thirst"
     OLD_AGE = "old_age"
     PREDATION = "predation"
+    EXHAUSTION = "exhaustion"
 
 
 class Player(db.Model):
@@ -67,6 +68,9 @@ class Critter(db.Model):
             "age": self.age,
             "x": self.x,
             "y": self.y,
+            "energy": self.energy,
+            "hunger": self.hunger,
+            "thirst": self.thirst,
             "owner_id": self.player_id,
         }
 
