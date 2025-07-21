@@ -1,7 +1,6 @@
-from flask import request, jsonify, Blueprint
-from app import create_app
-from app.models import Player, Critter, DeadCritter
-from app.simulation import World, TerrainType
+from flask import request, jsonify, Blueprint, render_template
+from app.models import Player, Critter, DeadCritter, TileState
+from app.simulation import World
 
 from app import db
 from flask import current_app as app
@@ -10,9 +9,12 @@ from flask import current_app as app
 main = Blueprint("main", __name__)
 
 
+CANVAS_SIZE = 600
+
+
 @main.route("/")
 def index():
-    return "Welcome to Critter World"
+    return render_template("index.html", canvas_size=CANVAS_SIZE)
 
 
 @main.route("/api/player", methods=["POST"])
@@ -126,55 +128,49 @@ def get_dead_critter():
     return jsonify(dead_critter.to_dict())
 
 
-@main.route("/world/view")
-def world_view():
-    """
-    Generates a simple HTML page to visualize a slice of the world.
-    Acceps query parameters: x, y, w, h.
-    """
+@main.route("/api/world/view")
+def get_world_view_data():
+    """Returns tile data for a rectangular area."""
     center_x = request.args.get("x", default=0, type=int)
     center_y = request.args.get("y", default=0, type=int)
     width = request.args.get("w", default=50, type=int)
     height = request.args.get("h", default=50, type=int)
 
     # FIXME: this shouldn't be set here.
-    world = World(seed=12345)
+    world = World(seed=1)
 
-    color_map = {
-        TerrainType.WATER: "#4287f5",
-        TerrainType.GRASS: "#34a12d",
-        TerrainType.DIRT: "#855a38",
-        TerrainType.MOUNTAIN: "#999999",
-    }
-
-    html = [
-        "<html><head><title>World View</title><style>",
-        "table {border-collapse: collapse; font-family: monospace}",
-        "td {width: 20px; height: 20px; text-align: center; color: white; font-size: 8px; font-weight: bold;}",
-        "</style></head><body>",
-    ]
-    html.append("<table>")
-
+    tile_data = []
     start_x = center_x - (width // 2)
-    start_y = center_y - (width // 2)
+    end_x = start_x + width
+    start_y = center_y - (height // 2)
+    end_y = start_y + height
 
-    for y in range(height):
-        html.append("<tr>")
-        for x in range(width):
-            tile = world.get_tile(start_x + x, start_y + y)
-            terrain_type = tile["terrain"]
-            color = color_map.get(terrain_type, "#ffffff")
+    overrides_list = TileState.query.filter(
+        TileState.x.between(start_x, end_x), TileState.y.between(start_y, end_y)
+    ).all()
 
-            tooltip = f"Coord: ({tile['x']}, {tile['y']})\nTerrain: {terrain_type.name}\nFood: {tile['food_available']:.1f}"
-            height_text = f"{tile['height']:.1f}"
-            html.append(
-                f'<td style="background-color: {color};" title="{tooltip}">{height_text}</td>'
-            )
-        html.append("</tr>")
+    overrides_map = {(tile.x, tile.y): tile for tile in overrides_list}
 
-    html.append("</table></body></html>")
+    step = 1
+    if width > CANVAS_SIZE:
+        step = width // CANVAS_SIZE
 
-    return "".join(html)
+    for y_offset in range(0, height, step):
+        for x_offset in range(0, width, step):
+            current_x = start_x + x_offset
+            current_y = start_y + y_offset
+
+            tile = world.generate_tile(current_x, current_y)
+
+            if (current_x, current_y) in overrides_map:
+                tile["food_available"] = overrides_map[
+                    (current_x, current_y)
+                ].food_available
+
+            tile["terrain"] = tile["terrain"].name
+            tile_data.append(tile)
+
+    return jsonify(tile_data)
 
 
 if __name__ == "__main__":

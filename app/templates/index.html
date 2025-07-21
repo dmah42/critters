@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Critter World</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #f0f0f0;
+      }
+      .controls {
+        margin: 20px;
+        padding: 15px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      input {
+        width: 60px;
+        margin-right: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        border-radius: 5px;
+        border: none;
+        background-color: #4287f5;
+        color: white;
+        cursor: pointer;
+      }
+      canvas {
+        border: 2px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Critter World Viewer</h1>
+
+    <div class="controls">
+      <label>X: <input type="number" id="x-coord" value="0" /></label>
+      <label>Y: <input type="number" id="y-coord" value="0" /></label>
+      <label>Width: <input type="number" id="width" value="100" /></label>
+      <label>Height: <input type="number" id="height" value="100" /></label>
+      <button id="draw-btn">Draw Map</button>
+    </div>
+
+    <canvas
+      id="world-canvas"
+      width="{{ canvas_size }}"
+      height="{{ canvas_size }}"
+    ></canvas>
+
+    <script>
+      // --- DOM Elements ---
+      const canvas = document.getElementById("world-canvas");
+      const ctx = canvas.getContext("2d");
+      const xInput = document.getElementById("x-coord");
+      const yInput = document.getElementById("y-coord");
+      const widthInput = document.getElementById("width");
+      const heightInput = document.getElementById("height");
+      const drawButton = document.getElementById("draw-btn");
+
+      // --- Color Map (must match TerrainType enum names) ---
+      const colorMap = {
+        WATER: "#4287f5",
+        GRASS: "#34a12d",
+        DIRT: "#855a38",
+        MOUNTAIN: "#a1a2a3",
+      };
+
+      // Takes a hex colour and percentage (-1.0 to 1.0) and
+      // returns a new hex color from dark to light.
+      function shadeColor(color, percent) {
+        let R = parseInt(color.substring(1, 3), 16);
+        let G = parseInt(color.substring(3, 5), 16);
+        let B = parseInt(color.substring(5, 7), 16);
+
+        R = parseInt(R * (1.0 + percent));
+        G = parseInt(G * (1.0 + percent));
+        B = parseInt(B * (1.0 + percent));
+
+        // CLAMP
+        R = R < 255 ? R : 255;
+        G = G < 255 ? G : 255;
+        B = B < 255 ? B : 255;
+
+        R = R > 0 ? R : 0;
+        G = G > 0 ? G : 0;
+        B = B > 0 ? B : 0;
+
+        const RR =
+          R.toString(16).length == 1 ? "0" + R.toString(16) : R.toString(16);
+        const GG =
+          G.toString(16).length == 1 ? "0" + G.toString(16) : G.toString(16);
+        const BB =
+          B.toString(16).length == 1 ? "0" + B.toString(16) : B.toString(16);
+
+        return "#" + RR + GG + BB;
+      }
+
+      // --- Main Drawing Function ---
+      async function fetchAndDrawMap() {
+        // Get values from the input controls
+        const x = xInput.value;
+        const y = yInput.value;
+        const width = widthInput.value;
+        const height = heightInput.value;
+
+        // Construct the API URL
+        const apiUrl = `/api/world/view?x=${x}&y=${y}&w=${width}&h=${height}`;
+
+        try {
+          // Fetch the data from our Flask API
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const tiles = await response.json();
+
+          // Clear the canvas before drawing
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Calculate the size of each tile "pixel"
+          const tileWidth = canvas.width / width;
+          const tileHeight = canvas.height / height;
+
+          // Loop through the tile data and draw each one
+          for (let i = 0; i < height; i++) {
+            for (let j = 0; j < width; j++) {
+              const tile = tiles[i * width + j];
+              if (!tile) continue;
+
+              // TODO: change color of grass based on food level.
+              const baseColor = colorMap[tile.terrain] || "#000";
+              const finalColor = shadeColor(baseColor, tile.height * 0.9);
+
+              ctx.fillStyle = finalColor;
+              ctx.fillRect(
+                j * tileWidth,
+                i * tileHeight,
+                tileWidth,
+                tileHeight
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch or draw map:", error);
+          alert("Failed to load map data. See console for details.");
+        }
+      }
+
+      // --- Event Listeners ---
+      drawButton.addEventListener("click", fetchAndDrawMap);
+
+      // Draw the initial map when the page loads
+      window.addEventListener("load", fetchAndDrawMap);
+    </script>
+  </body>
+</html>

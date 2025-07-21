@@ -5,7 +5,7 @@ from app import db
 
 DEFAULT_GRASS_FOOD = 10.0
 GRASS_REGROWTH_RATE = 0.1
-DIRT_TO_GRASS_RATIO = 0.2
+DIRT_TO_GRASS_RATIO = 0.0
 
 
 class TerrainType(enum.Enum):
@@ -60,7 +60,7 @@ class World:
 
         # Elevation noise parameters -- low frequency for large features
         # Zoom level: larger == more zoomed
-        self.height_scale = 100.0
+        self.height_scale = 200.0
 
         # Octaves: larger = more rugged
         self.height_octaves = 6
@@ -70,26 +70,13 @@ class World:
         self.height_lacunarity = 2.0
 
         # Terrain noise parameters -- high frequency for patches of grass
-        self.terrain_scale = 25.0
-        self.terrain_octaves = 4
+        self.terrain_scale = 100.0
+        self.terrain_octaves = 3
         self.terrain_persistence = 0.5
         self.terrain_lacunarity = 2.0
 
-        self.water_level = -0.2
+        self.water_level = -0.3
         self.mountain_level = 0.6
-
-    def get_tile(self, x, y):
-        """
-        Gets the properties of a tile at coords (x, y).
-        Generated procedurally with overrides from the database.
-        """
-        base_tile = self._generate_procedural_tile(x, y)
-        saved_state = TileState.query.get((x, y))
-
-        if saved_state:
-            base_tile["food_available"] = saved_state.food_available
-
-        return base_tile
 
     def update_tile_food(self, x, y, new_food_value):
         """
@@ -104,9 +91,8 @@ class World:
 
         db.session.commit()
 
-    def _generate_procedural_tile(self, x, y):
+    def generate_tile(self, x, y):
         """The core generation logic."""
-
         height_val = (
             noise.pnoise2(
                 x / self.height_scale,
@@ -134,17 +120,18 @@ class World:
                 octaves=self.terrain_octaves,
                 persistence=self.terrain_persistence,
                 lacunarity=self.terrain_lacunarity,
-                base=self.seed + 1000,  # Use a different seed for a different map
+                base=self.seed + 1000,
             )
 
             terrain = TerrainType.DIRT  # Default to dirt
             if terrain_val > DIRT_TO_GRASS_RATIO:
                 terrain = TerrainType.GRASS  # Fertile patches of grass
 
-        return {
+        tile = {
             "x": x,
             "y": y,
             "height": height_val,
             "terrain": terrain,
             "food_available": DEFAULT_GRASS_FOOD if terrain == TerrainType.GRASS else 0,
         }
+        return tile
