@@ -119,3 +119,12 @@ dead_critter_children_association = db.Table(
         "child_critter_id", db.Integer, db.ForeignKey("critter.id"), primary_key=True
     ),
 )
+
+
+class TileState(db.Model):
+    __tablename__ = "tile_state"
+
+    x = db.Column(db.Integer, primary_key=True)
+    y = db.Column(db.Integer, primary_key=True)
+
+    food_available = db.Column(db.Float, nullable=False)
