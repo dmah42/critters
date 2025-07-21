@@ -21,6 +21,9 @@ class Player(db.Model):
         "DeadCritter", back_populates="owner", lazy="dynamic"
     )
 
+    def to_dict(self):
+        return {"id": self.id, "username": self.username}
+
     def __repr__(self):
         return f"<Player {self.id} {self.username}"
 
@@ -57,6 +60,16 @@ class Critter(db.Model):
             (Critter.parent_one_id == self.id) | (Critter.parent_two_id == self.id)
         ).all()
 
+    def to_dict(self):
+        # TODO: add more
+        return {
+            "id": self.id,
+            "age": self.age,
+            "x": self.x,
+            "y": self.y,
+            "owner_id": self.player_id,
+        }
+
     def __repr__(self):
         return f"<Critter {self.id}>"
 
@@ -85,6 +98,10 @@ class DeadCritter(db.Model):
     children = db.relationship(
         "Critter", secondary="dead_critter_children_association", lazy="subquery"
     )
+
+    def to_dict(self):
+        # TODO: add more
+        return {"id": self.id, "owner_id": self.player_id}
 
     def __repr__(self):
         return f"<DeadCritter {self.critter_id} {self.original_critter_id}>"
