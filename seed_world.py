@@ -1,6 +1,6 @@
 import random
-from app import create_app, db
-from app.models import Critter
+from web_server import create_app, db
+from simulation.models import Critter
 
 # --- Configuration ---
 NUM_PROGENITORS = 50

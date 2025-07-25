@@ -1,8 +1,8 @@
 import enum
 import random
 import noise
-from app.models import Critter, TileState
-from app import db
+from simulation.models import Critter, TileState
+from web_server import db
 
 # Terrain constants
 DEFAULT_GRASS_FOOD = 10.0
@@ -24,22 +24,24 @@ class TerrainType(enum.Enum):
     MOUNTAIN = "mountain"
 
 
-def run_simulation_tick(world):
+def run_simulation_tick(world, session):
     """Process one tick of the world simulation. Called periodically."""
     print("tick")
-    _process_tile_regrowth()
-    _process_critter_ai(world)
+    _process_tile_regrowth(session)
+    _process_critter_ai(world, session)
     print("end tick")
 
 
-def _process_tile_regrowth():
+def _process_tile_regrowth(session):
     """
     Finds all depleted grass tiles and handles regrowth.
     If a tile regrows completely, remove the record.
     """
-    depleted_tiles = TileState.query.filter(
-        TileState.food_available < DEFAULT_GRASS_FOOD
-    ).all()
+    depleted_tiles = (
+        session.query(TileState)
+        .filter(TileState.food_available < DEFAULT_GRASS_FOOD)
+        .all()
+    )
 
     tiles_to_delete = []
 
@@ -50,17 +52,16 @@ def _process_tile_regrowth():
             tiles_to_delete.append(tile)
 
     for tile in tiles_to_delete:
-        db.session.delete(tile)
+        session.delete(tile)
 
-    db.session.commit()
     print(
         f"Processed regrowth for {len(depleted_tiles)} tiles.  Deleted {len(tiles_to_delete)} tiles"
     )
 
 
-def _process_critter_ai(world):
+def _process_critter_ai(world, session):
     """Handles the state changes and actions for living critters"""
-    all_critters = Critter.query.all()
+    all_critters = session.query(Critter).all()
 
     for critter in all_critters:
         # Update basic needs
@@ -93,7 +94,6 @@ def _process_critter_ai(world):
                 critter.x = new_x
                 critter.y = new_y
 
-    db.session.commit()
     print(f"Processed AI for {len(all_critters)} critters.")
 
 

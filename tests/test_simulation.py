@@ -6,8 +6,8 @@ from unittest.mock import patch
 # Add the project root to the Python path to allow imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app import create_app
-from app.simulation import World
+from web_server import create_app
+from simulation.engine import World
 
 
 class TestSimulation(unittest.TestCase):

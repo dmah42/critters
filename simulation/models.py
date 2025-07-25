@@ -1,4 +1,4 @@
-from app import db
+from web_server import db
 import datetime
 import enum
 

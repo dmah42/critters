@@ -1,8 +1,8 @@
 from flask import request, jsonify, Blueprint, render_template
-from app.models import Player, Critter, DeadCritter, TileState
-from app.simulation import World
+from simulation.models import Player, Critter, DeadCritter, TileState
+from simulation.engine import World
 
-from app import db
+from web_server import db
 from flask import current_app as app
 
 
