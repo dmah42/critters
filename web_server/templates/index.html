@@ -41,8 +41,8 @@
     <div class="controls">
       <label>X: <input type="number" id="x-coord" value="0" /></label>
       <label>Y: <input type="number" id="y-coord" value="0" /></label>
-      <label>Width: <input type="number" id="width" value="100" /></label>
-      <label>Height: <input type="number" id="height" value="100" /></label>
+      <label>W: <input type="number" id="width" value="100" /></label>
+      <label>H: <input type="number" id="height" value="100" /></label>
       <button id="draw-btn">Draw Map</button>
     </div>
 
@@ -61,6 +61,14 @@
       const widthInput = document.getElementById("width");
       const heightInput = document.getElementById("height");
       const drawButton = document.getElementById("draw-btn");
+
+      let currentTerrainData = null;
+      let currentView = {
+        x: parseInt(xInput.value),
+        y: parseInt(yInput.value),
+        w: parseInt(widthInput.value),
+        h: parseInt(heightInput.value),
+      };
 
       // --- Color Map (must match TerrainType enum names) ---
       const colorMap = {
@@ -100,83 +108,104 @@
         return "#" + RR + GG + BB;
       }
 
-      // --- Main Drawing Function ---
-      async function fetchAndDrawMap() {
-        // Get values from the input controls
-        const x = xInput.value;
-        const y = yInput.value;
-        const width = widthInput.value;
-        const height = heightInput.value;
+      async function fetchTerrain(view) {
+        const apiUrl = `/api/world/terrain?x=${view.x}&y=${view.y}&w=${view.w}&h=${view.h}`;
 
-        // Construct the API URL
-        const apiUrl = `/api/world/view?x=${x}&y=${y}&w=${width}&h=${height}`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Failed to fetch terrain");
+        currentTerrainData = await response.json();
+      }
+
+      async function fetchCritters(view) {
+        const apiUrl = `/api/world/critters?x=${view.x}&y=${view.y}&w=${view.w}&h=${view.h}`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Failed to fetch critters");
+        return await response.json();
+      }
+
+      function drawTerrain(view) {
+        if (!currentTerrainData) return;
+        const tiles = currentTerrainData.tiles;
+        const tileWidth = canvas.width / view.w;
+        const tileHeight = canvas.height / view.h;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < tiles.length; i++) {
+          const tile = tiles[i];
+          const x = i % view.w;
+          const y = Math.floor(i / view.w);
+          const baseColor = colorMap[tile.terrain] || "#000";
+          const finalColor = shadeColor(baseColor, tile.height * 0.4);
+          ctx.fillStyle = finalColor;
+          ctx.fillRect(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+        }
+      }
+
+      // Handles erasing old critters and drawing new ones
+      function updateCritterLayer(view, newCritters) {
+        if (!currentTerrainData) return;
+        const tiles = currentTerrainData.tiles;
+        const tileWidth = canvas.width / view.w;
+        const tileHeight = canvas.height / view.h;
+
+        // Redraw terrain to "erase" the critters.
+        drawTerrain(view);
+
+        // Calculate top-left
+        const startX = view.x - view.w / 2;
+        const startY = view.y - view.h / 2;
+
+        ctx.fillStyle = "red";
+        for (const critter of newCritters) {
+          const canvasX = (critter.x - startX) * tileWidth;
+          const canvasY = (critter.y - startY) * tileHeight;
+          ctx.beginPath();
+          ctx.arc(
+            canvasX + tileWidth / 2,
+            canvasY + tileHeight / 2,
+            tileWidth / 2.5,
+            0,
+            2 * Math.PI
+          );
+          ctx.fill();
+        }
+      }
+
+      async function handleManualUpdate() {
+        // Update the current view.
+        currentView.x = xInput.value;
+        currentView.y = yInput.value;
+        currentView.w = widthInput.value;
+        currentView.h = heightInput.value;
 
         try {
-          // Fetch the data from our Flask API
-          const response = await fetch(apiUrl);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          const tiles = data.tiles;
-          const critters = data.critters;
+          await fetchTerrain(currentView);
+          drawTerrain(currentView);
 
-          // Clear the canvas before drawing
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Calculate the size of each tile "pixel"
-          const tileWidth = canvas.width / width;
-          const tileHeight = canvas.height / height;
-
-          // Loop through the tile data and draw each one
-          for (let i = 0; i < height; i++) {
-            for (let j = 0; j < width; j++) {
-              const tile = tiles[i * width + j];
-              if (!tile) continue;
-
-              // TODO: change color of grass based on food level.
-              const baseColor = colorMap[tile.terrain] || "#000";
-              const finalColor = shadeColor(baseColor, tile.height * 0.9);
-
-              ctx.fillStyle = finalColor;
-              ctx.fillRect(
-                j * tileWidth,
-                i * tileHeight,
-                tileWidth,
-                tileHeight
-              );
-            }
-          }
-
-          ctx.fillStyle = "red";
-          for (const critter of critters) {
-            const canvasX = (critter.x - x) * tileWidth;
-            const canvasY = (critter.y - y) * tileHeight;
-
-            ctx.beginPath();
-            ctx.arc(
-              canvasX + tileWidth / 2,
-              canvasY + tileHeight / 2,
-              tileWidth / 2.5,
-              0,
-              2 * Math.PI
-            );
-            ctx.fill();
-          }
+          const critterData = await fetchCritters(currentView);
+          updateCritterLayer(currentView, critterData.critters);
         } catch (error) {
-          console.error("Failed to fetch or draw map:", error);
-          alert("Failed to load map data. See console for details.");
+          console.error(error);
+        }
+      }
+
+      async function handleLiveUpdate() {
+        if (!currentTerrainData) return; // Don't run if the map isn't loaded
+
+        try {
+          // Use cached current view.
+          const critterData = await fetchCritters(currentView);
+          updateCritterLayer(currentView, critterData.critters);
+        } catch (error) {
+          console.error(error);
         }
       }
 
       // --- Event Listeners ---
-      drawButton.addEventListener("click", fetchAndDrawMap);
-
-      // Auto refresh.
-      setInterval(fetchAndDrawMap, 2000);
-
-      // Draw the initial map when the page loads
-      window.addEventListener("load", fetchAndDrawMap);
+      drawButton.addEventListener("click", handleManualUpdate);
+      window.addEventListener("load", handleManualUpdate);
+      setInterval(handleLiveUpdate, 3000);
     </script>
   </body>
 </html>

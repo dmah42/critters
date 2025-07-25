@@ -128,9 +128,9 @@ def get_dead_critter():
     return jsonify(dead_critter.to_dict())
 
 
-@main.route("/api/world/view")
-def get_world_view_data():
-    """Returns tile data for a rectangular area."""
+@main.route("/api/world/terrain", methods=["GET"])
+def get_world_terrain_data():
+    """Returns tile data for a given rectangular viewing area."""
     center_x = request.args.get("x", default=0, type=int)
     center_y = request.args.get("y", default=0, type=int)
     width = request.args.get("w", default=50, type=int)
@@ -144,11 +144,6 @@ def get_world_view_data():
     end_x = start_x + width
     start_y = center_y - (height // 2)
     end_y = start_y + height
-
-    critters_in_view = Critter.query.filter(
-        Critter.x.between(start_x, end_x - 1), Critter.y.between(start_y, end_y - 1)
-    ).all()
-    critter_data = [critter.to_dict() for critter in critters_in_view]
 
     overrides_list = TileState.query.filter(
         TileState.x.between(start_x, end_x), TileState.y.between(start_y, end_y)
@@ -175,7 +170,28 @@ def get_world_view_data():
             tile["terrain"] = tile["terrain"].name
             tile_data.append(tile)
 
-    return jsonify({"tiles": tile_data, "critters": critter_data})
+    return jsonify({"tiles": tile_data})
+
+
+@main.route("/api/world/critters", methods=["GET"])
+def get_world_critters_data():
+    """Returns the critter data for a given rectangular view."""
+    center_x = request.args.get("x", default=0, type=int)
+    center_y = request.args.get("y", default=0, type=int)
+    width = request.args.get("w", default=50, type=int)
+    height = request.args.get("h", default=50, type=int)
+
+    start_x = center_x - (width // 2)
+    end_x = start_x + width
+    start_y = center_y - (height // 2)
+    end_y = start_y + height
+
+    critters_in_view = Critter.query.filter(
+        Critter.x.between(start_x, end_x - 1), Critter.y.between(start_y, end_y - 1)
+    ).all()
+    critter_data = [critter.to_dict() for critter in critters_in_view]
+
+    return jsonify({"critters": critter_data})
 
 
 if __name__ == "__main__":

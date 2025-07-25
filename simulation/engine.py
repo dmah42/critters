@@ -12,7 +12,7 @@ DIRT_TO_GRASS_RATIO = 0.0
 # Critter constants
 HUNGER_PER_TICK = 0.1
 THIRST_PER_TICK = 0.15
-BASE_ENERGY_COST_PER_MOVE = 1.0
+BASE_ENERGY_COST_PER_MOVE = 0.1
 UPHILL_ENERGY_MULTIPLIER = 1.5
 DOWNHILL_ENERGY_MULTIPLIER = 0.75
 
@@ -26,10 +26,10 @@ class TerrainType(enum.Enum):
 
 def run_simulation_tick(world, session):
     """Process one tick of the world simulation. Called periodically."""
-    print("tick")
+    print("+", end="")
     _process_tile_regrowth(session)
     _process_critter_ai(world, session)
-    print("end tick")
+    print(".", end="")
 
 
 def _process_tile_regrowth(session):
@@ -73,8 +73,8 @@ def _process_critter_ai(world, session):
         # TODO: have their needs hit thresholds?
         # TODO: can they smell something nearby?
 
-        for i in range(critter.speed):
-            dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        for i in range(int(critter.speed)):
             new_x, new_y = critter.x + dx, critter.y + dy
 
             destination_tile = world.generate_tile(new_x, new_y)
