@@ -21,6 +21,10 @@ HUNGER_TO_START_FORAGING = 25.0
 HUNGER_RESTORED_PER_EAT = 10.0
 EAT_AMOUNT = 5.0
 
+ENERGY_TO_START_RESTING = 30.0
+ENERGY_REGEN_PER_TICK = 5.0
+MAX_ENERGY = 100.0
+
 
 class TerrainType(enum.Enum):
     WATER = "water"
@@ -73,6 +77,13 @@ def _process_critter_ai(world, session):
         # Update basic needs
         critter.hunger += HUNGER_PER_TICK
         critter.thirst += THIRST_PER_TICK
+
+        # Priority 1: Rest if energy is low
+        if critter.energy < ENERGY_TO_START_RESTING:
+            critter.energy += ENERGY_REGEN_PER_TICK
+            critter.energy = min(critter.energy, MAX_ENERGY)
+            print(f"    resting")
+            return
 
         current_tile = world.generate_tile(critter.x, critter.y)
 
