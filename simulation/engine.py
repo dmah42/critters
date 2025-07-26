@@ -25,6 +25,9 @@ ENERGY_TO_START_RESTING = 30.0
 ENERGY_REGEN_PER_TICK = 5.0
 MAX_ENERGY = 100.0
 
+THIRST_TO_START_DRINKING = 20.0
+DRINK_AMOUNT = 25.0
+
 
 class TerrainType(enum.Enum):
     WATER = "water"
@@ -78,19 +81,28 @@ def _process_critter_ai(world, session):
         critter.hunger += HUNGER_PER_TICK
         critter.thirst += THIRST_PER_TICK
 
-        # Priority 1: Rest if energy is low
-        if critter.energy < ENERGY_TO_START_RESTING:
+        # Check in on critter state
+        is_tired = critter.energy < ENERGY_TO_START_RESTING
+        is_thirsty = critter.thirst >= THIRST_TO_START_DRINKING
+        is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
+
+        # Priority 1: Rest if tired
+        if is_tired:
             critter.energy += ENERGY_REGEN_PER_TICK
             critter.energy = min(critter.energy, MAX_ENERGY)
-            print(f"    resting")
+            print(f"    rested: energy: {critter.energy}")
             return
 
         current_tile = world.generate_tile(critter.x, critter.y)
 
-        is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
+        # Priority 2: Drink if thirsty and on a water tile
+        if is_thirsty and current_tile["terrain"] == TerrainType.WATER:
+            critter.thirst -= DRINK_AMOUNT
+            critter.thirst = max(critter.thirst, 0)
+            print(f"    drank. thirst: {critter.thirst}")
+            return
 
-        print(f"    is hungry: {is_hungry}")
-        # If hungry
+        # Priority 3: Eat if hungry and on a food tile
         if (
             is_hungry
             and current_tile["terrain"] == TerrainType.GRASS
@@ -101,18 +113,39 @@ def _process_critter_ai(world, session):
             world.update_tile_food(critter.x, critter.y, new_tile_food)
 
             critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
-            if critter.hunger < 0:
-                critter.hunger = 0
+            critter.hunger = max(critter.hunger, 0)
 
             print(f"    ate. hunger: {critter.hunger}")
-            # Nothing else to do this turn.
             return
 
-        # If we didn't eat we'll move, towards food if necessary.
+        # If we didn't eat we'll move, towards water or food if necessary.
         dx, dy = 0, 0
-        # If hungry but there's no food, sense and move
+        surroundings = [
+            world.generate_tile(critter.x + dx, critter.y + dy)
+            for dy in [-1, 0, 1]
+            for dx in [-1, 0, 1]
+            if not (dx == 0 and dy == 0)
+        ]
+
+        if is_thirsty:
+            # Try to find water
+            print(f"    thirsty")
+            water_tiles = [
+                tile for tile in surroundings if tile["terrain"] == TerrainType.WATER
+            ]
+            if water_tiles:
+                best_tile = min(
+                    water_tiles,
+                    key=lambda tile: abs(tile["x"] - critter.x)
+                    + abs(tile["y"] - critter.y),
+                )
+                dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
+                print(f"    found water in {best_tile}")
+            else:
+                dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+
         if is_hungry:
-            # Get the 8 adjacent tiles
+            print(f"    hungry")
             surroundings = [
                 world.generate_tile(critter.x + dx, critter.y + dy)
                 for dy in [-1, 0, 1]
@@ -128,7 +161,6 @@ def _process_critter_ai(world, session):
                 print(f"    found food in {best_tile}")
             else:
                 dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-        # Not hungry, just wander randomly
         else:
             dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
 
