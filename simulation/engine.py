@@ -15,6 +15,9 @@ THIRST_PER_TICK = 0.15
 BASE_ENERGY_COST_PER_MOVE = 0.1
 UPHILL_ENERGY_MULTIPLIER = 1.5
 DOWNHILL_ENERGY_MULTIPLIER = 0.75
+SENSE_RADIUS = 5
+# 70% chance to go for the most food instead of the nearest
+STRATEGIST_PROBABILITY = 0.7
 
 # AI constants
 HUNGER_TO_START_FORAGING = 25.0
@@ -95,12 +98,23 @@ def _process_critter_ai(world, session):
 
         current_tile = world.generate_tile(critter.x, critter.y)
 
-        # Priority 2: Drink if thirsty and on a water tile
-        if is_thirsty and current_tile["terrain"] == TerrainType.WATER:
-            critter.thirst -= DRINK_AMOUNT
-            critter.thirst = max(critter.thirst, 0)
-            print(f"    drank. thirst: {critter.thirst}")
-            return
+        # Priority 2: Drink if thirsty and near a water tile
+        if is_thirsty:
+            surroundings = [
+                world.generate_tile(critter.x + dx, critter.y + dy)
+                for dy in [-1, 0, 1]
+                for dx in [-1, 0, 1]
+                if not (dx == 0 and dy == 0)
+            ]
+            is_near_water = any(
+                tile["terrain"] == TerrainType.WATER for tile in surroundings
+            )
+
+            if is_near_water:
+                critter.thirst -= DRINK_AMOUNT
+                critter.thirst = max(critter.thirst, 0)
+                print(f"    drank. thirst: {critter.thirst}")
+                return
 
         # Priority 3: Eat if hungry and on a food tile
         if (
@@ -120,10 +134,10 @@ def _process_critter_ai(world, session):
 
         # If we didn't eat we'll move, towards water or food if necessary.
         dx, dy = 0, 0
-        surroundings = [
+        sense_surroundings = [
             world.generate_tile(critter.x + dx, critter.y + dy)
-            for dy in [-1, 0, 1]
-            for dx in [-1, 0, 1]
+            for dy in range(-SENSE_RADIUS, SENSE_RADIUS + 1)
+            for dx in range(-SENSE_RADIUS, SENSE_RADIUS + 1)
             if not (dx == 0 and dy == 0)
         ]
 
@@ -131,9 +145,12 @@ def _process_critter_ai(world, session):
             # Try to find water
             print(f"    thirsty")
             water_tiles = [
-                tile for tile in surroundings if tile["terrain"] == TerrainType.WATER
+                tile
+                for tile in sense_surroundings
+                if tile["terrain"] == TerrainType.WATER
             ]
             if water_tiles:
+                # Find the nearest tile by manhattan distance.
                 best_tile = min(
                     water_tiles,
                     key=lambda tile: abs(tile["x"] - critter.x)
@@ -146,17 +163,26 @@ def _process_critter_ai(world, session):
 
         if is_hungry:
             print(f"    hungry")
-            surroundings = [
-                world.generate_tile(critter.x + dx, critter.y + dy)
-                for dy in [-1, 0, 1]
-                for dx in [-1, 0, 1]
-                if not (dx == 0 and dy == 0)
-            ]
             # Find the best tile
-            best_tile = max(surroundings, key=lambda tile: tile["food_available"])
+            food_tiles = [
+                tile for tile in sense_surroundings if tile["food_available"] > 0
+            ]
 
-            # If there's food nearby, move towards it.  Otherwise move randomly.
-            if best_tile["food_available"] > 0:
+            if food_tiles:
+                # Choose a foraging strategy
+                if random.random() < STRATEGIST_PROBABILITY:
+                    # Strategist: go for the most food
+                    print(f"      going for most food")
+                    best_tile = max(food_tiles, key=lambda tile: tile["food_available"])
+                else:
+                    # Opportunist: go for closest food by manhattan distance
+                    print(f"      going for nearest food")
+                    best_tile = min(
+                        food_tiles,
+                        key=lambda tile: abs(tile["x"] - critter.x)
+                        + abs(tile["y"] - critter.y),
+                    )
+
                 dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
                 print(f"    found food in {best_tile}")
             else:
@@ -170,13 +196,13 @@ def _process_critter_ai(world, session):
             destination_tile = world.generate_tile(new_x, new_y)
 
             # Don't move into water
-            # TODO: drink if next to water and it's needed
             if destination_tile["terrain"] == TerrainType.WATER:
                 print("    stopping due to water")
                 break
 
             if (
-                destination_tile["terrain"] == TerrainType.GRASS
+                is_hungry
+                and destination_tile["terrain"] == TerrainType.GRASS
                 and destination_tile["food_available"] > 0
             ):
                 print("    stopping due to food")
