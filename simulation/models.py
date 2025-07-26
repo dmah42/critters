@@ -1,5 +1,6 @@
+import json
 from web_server import db
-import datetime
+from datetime import datetime, timezone
 import enum
 
 
@@ -106,7 +107,7 @@ class DeadCritter(db.Model):
     parent_one_id = db.Column(db.Integer)
     parent_two_id = db.Column(db.Integer)
 
-    time_of_death = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    time_of_death = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     children = db.relationship(
         "Critter", secondary="dead_critter_children_association", lazy="subquery"
@@ -141,3 +142,27 @@ class TileState(db.Model):
     y = db.Column(db.Integer, primary_key=True)
 
     food_available = db.Column(db.Float, nullable=False)
+
+
+class SimulationStats(db.Model):
+    __tablename__ = "simulation_stats"
+    tick = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    population = db.Column(db.Integer)
+    herbivore_population = db.Column(db.Integer)
+    carnivore_population = db.Column(db.Integer)
+
+    # Store the age distribution as a JSON string
+    age_distribution = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            "tick": self.tick,
+            "population": self.population,
+            "herbivore_population": self.herbivore_population,
+            "carnivore_population": self.carnivore_population,
+            "age_distribution": (
+                json.loads(self.age_distribution) if self.age_distribution else {}
+            ),
+        }

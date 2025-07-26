@@ -1,7 +1,15 @@
 import enum
+import json
 import random
 import noise
-from simulation.models import CauseOfDeath, Critter, DeadCritter, TileState
+from simulation.models import (
+    CauseOfDeath,
+    Critter,
+    DeadCritter,
+    DietType,
+    SimulationStats,
+    TileState,
+)
 from web_server import db
 
 # Terrain constants
@@ -48,6 +56,7 @@ def run_simulation_tick(world, session):
     print("+")
     _process_tile_regrowth(session)
     _process_critter_ai(world, session)
+    _record_statistics(session)
     print(".")
 
 
@@ -353,3 +362,44 @@ class World:
             "food_available": DEFAULT_GRASS_FOOD if terrain == TerrainType.GRASS else 0,
         }
         return tile
+
+
+def _record_statistics(session):
+    """Calculates and saves the current sim stats"""
+    critters = session.query(Critter).all()
+    population = len(critters)
+    if population == 0:
+        print("No living critters")
+        return
+
+    herbivores = 0
+    carnivores = 0
+    ages = {}
+
+    for c in critters:
+        if c.diet == DietType.HERBIVORE:
+            herbivores += 1
+        elif c.diet == DietType.CARNIVORE:
+            carnivores += 1
+        else:
+            print(f"unknown diet type: {c.diet}")
+
+        if not c.age in ages:
+            ages[c.age] = 0
+        ages[c.age] += 1
+
+    last_stat = (
+        session.query(SimulationStats).order_by(SimulationStats.tick.desc()).first()
+    )
+    current_tick = (last_stat.tick + 1) if last_stat else 1
+
+    stats = SimulationStats(
+        tick=current_tick,
+        population=population,
+        herbivore_population=herbivores,
+        carnivore_population=carnivores,
+        age_distribution=json.dumps(ages),
+    )
+    session.add(stats)
+
+    print(f" Recorded stats for tick {current_tick}: {stats.to_dict()}")
