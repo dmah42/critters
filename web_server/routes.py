@@ -1,5 +1,5 @@
 from flask import request, jsonify, Blueprint, render_template
-from simulation.models import Player, Critter, DeadCritter, TileState
+from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
 from simulation.engine import DEFAULT_GRASS_FOOD, World
 
 from web_server import db
@@ -17,6 +17,11 @@ def index():
     return render_template(
         "index.html", canvas_size=CANVAS_SIZE, default_grass_food=DEFAULT_GRASS_FOOD
     )
+
+
+@main.route("/stats")
+def stats():
+    return render_template("stats.html")
 
 
 @main.route("/api/player", methods=["POST"])
@@ -194,6 +199,20 @@ def get_world_critters_data():
     critter_data = [critter.to_dict() for critter in critters_in_view]
 
     return jsonify({"critters": critter_data})
+
+
+@main.route("/api/stats/history", methods=["GET"])
+def get_stats_histor():
+    """Returns a history of simulation stats"""
+    limit = request.args.get("limit", 100, type=int)
+
+    stats_history = (
+        SimulationStats.query.order_by(SimulationStats.tick.desc()).limit(limit).all()
+    )
+
+    stats_history.reverse()
+
+    return jsonify([s.to_dict() for s in stats_history])
 
 
 if __name__ == "__main__":

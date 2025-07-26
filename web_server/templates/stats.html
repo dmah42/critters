@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simulation Statistics</title>
+    <!-- 1. Import the Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+      }
+      h1,
+      h2 {
+        text-align: center;
+        color: #444;
+      }
+      .chart-container {
+        width: 80%;
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Simulation Statistics</h1>
+
+    <div class="chart-container">
+      <h2>Population Over Time</h2>
+      <canvas id="populationChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h2>Latest Age Distribution</h2>
+      <canvas id="ageChart"></canvas>
+    </div>
+
+    <script>
+      // --- Chart Objects ---
+      let populationChart;
+      let ageChart;
+
+      // --- Function to fetch data and initialize charts ---
+      async function initializeCharts() {
+        try {
+          const response = await fetch("/api/stats/history?limit=200");
+          if (!response.ok) throw new Error("Failed to fetch stats history");
+          const history = await response.json();
+
+          if (history.length === 0) return;
+
+          // --- 1. Create Population Chart ---
+          const popCtx = document
+            .getElementById("populationChart")
+            .getContext("2d");
+          populationChart = new Chart(popCtx, {
+            type: "line",
+            data: {
+              labels: history.map((s) => s.tick), // Ticks on the X-axis
+              datasets: [
+                {
+                  label: "Total Population",
+                  data: history.map((s) => s.population),
+                  borderColor: "rgb(75, 192, 192)",
+                  tension: 0.1,
+                  fill: false,
+                },
+                {
+                  label: "Herbivores",
+                  data: history.map((s) => s.herbivore_population),
+                  borderColor: "rgb(153, 255, 153)",
+                  tension: 0.1,
+                  fill: false,
+                },
+                {
+                  label: "Carnivores",
+                  data: history.map((s) => s.carnivore_population),
+                  borderColor: "rgb(255, 99, 132)",
+                  tension: 0.1,
+                  fill: false,
+                },
+              ],
+            },
+          });
+
+          // --- 2. Create Age Distribution Chart ---
+          const latestStat = history[history.length - 1];
+          const ageCtx = document.getElementById("ageChart").getContext("2d");
+          ageChart = new Chart(ageCtx, {
+            type: "bar",
+            data: {
+              labels: Object.keys(latestStat.age_distribution),
+              datasets: [
+                {
+                  label: "Number of Critters",
+                  data: Object.values(latestStat.age_distribution),
+                  backgroundColor: [
+                    "rgba(54, 162, 235, 0.6)",
+                    "rgba(75, 192, 192, 0.6)",
+                    "rgba(255, 206, 86, 0.6)",
+                    "rgba(255, 99, 132, 0.6)",
+                  ],
+                },
+              ],
+            },
+            options: {
+              plugins: { legend: { display: false } },
+            },
+          });
+        } catch (error) {
+          console.error("Error initializing charts:", error);
+        }
+      }
+
+      // --- Function to update charts with the latest data ---
+      async function updateCharts() {
+        try {
+          const response = await fetch("/api/stats/latest");
+          if (!response.ok) return;
+          const latestStat = await response.json();
+
+          // Update population chart if the tick is new
+          if (
+            populationChart &&
+            populationChart.data.labels[
+              populationChart.data.labels.length - 1
+            ] !== latestStat.tick
+          ) {
+            populationChart.data.labels.push(latestStat.tick);
+            populationChart.data.datasets[0].data.push(latestStat.population);
+            populationChart.data.datasets[1].data.push(
+              latestStat.herbivore_population
+            );
+            populationChart.data.datasets[2].data.push(
+              latestStat.carnivore_population
+            );
+
+            // Optional: remove oldest data point to keep the chart clean
+            if (populationChart.data.labels.length > 200) {
+              populationChart.data.labels.shift();
+              populationChart.data.datasets.forEach((dataset) =>
+                dataset.data.shift()
+              );
+            }
+            populationChart.update();
+          }
+
+          // Update age chart
+          if (ageChart) {
+            ageChart.data.labels = Object.keys(latestStat.age_distribution);
+            ageChart.data.datasets[0].data = Object.values(
+              latestStat.age_distribution
+            );
+            ageChart.update();
+          }
+        } catch (error) {
+          console.error("Error updating charts:", error);
+        }
+      }
+
+      // --- Initial Load and Live Update ---
+      window.addEventListener("load", initializeCharts);
+      setInterval(updateCharts, 5000); // Refresh every 5 seconds
+    </script>
+  </body>
+</html>
