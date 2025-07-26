@@ -1,12 +1,10 @@
+import argparse
 import random
 from web_server import create_app, db
 from simulation.models import Critter, DietType
 
-# --- Configuration ---
-NUM_PROGENITORS = 5
 
-
-def seed_population():
+def seed_population(num_progenitors):
     """
     Creates the initial population for the world.
     - Creates two 'dummy' parents.
@@ -35,7 +33,7 @@ def seed_population():
 
     # Create the progenitor critters with random stats.
     progenitors = []
-    for i in range(NUM_PROGENITORS):
+    for i in range(num_progenitors):
         progenitor = Critter(
             parent_one_id=adam.id,
             parent_two_id=steve.id,
@@ -57,10 +55,21 @@ def seed_population():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Seed the critter world")
+    parser.add_argument(
+        "-n",
+        "--num-progenitors",
+        type=int,
+        default=20,
+        help="The number of initial progenitors to create",
+    )
+    args = parser.parse_args()
+
     # We need an application context to interact with the database.
     app = create_app()
     with app.app_context():
         # Clear existing critters to re-seed.
         db.session.query(Critter).delete()
         db.session.commit()
-        seed_population()
+
+        seed_population(num_progenitors=args.num_progenitors)

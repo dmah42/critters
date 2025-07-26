@@ -1,6 +1,6 @@
 from flask import request, jsonify, Blueprint, render_template
 from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
-from simulation.engine import DEFAULT_GRASS_FOOD, World
+from simulation.engine import DEFAULT_GRASS_FOOD, ENERGY_TO_START_RESTING, World
 
 from web_server import db
 from flask import current_app as app
@@ -21,7 +21,9 @@ def index():
 
 @main.route("/stats")
 def stats():
-    return render_template("stats.html")
+    return render_template(
+        "stats.html", energy_to_start_resting=ENERGY_TO_START_RESTING
+    )
 
 
 @main.route("/api/player", methods=["POST"])

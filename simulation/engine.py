@@ -1,5 +1,6 @@
 import enum
 import json
+import math
 import random
 import noise
 from simulation.models import (
@@ -42,6 +43,15 @@ DRINK_AMOUNT = 25.0
 HEALTH_DAMAGE_PER_TICK = 0.5
 CRITICAL_HUNGER = 80.0
 CRITICAL_THIRST = 75.0
+
+## Breeding constants
+HEALTH_TO_BREED = 90.0
+MAX_HUNGER_TO_BREED = 15.0
+MAX_THIRST_TO_BREED = 15.0
+BREEDING_ENERGY_COST = 40.0
+BREEDING_COOLDOWN_TICKS = 500
+MUTATION_CHANCE = 0.1
+MUTATION_AMOUNT = 0.2
 
 
 class TerrainType(enum.Enum):
@@ -96,18 +106,20 @@ def _process_critter_ai(world, session):
         return
 
     for critter in all_critters:
-        _run_critter_logic(critter, world, session)
+        _run_critter_logic(critter, world, session, all_critters)
 
     print(f"Processed AI for {len(all_critters)} critters.")
 
 
-def _run_critter_logic(critter, world, session):
+def _run_critter_logic(critter, world, session, all_critters):
     """Run the AI logic for a single critter"""
     print(f"  Processing critter {critter.id}")
     # Update basic needs
     critter.age += 1
     critter.hunger += HUNGER_PER_TICK
     critter.thirst += THIRST_PER_TICK
+    if critter.breeding_cooldown > 0:
+        critter.breeding_cooldown -= 1
 
     if critter.hunger > CRITICAL_HUNGER or critter.thirst > CRITICAL_THIRST:
         critter.health -= HEALTH_DAMAGE_PER_TICK
@@ -223,6 +235,36 @@ def _run_critter_logic(critter, world, session):
             dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
     else:
         dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+
+    # Priority 4: Seek a mate
+    ready_to_breed = (
+        critter.health >= HEALTH_TO_BREED
+        and critter.hunger < MAX_HUNGER_TO_BREED
+        and critter.thirst < MAX_THIRST_TO_BREED
+        and critter.breeding_cooldown == 0
+    )
+
+    if ready_to_breed:
+        potential_mates = [
+            other
+            for other in all_critters
+            if other.id != critter.id
+            and other.diet == critter.id
+            and abs(other.x - critter.x) <= SENSE_RADIUS
+            and abs(other.y - critter.y) <= SENSE_RADIUS
+            and other.health >= HEALTH_TO_BREED
+            and other.hunger < MAX_HUNGER_TO_BREED
+            and other.thirst < MAX_THIRST_TO_BREED
+            and other.breeding_cooldown == 0
+        ]
+
+        if potential_mates:
+            mate = potential_mates[0]
+            if abs(mate.x - critter.x) <= 1 and abs(mate.y - critter.y) <= 1:
+                _reproduce(critter, mate, session)
+                return
+            else:
+                dx, dy = mate.x - critter.x, mate.y - critter.y
 
     # Execute the move
     for _ in range(int(critter.speed)):
@@ -375,6 +417,10 @@ def _record_statistics(session):
     herbivores = 0
     carnivores = 0
     ages = {}
+    health_bins = {"Healthy": 0, "Hurt": 0, "Critical": 0}
+    hunger_bins = {"Sated": 0, "Hungry": 0, "Starving": 0}
+    thirst_bins = {"Hydrated": 0, "Thirsty": 0, "Parched": 0}
+    energies = {}
 
     for c in critters:
         if c.diet == DietType.HERBIVORE:
@@ -388,6 +434,32 @@ def _record_statistics(session):
             ages[c.age] = 0
         ages[c.age] += 1
 
+        if c.health > 70:
+            health_bins["Healthy"] += 1
+        elif c.health > 30:
+            health_bins["Hurt"] += 1
+        else:
+            health_bins["Critical"] += 1
+
+        if c.hunger < HUNGER_TO_START_FORAGING:
+            hunger_bins["Sated"] += 1
+        elif c.hunger < CRITICAL_HUNGER:
+            hunger_bins["Hungry"] += 1
+        else:
+            hunger_bins["Starving"] += 1
+
+        if c.thirst < THIRST_TO_START_DRINKING:
+            thirst_bins["Hydrated"] += 1
+        elif c.thirst < CRITICAL_THIRST:
+            thirst_bins["Thirsty"] += 1
+        else:
+            thirst_bins["Parched"] += 1
+
+        energy_bin = int(math.floor(c.energy))
+        if not energy_bin in energies:
+            energies[energy_bin] = 0
+        energies[energy_bin] += 1
+
     last_stat = (
         session.query(SimulationStats).order_by(SimulationStats.tick.desc()).first()
     )
@@ -399,7 +471,42 @@ def _record_statistics(session):
         herbivore_population=herbivores,
         carnivore_population=carnivores,
         age_distribution=json.dumps(ages),
+        health_distribution=json.dumps(health_bins),
+        hunger_distribution=json.dumps(hunger_bins),
+        thirst_distribution=json.dumps(thirst_bins),
+        energy_distribution=json.dumps(energies),
     )
     session.add(stats)
 
     print(f" Recorded stats for tick {current_tick}: {stats.to_dict()}")
+
+
+def _reproduce(parent1, parent2, session):
+    """Creates a new offspring from two parents"""
+    print(f"  {parent1} and {parent2} are breeding")
+
+    child_speed = random.choice([parent1.speed, parent2.speed])
+    child_size = random.choice([parent1.size, parent2.size])
+
+    if random.random() < MUTATION_CHANCE:
+        child_speed += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
+        child_speed = max(child_speed, 1.0)
+    if random.random() < MUTATION_CHANCE:
+        child_size += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
+        child_size = max(child_size, 1.0)
+
+    child = Critter(
+        parent_one_id=parent1.id,
+        parent_two_id=parent2.id,
+        diet=parent1.diet,
+        x=parent1.x,
+        y=parent1.y,
+        speed=child_speed,
+        size=child_size,
+    )
+    session.add(child)
+
+    parent1.energy -= BREEDING_ENERGY_COST
+    parent2.energy -= BREEDING_ENERGY_COST
+    parent1.breeding_cooldown = BREEDING_COOLDOWN_TICKS
+    parent2.breeding_cooldown = BREEDING_COOLDOWN_TICKS

@@ -56,6 +56,9 @@ class Critter(db.Model):
     x = db.Column(db.Integer, default=0)
     y = db.Column(db.Integer, default=0)
 
+    # Avoid breeding too often
+    breeding_cooldown = db.Column(db.Integer, default=0)
+
     player_id = db.Column(db.Integer, db.ForeignKey("player.id"), nullable=True)
     owner = db.relationship("Player", back_populates="critters")
 
@@ -155,6 +158,10 @@ class SimulationStats(db.Model):
 
     # Store the age distribution as a JSON string
     age_distribution = db.Column(db.Text)
+    health_distribution = db.Column(db.Text)
+    hunger_distribution = db.Column(db.Text)
+    thirst_distribution = db.Column(db.Text)
+    energy_distribution = db.Column(db.Text)
 
     def to_dict(self):
         return {
@@ -164,5 +171,17 @@ class SimulationStats(db.Model):
             "carnivore_population": self.carnivore_population,
             "age_distribution": (
                 json.loads(self.age_distribution) if self.age_distribution else {}
+            ),
+            "health_distribution": (
+                json.loads(self.health_distribution) if self.health_distribution else {}
+            ),
+            "hunger_distribution": (
+                json.loads(self.hunger_distribution) if self.hunger_distribution else {}
+            ),
+            "thirst_distribution": (
+                json.loads(self.thirst_distribution) if self.thirst_distribution else {}
+            ),
+            "energy_distribution": (
+                json.loads(self.energy_distribution) if self.energy_distribution else {}
             ),
         }
