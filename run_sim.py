@@ -1,3 +1,4 @@
+import argparse
 import time
 import traceback
 from sqlalchemy import create_engine
@@ -8,12 +9,23 @@ from simulation.engine import World, run_simulation_tick
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Run Critter World sim loop")
+    parser.add_argument(
+        "-t",
+        "--tick-timer",
+        type=float,
+        default=10.0,
+        help="The time in seconds between sim ticks",
+    )
+    args = parser.parse_args()
+
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     Session = sessionmaker(bind=engine)
 
     world = World(seed=1)
 
-    print("Starting simulation loop... Press Ctrl+C to exit.")
+    print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
+    print("  Ctrl+C to exit.")
     while True:
         session = Session()
         try:
@@ -26,7 +38,7 @@ def main():
         finally:
             session.close()
 
-        time.sleep(60)
+        time.sleep(args.tick_timer)
 
 
 if __name__ == "__main__":

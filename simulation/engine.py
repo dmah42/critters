@@ -94,7 +94,7 @@ def _process_critter_ai(world, session):
             critter.energy += ENERGY_REGEN_PER_TICK
             critter.energy = min(critter.energy, MAX_ENERGY)
             print(f"    rested: energy: {critter.energy}")
-            return
+            continue
 
         current_tile = world.generate_tile(critter.x, critter.y)
 
@@ -114,7 +114,7 @@ def _process_critter_ai(world, session):
                 critter.thirst -= DRINK_AMOUNT
                 critter.thirst = max(critter.thirst, 0)
                 print(f"    drank. thirst: {critter.thirst}")
-                return
+                continue
 
         # Priority 3: Eat if hungry and on a food tile
         if (
@@ -130,7 +130,7 @@ def _process_critter_ai(world, session):
             critter.hunger = max(critter.hunger, 0)
 
             print(f"    ate. hunger: {critter.hunger}")
-            return
+            continue
 
         # If we didn't eat we'll move, towards water or food if necessary.
         dx, dy = 0, 0

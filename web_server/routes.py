@@ -1,6 +1,6 @@
 from flask import request, jsonify, Blueprint, render_template
 from simulation.models import Player, Critter, DeadCritter, TileState
-from simulation.engine import World
+from simulation.engine import DEFAULT_GRASS_FOOD, World
 
 from web_server import db
 from flask import current_app as app
@@ -14,7 +14,9 @@ CANVAS_SIZE = 600
 
 @main.route("/")
 def index():
-    return render_template("index.html", canvas_size=CANVAS_SIZE)
+    return render_template(
+        "index.html", canvas_size=CANVAS_SIZE, default_grass_food=DEFAULT_GRASS_FOOD
+    )
 
 
 @main.route("/api/player", methods=["POST"])
