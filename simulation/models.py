@@ -82,6 +82,7 @@ class Critter(db.Model):
             "hunger": self.hunger,
             "thirst": self.thirst,
             "owner_id": self.player_id,
+            "diet": self.diet.name,
         }
 
     def __repr__(self):

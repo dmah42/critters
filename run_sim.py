@@ -22,7 +22,7 @@ def main():
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     Session = sessionmaker(bind=engine)
 
-    world = World(seed=1)
+    world = World(seed=Config.WORLD_SEED)
 
     print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")

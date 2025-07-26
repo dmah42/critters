@@ -186,13 +186,21 @@
 
         ctx.fillStyle = "red";
         for (const critter of newCritters) {
+          if (critter.diet === 'HERBIVORE') {
+            ctx.fillStyle = 'cyan';
+          } else if (critter.diet === 'CARNIVORE') {
+            ctx.fillStyle = 'red';
+          } else {
+            ctx.fillStyle = 'grey';  // fallback
+          }
+
           const canvasX = (critter.x - startX) * tileWidth;
           const canvasY = (critter.y - startY) * tileHeight;
           ctx.beginPath();
           ctx.arc(
             canvasX + tileWidth / 2,
             canvasY + tileHeight / 2,
-            tileWidth / 2.5,
+            tileWidth / 2.0,
             0,
             2 * Math.PI
           );

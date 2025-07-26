@@ -1,16 +1,20 @@
 import argparse
 import random
+from config import Config
+from simulation.engine import TerrainType, World
 from web_server import create_app, db
 from simulation.models import Critter, DietType
 
 
-def seed_population(num_progenitors):
+def seed_population(seed, num_progenitors):
     """
     Creates the initial population for the world.
     - Creates two 'dummy' parents.
     - Creates a number of progenitors with random stats.
     """
-    print("Seeding world population...")
+    print(f"Seeding world with seed ${seed} and ${num_progenitors} progenitors")
+
+    world = World(seed=seed)
 
     # 1. Create two 'dummy' critters to act as parents for the first generation.
     # We must commit them first to get their IDs.
@@ -34,6 +38,15 @@ def seed_population(num_progenitors):
     # Create the progenitor critters with random stats.
     progenitors = []
     for i in range(num_progenitors):
+        while True:
+            rand_x = random.randint(-50, 50)
+            rand_y = random.randint(-50, 50)
+
+            tile = world.generate_tile(rand_x, rand_y)
+
+            if tile["terrain"] != TerrainType.WATER:
+                break
+
         progenitor = Critter(
             parent_one_id=adam.id,
             parent_two_id=steve.id,
@@ -42,8 +55,8 @@ def seed_population(num_progenitors):
             speed=random.uniform(3.0, 7.0),
             size=random.uniform(3.0, 7.0),
             # Place them randomly in the world near the origin
-            x=random.randint(-50, 50),
-            y=random.randint(-50, 50),
+            x=rand_x,
+            y=rand_y,
         )
         progenitors.append(progenitor)
 
@@ -72,4 +85,4 @@ if __name__ == "__main__":
         db.session.query(Critter).delete()
         db.session.commit()
 
-        seed_population(num_progenitors=args.num_progenitors)
+        seed_population(seed=Config.WORLD_SEED, num_progenitors=args.num_progenitors)

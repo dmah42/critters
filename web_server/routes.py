@@ -1,4 +1,5 @@
 from flask import request, jsonify, Blueprint, render_template
+from config import Config
 from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
 from simulation.engine import DEFAULT_GRASS_FOOD, ENERGY_TO_START_RESTING, World
 
@@ -145,8 +146,7 @@ def get_world_terrain_data():
     width = request.args.get("w", default=50, type=int)
     height = request.args.get("h", default=50, type=int)
 
-    # FIXME: this shouldn't be set here.
-    world = World(seed=1)
+    world = World(seed=Config.WORLD_SEED)
 
     tile_data = []
     start_x = center_x - (width // 2)
