@@ -1,9 +1,9 @@
 import random
 from web_server import create_app, db
-from simulation.models import Critter
+from simulation.models import Critter, DietType
 
 # --- Configuration ---
-NUM_PROGENITORS = 50
+NUM_PROGENITORS = 5
 
 
 def seed_population():
@@ -33,12 +33,13 @@ def seed_population():
 
     print(f"Created dummy parents with IDs: {adam.id} and {steve.id}")
 
-    # 2. Create the progenitor critters with random stats.
+    # Create the progenitor critters with random stats.
     progenitors = []
     for i in range(NUM_PROGENITORS):
         progenitor = Critter(
             parent_one_id=adam.id,
             parent_two_id=steve.id,
+            diet=DietType.HERBIVORE if random.random() > 0.7 else DietType.CARNIVORE,
             # Assign random stats
             speed=random.uniform(3.0, 7.0),
             size=random.uniform(3.0, 7.0),

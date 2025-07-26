@@ -16,6 +16,11 @@ BASE_ENERGY_COST_PER_MOVE = 0.1
 UPHILL_ENERGY_MULTIPLIER = 1.5
 DOWNHILL_ENERGY_MULTIPLIER = 0.75
 
+# AI constants
+HUNGER_TO_START_FORAGING = 25.0
+HUNGER_RESTORED_PER_EAT = 10.0
+EAT_AMOUNT = 5.0
+
 
 class TerrainType(enum.Enum):
     WATER = "water"
@@ -26,10 +31,10 @@ class TerrainType(enum.Enum):
 
 def run_simulation_tick(world, session):
     """Process one tick of the world simulation. Called periodically."""
-    print("+", end="")
+    print("+")
     _process_tile_regrowth(session)
     _process_critter_ai(world, session)
-    print(".", end="")
+    print(".")
 
 
 def _process_tile_regrowth(session):
@@ -64,42 +69,96 @@ def _process_critter_ai(world, session):
     all_critters = session.query(Critter).all()
 
     for critter in all_critters:
+        print(f"  Processing critter {critter.id}")
         # Update basic needs
         critter.hunger += HUNGER_PER_TICK
         critter.thirst += THIRST_PER_TICK
 
         current_tile = world.generate_tile(critter.x, critter.y)
 
-        # TODO: have their needs hit thresholds?
-        # TODO: can they smell something nearby?
+        is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
 
-        dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-        for i in range(int(critter.speed)):
+        print(f"    is hungry: {is_hungry}")
+        # If hungry
+        if (
+            is_hungry
+            and current_tile["terrain"] == TerrainType.GRASS
+            and current_tile["food_available"] > 0
+        ):
+            amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
+            new_tile_food = current_tile["food_available"] - amount_to_eat
+            world.update_tile_food(critter.x, critter.y, new_tile_food)
+
+            critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
+            if critter.hunger < 0:
+                critter.hunger = 0
+
+            print(f"    ate. hunger: {critter.hunger}")
+            # Nothing else to do this turn.
+            return
+
+        # If we didn't eat we'll move, towards food if necessary.
+        dx, dy = 0, 0
+        # If hungry but there's no food, sense and move
+        if is_hungry:
+            # Get the 8 adjacent tiles
+            surroundings = [
+                world.generate_tile(critter.x + dx, critter.y + dy)
+                for dy in [-1, 0, 1]
+                for dx in [-1, 0, 1]
+                if not (dx == 0 and dy == 0)
+            ]
+            # Find the best tile
+            best_tile = max(surroundings, key=lambda tile: tile["food_available"])
+
+            # If there's food nearby, move towards it.  Otherwise move randomly.
+            if best_tile["food_available"] > 0:
+                dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
+                print(f"    found food in {best_tile}")
+            else:
+                dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        # Not hungry, just wander randomly
+        else:
+            dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+
+        # Execute the move
+        for _ in range(int(critter.speed)):
             new_x, new_y = critter.x + dx, critter.y + dy
-
             destination_tile = world.generate_tile(new_x, new_y)
 
             # Don't move into water
             # TODO: drink if next to water and it's needed
-            if destination_tile["terrain"] != TerrainType.WATER:
-                height_diff = destination_tile["height"] - current_tile["height"]
-                energy_cost = BASE_ENERGY_COST_PER_MOVE
-                if height_diff > 0:
-                    energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
-                elif height_diff < 0:
-                    energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+            if destination_tile["terrain"] == TerrainType.WATER:
+                print("    stopping due to water")
+                break
 
-                critter.energy -= energy_cost
+            if (
+                destination_tile["terrain"] == TerrainType.GRASS
+                and destination_tile["food_available"] > 0
+            ):
+                print("    stopping due to food")
+                break
 
-                critter.x = new_x
-                critter.y = new_y
+            height_diff = destination_tile["height"] - current_tile["height"]
+            energy_cost = BASE_ENERGY_COST_PER_MOVE
+            if height_diff > 0:
+                energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
+            elif height_diff < 0:
+                energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+
+            critter.energy -= energy_cost
+
+            critter.x = new_x
+            critter.y = new_y
+
+        print(f"    energy: {critter.energy}")
 
     print(f"Processed AI for {len(all_critters)} critters.")
 
 
 class World:
     """
-    Represents the game world, procedurall generating terrain
+    Represents the game world, procedural generating terrain
     on the fly.  Nothing is stored in memory.
     """
 

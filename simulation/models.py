@@ -11,6 +11,11 @@ class CauseOfDeath(enum.Enum):
     EXHAUSTION = "exhaustion"
 
 
+class DietType(enum.Enum):
+    HERBIVORE = "herbivore"
+    CARNIVORE = "carnivore"
+
+
 class Player(db.Model):
     __tablename__ = "player"
 
@@ -35,6 +40,7 @@ class Critter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Core stats
+    diet = db.Column(db.Enum(DietType), nullable=False, default=DietType.HERBIVORE)
     health = db.Column(db.Float, default=100.0)
     energy = db.Column(db.Float, default=100.0)
     hunger = db.Column(db.Float, default=0.0)

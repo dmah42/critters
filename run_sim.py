@@ -26,7 +26,7 @@ def main():
         finally:
             session.close()
 
-        time.sleep(5)  # Tick every 5 seconds
+        time.sleep(60)
 
 
 if __name__ == "__main__":
