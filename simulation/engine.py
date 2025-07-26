@@ -1,7 +1,7 @@
 import enum
 import random
 import noise
-from simulation.models import Critter, TileState
+from simulation.models import CauseOfDeath, Critter, DeadCritter, TileState
 from web_server import db
 
 # Terrain constants
@@ -30,6 +30,10 @@ MAX_ENERGY = 100.0
 
 THIRST_TO_START_DRINKING = 20.0
 DRINK_AMOUNT = 25.0
+
+HEALTH_DAMAGE_PER_TICK = 0.5
+CRITICAL_HUNGER = 80.0
+CRITICAL_THIRST = 75.0
 
 
 class TerrainType(enum.Enum):
@@ -78,151 +82,188 @@ def _process_critter_ai(world, session):
     """Handles the state changes and actions for living critters"""
     all_critters = session.query(Critter).all()
 
+    if not all_critters:
+        print("No living critters found.")
+        return
+
     for critter in all_critters:
-        print(f"  Processing critter {critter.id}")
-        # Update basic needs
-        critter.hunger += HUNGER_PER_TICK
-        critter.thirst += THIRST_PER_TICK
+        _run_critter_logic(critter, world, session)
 
-        # Check in on critter state
-        is_tired = critter.energy < ENERGY_TO_START_RESTING
-        is_thirsty = critter.thirst >= THIRST_TO_START_DRINKING
-        is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
+    print(f"Processed AI for {len(all_critters)} critters.")
 
-        # Priority 1: Rest if tired
-        if is_tired:
-            critter.energy += ENERGY_REGEN_PER_TICK
-            critter.energy = min(critter.energy, MAX_ENERGY)
-            print(f"    rested: energy: {critter.energy}")
-            continue
 
-        current_tile = world.generate_tile(critter.x, critter.y)
+def _run_critter_logic(critter, world, session):
+    """Run the AI logic for a single critter"""
+    print(f"  Processing critter {critter.id}")
+    # Update basic needs
+    critter.age += 1
+    critter.hunger += HUNGER_PER_TICK
+    critter.thirst += THIRST_PER_TICK
 
-        # Priority 2: Drink if thirsty and near a water tile
-        if is_thirsty:
-            surroundings = [
-                world.generate_tile(critter.x + dx, critter.y + dy)
-                for dy in [-1, 0, 1]
-                for dx in [-1, 0, 1]
-                if not (dx == 0 and dy == 0)
-            ]
-            is_near_water = any(
-                tile["terrain"] == TerrainType.WATER for tile in surroundings
-            )
+    if critter.hunger > CRITICAL_HUNGER or critter.thirst > CRITICAL_THIRST:
+        critter.health -= HEALTH_DAMAGE_PER_TICK
 
-            if is_near_water:
-                critter.thirst -= DRINK_AMOUNT
-                critter.thirst = max(critter.thirst, 0)
-                print(f"    drank. thirst: {critter.thirst}")
-                continue
+    # Check for death
+    if critter.health <= 0:
+        cause = (
+            CauseOfDeath.STARVATION
+            if critter.hunger > critter.thirst
+            else CauseOfDeath.THIRST
+        )
+        _handle_death(critter, cause, session)
+        return
 
-        # Priority 3: Eat if hungry and on a food tile
-        if (
-            is_hungry
-            and current_tile["terrain"] == TerrainType.GRASS
-            and current_tile["food_available"] > 0
-        ):
-            amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
-            new_tile_food = current_tile["food_available"] - amount_to_eat
-            world.update_tile_food(critter.x, critter.y, new_tile_food)
+    # Check in on critter state
+    is_tired = critter.energy < ENERGY_TO_START_RESTING
+    is_thirsty = critter.thirst >= THIRST_TO_START_DRINKING
+    is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
 
-            critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
-            critter.hunger = max(critter.hunger, 0)
+    # Priority 1: Rest if tired
+    if is_tired:
+        critter.energy += ENERGY_REGEN_PER_TICK
+        critter.energy = min(critter.energy, MAX_ENERGY)
+        print(f"    rested: energy: {critter.energy}")
+        return
 
-            print(f"    ate. hunger: {critter.hunger}")
-            continue
+    current_tile = world.generate_tile(critter.x, critter.y)
 
-        # If we didn't eat we'll move, towards water or food if necessary.
-        dx, dy = 0, 0
-        sense_surroundings = [
+    # Priority 2: Drink if thirsty and near a water tile
+    if is_thirsty:
+        surroundings = [
             world.generate_tile(critter.x + dx, critter.y + dy)
-            for dy in range(-SENSE_RADIUS, SENSE_RADIUS + 1)
-            for dx in range(-SENSE_RADIUS, SENSE_RADIUS + 1)
+            for dy in [-1, 0, 1]
+            for dx in [-1, 0, 1]
             if not (dx == 0 and dy == 0)
         ]
+        is_near_water = any(
+            tile["terrain"] == TerrainType.WATER for tile in surroundings
+        )
 
-        if is_thirsty:
-            # Try to find water
-            print(f"    thirsty")
-            water_tiles = [
-                tile
-                for tile in sense_surroundings
-                if tile["terrain"] == TerrainType.WATER
-            ]
-            if water_tiles:
-                # Find the nearest tile by manhattan distance.
-                best_tile = min(
-                    water_tiles,
-                    key=lambda tile: abs(tile["x"] - critter.x)
-                    + abs(tile["y"] - critter.y),
-                )
-                dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
-                print(f"    found water in {best_tile}")
-            else:
-                dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        if is_near_water:
+            critter.thirst -= DRINK_AMOUNT
+            critter.thirst = max(critter.thirst, 0)
+            print(f"    drank. thirst: {critter.thirst}")
+            return
 
-        if is_hungry:
-            print(f"    hungry")
-            # Find the best tile
-            food_tiles = [
-                tile for tile in sense_surroundings if tile["food_available"] > 0
-            ]
+    # Priority 3: Eat if hungry and on a food tile
+    if (
+        is_hungry
+        and current_tile["terrain"] == TerrainType.GRASS
+        and current_tile["food_available"] > 0
+    ):
+        amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
+        new_tile_food = current_tile["food_available"] - amount_to_eat
+        world.update_tile_food(critter.x, critter.y, new_tile_food)
 
-            if food_tiles:
-                # Choose a foraging strategy
-                if random.random() < STRATEGIST_PROBABILITY:
-                    # Strategist: go for the most food
-                    print(f"      going for most food")
-                    best_tile = max(food_tiles, key=lambda tile: tile["food_available"])
-                else:
-                    # Opportunist: go for closest food by manhattan distance
-                    print(f"      going for nearest food")
-                    best_tile = min(
-                        food_tiles,
-                        key=lambda tile: abs(tile["x"] - critter.x)
-                        + abs(tile["y"] - critter.y),
-                    )
+        critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
+        critter.hunger = max(critter.hunger, 0)
 
-                dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
-                print(f"    found food in {best_tile}")
-            else:
-                dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        print(f"    ate. hunger: {critter.hunger}")
+        return
+
+    # If we didn't eat we'll move, towards water or food if necessary.
+    dx, dy = 0, 0
+    sense_surroundings = [
+        world.generate_tile(critter.x + dx, critter.y + dy)
+        for dy in range(-SENSE_RADIUS, SENSE_RADIUS + 1)
+        for dx in range(-SENSE_RADIUS, SENSE_RADIUS + 1)
+        if not (dx == 0 and dy == 0)
+    ]
+
+    if is_thirsty:
+        # Try to find water
+        print(f"    thirsty")
+        water_tiles = [
+            tile for tile in sense_surroundings if tile["terrain"] == TerrainType.WATER
+        ]
+        if water_tiles:
+            # Find the nearest tile by manhattan distance.
+            best_tile = min(
+                water_tiles,
+                key=lambda tile: abs(tile["x"] - critter.x)
+                + abs(tile["y"] - critter.y),
+            )
+            dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
+            print(f"    found water in {best_tile}")
         else:
             dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
 
-        # Execute the move
-        for _ in range(int(critter.speed)):
-            new_x, new_y = critter.x + dx, critter.y + dy
-            destination_tile = world.generate_tile(new_x, new_y)
+    if is_hungry:
+        print(f"    hungry")
+        # Find the best tile
+        food_tiles = [tile for tile in sense_surroundings if tile["food_available"] > 0]
 
-            # Don't move into water
-            if destination_tile["terrain"] == TerrainType.WATER:
-                print("    stopping due to water")
-                break
+        if food_tiles:
+            # Choose a foraging strategy
+            if random.random() < STRATEGIST_PROBABILITY:
+                # Strategist: go for the most food
+                print(f"      going for most food")
+                best_tile = max(food_tiles, key=lambda tile: tile["food_available"])
+            else:
+                # Opportunist: go for closest food by manhattan distance
+                print(f"      going for nearest food")
+                best_tile = min(
+                    food_tiles,
+                    key=lambda tile: abs(tile["x"] - critter.x)
+                    + abs(tile["y"] - critter.y),
+                )
 
-            if (
-                is_hungry
-                and destination_tile["terrain"] == TerrainType.GRASS
-                and destination_tile["food_available"] > 0
-            ):
-                print("    stopping due to food")
-                break
+            dx, dy = best_tile["x"] - critter.x, best_tile["y"] - critter.y
+            print(f"    found food in {best_tile}")
+        else:
+            dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+    else:
+        dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
 
-            height_diff = destination_tile["height"] - current_tile["height"]
-            energy_cost = BASE_ENERGY_COST_PER_MOVE
-            if height_diff > 0:
-                energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
-            elif height_diff < 0:
-                energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+    # Execute the move
+    for _ in range(int(critter.speed)):
+        new_x, new_y = critter.x + dx, critter.y + dy
+        destination_tile = world.generate_tile(new_x, new_y)
 
-            critter.energy -= energy_cost
+        # Don't move into water
+        if destination_tile["terrain"] == TerrainType.WATER:
+            print("    stopping due to water")
+            break
 
-            critter.x = new_x
-            critter.y = new_y
+        if (
+            is_hungry
+            and destination_tile["terrain"] == TerrainType.GRASS
+            and destination_tile["food_available"] > 0
+        ):
+            print("    stopping due to food")
+            break
 
-        print(f"    energy: {critter.energy}")
+        height_diff = destination_tile["height"] - current_tile["height"]
+        energy_cost = BASE_ENERGY_COST_PER_MOVE
+        if height_diff > 0:
+            energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
+        elif height_diff < 0:
+            energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
 
-    print(f"Processed AI for {len(all_critters)} critters.")
+        critter.energy -= energy_cost
+
+        critter.x = new_x
+        critter.y = new_y
+
+    print(f"    energy: {critter.energy}")
+
+
+def _handle_death(critter, cause, session):
+    """Handles the death of a critter"""
+    print(f"    died of {cause.name}")
+
+    dead_critter = DeadCritter(
+        original_id=critter.id,
+        age=critter.age,
+        cause=critter.cause,
+        speed=critter.speed,
+        size=critter.size,
+        player_id=critter.player_id,
+        parent_one_id=critter.parent_one_id,
+        parent_two_id=critter.parent_two_id,
+    )
+    session.add(dead_critter)
+    session.delete(critter)
 
 
 class World:

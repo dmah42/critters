@@ -89,7 +89,7 @@ class DeadCritter(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     # Store original id
-    original_critter_id = db.Column(db.Integer, index=True, unique=True)
+    original_id = db.Column(db.Integer, index=True, unique=True)
 
     # stats snapshot
     age = db.Column(db.Integer, nullable=False)
@@ -102,6 +102,9 @@ class DeadCritter(db.Model):
     # player owner
     player_id = db.Column(db.Integer, db.ForeignKey("player.id"), nullable=True)
     owner = db.relationship("Player", back_populates="dead_critters")
+
+    parent_one_id = db.Column(db.Integer)
+    parent_two_id = db.Column(db.Integer)
 
     time_of_death = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
