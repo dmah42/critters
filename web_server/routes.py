@@ -1,7 +1,8 @@
 from flask import request, jsonify, Blueprint, render_template
 from config import Config
+from simulation.brain import ENERGY_TO_START_RESTING
 from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
-from simulation.engine import DEFAULT_GRASS_FOOD, ENERGY_TO_START_RESTING, World
+from simulation.engine import DEFAULT_GRASS_FOOD, World
 
 from web_server import db
 from flask import current_app as app

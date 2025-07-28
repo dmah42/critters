@@ -3,6 +3,8 @@ from web_server import db
 from datetime import datetime, timezone
 import enum
 
+HEALTH_PER_SIZE_POINT = 20.0
+
 
 class CauseOfDeath(enum.Enum):
     STARVATION = "starvation"
@@ -70,6 +72,15 @@ class Critter(db.Model):
         return Critter.query.filter(
             (Critter.parent_one_id == self.id) | (Critter.parent_two_id == self.id)
         ).all()
+
+    @property
+    def max_health(self):
+        return self.size * HEALTH_PER_SIZE_POINT
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "health" not in kwargs:
+            self.health = self.size * HEALTH_PER_SIZE_POINT
 
     def to_dict(self):
         # TODO: add more

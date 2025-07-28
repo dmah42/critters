@@ -19,8 +19,8 @@ def seed_population(seed, num_progenitors):
     # 1. Create two 'dummy' critters to act as parents for the first generation.
     # We must commit them first to get their IDs.
     # A simple way to handle the non-nullable parent constraint is to have them be their own parent.
-    adam = Critter(parent_one_id=1, parent_two_id=1)
-    steve = Critter(parent_one_id=2, parent_two_id=2)
+    adam = Critter(parent_one_id=1, parent_two_id=1, size=5.0)
+    steve = Critter(parent_one_id=2, parent_two_id=2, size=5.0)
 
     # Add them to the session and flush to assign IDs without committing the full transaction.
     db.session.add(adam)
@@ -50,7 +50,7 @@ def seed_population(seed, num_progenitors):
         progenitor = Critter(
             parent_one_id=adam.id,
             parent_two_id=steve.id,
-            diet=DietType.HERBIVORE if random.random() > 0.7 else DietType.CARNIVORE,
+            diet=random.choice([DietType.HERBIVORE, DietType.CARNIVORE]),
             # Assign random stats
             speed=random.uniform(3.0, 7.0),
             size=random.uniform(3.0, 7.0),
