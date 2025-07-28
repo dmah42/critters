@@ -9,6 +9,7 @@ from simulation.brain import (
     ActionType,
 )
 from simulation.models import (
+    AIState,
     CauseOfDeath,
     Critter,
     DeadCritter,
@@ -136,6 +137,10 @@ def _run_critter_logic(critter, world, session, all_critters):
     action_type = action["type"]
 
     # print(f"   {action_type}")
+
+    critter.ai_state = (
+        AIState.RESTING if action_type == ActionType.REST else AIState.IDLE
+    )
 
     # --- Part 3: Execute the Chosen Action ---
     # This is a simple "switch" statement that executes the brain's decision.

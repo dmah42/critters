@@ -19,6 +19,11 @@ class DietType(enum.Enum):
     CARNIVORE = "carnivore"
 
 
+class AIState(enum.Enum):
+    IDLE = "idle"  # Default state, making decisions
+    RESTING = "resting"  # Committed to resting
+
+
 class Player(db.Model):
     __tablename__ = "player"
 
@@ -43,7 +48,12 @@ class Critter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Core stats
-    diet = db.Column(db.Enum(DietType), nullable=False, default=DietType.HERBIVORE)
+    diet = db.Column(
+        db.Enum(DietType),
+        nullable=False,
+        default=DietType.HERBIVORE,
+        server_default=DietType.HERBIVORE.value,
+    )
     health = db.Column(db.Float, default=100.0)
     energy = db.Column(db.Float, default=100.0)
     hunger = db.Column(db.Float, default=0.0)
@@ -66,6 +76,13 @@ class Critter(db.Model):
 
     parent_one_id = db.Column(db.Integer, db.ForeignKey("critter.id"), nullable=False)
     parent_two_id = db.Column(db.Integer, db.ForeignKey("critter.id"), nullable=False)
+
+    ai_state = db.Column(
+        db.Enum(AIState),
+        nullable=False,
+        default=AIState.IDLE,
+        server_default=AIState.IDLE.value,
+    )
 
     @property
     def children(self):

@@ -1,7 +1,9 @@
+from simulation.models import AIState
 from simulation.terrain_type import TerrainType
 from simulation.action_type import ActionType
 
 ENERGY_TO_START_RESTING = 30.0
+ENERGY_TO_STOP_RESTING = 90.0
 
 HEALTH_TO_BREED = 90.0
 MAX_HUNGER_TO_BREED = 15.0
@@ -47,15 +49,18 @@ class CritterAI:
             and critter.breeding_cooldown == 0
         )
 
-        # --- Priority 1: REST ---
-        if is_tired:
-            return {"type": ActionType.REST}
-
-        # --- Priority 2: FLEE (if the module exists) ---
+        # --- Priority 1: FLEE (if the module exists) ---
         if self.fleeing_module:
             action = self.fleeing_module.get_action(critter, self.all_critters)
             if action:
                 return action
+
+        # --- Priority 2: REST and keep resting if we've started
+        if is_tired or (
+            critter.ai_state == AIState.RESTING
+            and critter.energy < ENERGY_TO_STOP_RESTING
+        ):
+            return {"type": ActionType.REST}
 
         # --- Priority 3: DRINK or SEEK_WATER ---
         if is_thirsty and self.water_seeking_module:
