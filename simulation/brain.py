@@ -10,7 +10,10 @@ MAX_HUNGER_TO_BREED = 15.0
 MAX_THIRST_TO_BREED = 15.0
 
 THIRST_TO_START_DRINKING = 20.0
+THIRST_TO_STOP_DRINKING = 5.0
+
 HUNGER_TO_START_FORAGING = 25.0
+HUNGER_TO_STOP_FORAGING = 16.0
 
 SENSE_RADIUS = 5
 
@@ -63,16 +66,24 @@ class CritterAI:
             return {"type": ActionType.REST}
 
         # --- Priority 3: DRINK or SEEK_WATER ---
-        if is_thirsty and self.water_seeking_module:
-            action = self.water_seeking_module.get_action(critter, self.world)
-            if action:
-                return action
+        if self.water_seeking_module:
+            if is_thirsty or (
+                critter.ai_state == AIState.THIRSTY
+                and critter.thirst > THIRST_TO_STOP_DRINKING
+            ):
+                action = self.water_seeking_module.get_action(critter, self.world)
+                if action:
+                    return action
 
         # --- Priority 4: EAT/ATTACK or SEEK_FOOD ---
-        if is_hungry and self.foraging_module:
-            action = self.foraging_module.get_action(critter, self.all_critters)
-            if action:
-                return action
+        if self.foraging_module:
+            if is_hungry or (
+                critter.ai_state == AIState.HUNGRY
+                and critter.hunger > HUNGER_TO_STOP_FORAGING
+            ):
+                action = self.foraging_module.get_action(critter, self.all_critters)
+                if action:
+                    return action
 
         # --- Priority 5: BREED or SEEK_MATE ---
         if ready_to_breed and self.mate_seeking_module:

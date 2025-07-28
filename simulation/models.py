@@ -22,6 +22,8 @@ class DietType(enum.Enum):
 class AIState(enum.Enum):
     IDLE = "idle"  # Default state, making decisions
     RESTING = "resting"  # Committed to resting
+    THIRSTY = "thirsty"  # Committed to finding and drinking water
+    HUNGRY = "hungry"  # Committed to finding and eating food
 
 
 class Player(db.Model):

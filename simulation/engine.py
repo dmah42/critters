@@ -107,7 +107,7 @@ def _run_critter_logic(critter, world, session, all_critters):
     """
     # --- Part 1: Universal State Updates (Health, Hunger, Death, etc.) ---
     # This initial block of code is the same as before.
-    print(f"  Processing critter {critter.id}")
+    print(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
     critter.age += 1
     critter.hunger += HUNGER_PER_TICK
     critter.thirst += THIRST_PER_TICK
@@ -132,25 +132,25 @@ def _run_critter_logic(critter, world, session, all_critters):
     action = ai_brain.determine_action()
     action_type = action["type"]
 
-    # print(f"   {action_type}")
-
-    critter.ai_state = (
-        AIState.RESTING if action_type == ActionType.REST else AIState.IDLE
-    )
+    # Assume IDLE unless we learn otherwise.
+    critter.ai_state = AIState.IDLE
 
     # --- Part 3: Execute the Chosen Action ---
     # This is a simple "switch" statement that executes the brain's decision.
     if action_type == ActionType.REST:
+        critter.ai_state = AIState.RESTING
         critter.energy += ENERGY_REGEN_PER_TICK
         critter.energy = min(critter.energy, MAX_ENERGY)
         print(f"    rested: energy: {critter.energy:.2f}")
 
     elif action_type == ActionType.DRINK:
+        critter.ai_state = AIState.THIRSTY
         critter.thirst -= DRINK_AMOUNT
         critter.thirst = max(critter.thirst, 0)
         print(f"    drank: thirst: {critter.thirst}")
 
     elif action_type == ActionType.EAT:
+        critter.ai_state = AIState.HUNGRY
         current_tile = world.generate_tile(critter.x, critter.y)
         amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
         new_tile_food = current_tile["food_available"] - amount_to_eat
@@ -160,6 +160,7 @@ def _run_critter_logic(critter, world, session, all_critters):
         print(f"    ate: hunger: {critter.hunger}")
 
     elif action_type == ActionType.ATTACK:
+        critter.ai_state = AIState.HUNGRY
         prey = action["target"]
         damage = critter.size * DAMAGE_PER_SIZE_POINT
 
@@ -192,6 +193,10 @@ def _run_critter_logic(critter, world, session, all_critters):
         if action_type == ActionType.FLEE:
             predator = action["predator"]
             print(f"    fleeing from {predator.id}")
+        elif action_type == ActionType.SEEK_FOOD:
+            critter.ai_state = AIState.HUNGRY
+        elif action_type == ActionType.SEEK_WATER:
+            critter.ai_state = AIState.THIRSTY
 
         target = action.get("target")  # Get the specific target tile if it exists
         _execute_move(
