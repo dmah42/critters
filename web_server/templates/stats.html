@@ -51,24 +51,22 @@
       <canvas id="populationChart"></canvas>
     </div>
 
-    <div class="chart-container chart-row">
-      <div>
-        <h2>Health</h2>
-        <canvas id="healthChart"></canvas>
-      </div>
-      <div>
-        <h2>Hunger</h2>
-        <canvas id="hungerChart"></canvas>
-      </div>
-      <div>
-        <h2>Thirst</h2>
-        <canvas id="thirstChart"></canvas>
-      </div>
-    </div>
-
     <div class="chart-container full-width-chart-container">
       <h2>Energy distribution</h2>
       <canvas id="energyChart"></canvas>
+    </div>
+    <div class="chart-container full-width-chart-container">
+      <h2>Hunger distribution</h2>
+      <canvas id="hungerChart"></canvas>
+    </div>
+    <div class="chart-container full-width-chart-container">
+      <h2>Thirst distribution</h2>
+      <canvas id="thirstChart"></canvas>
+    </div>
+
+    <div class="chart-container full-width-chart-container">
+      <h2>Health</h2>
+      <canvas id="healthChart"></canvas>
     </div>
 
     <div class="chart-container full-width-chart-container">
@@ -77,12 +75,13 @@
     </div>
 
     <script>
-      let populationChart, ageChart, healthChart, hungerChart, thirstChart, energyDistributionChart;
+      let populationChart, ageChart, healthChart, hungerChart, thirstChart, energyChart;
 
       const HEALTH_ORDER = ["Healthy", "Hurt", "Critical"];
-      const HUNGER_ORDER = ["Sated", "Hungry", "Starving"];
-      const THIRST_ORDER = ["Hydrated", "Thirsty", "Parched"];
       const ENERGY_TO_START_RESTING = {{ energy_to_start_resting }};
+      const ENERGY_TO_STOP_RESTING = {{ energy_to_stop_resting }};
+      const HUNGER_TO_START_FORAGING = {{ hunger_to_start_foraging }};
+      const THIRST_TO_START_DRINKING = {{ thirst_to_start_drinking }};
 
       function updateBarChart(chartInstance, canvasId, labels, data, title, backgroundColors = null) {
         if (chartInstance) {
@@ -112,6 +111,47 @@
             },
           });
         }
+      }
+
+      function drawDistributionChart(title, chart, canvasId, distribution, criticalThreshold, warningThreshold, lowIsBad) {
+          const labels = Object.keys(distribution).sort((a, b) => parseInt(a) - parseInt(b));
+          const data = labels.map(label => distribution[label] || 0);
+
+          // Define colors for the states
+          const okColor = 'rgba(75, 192, 192, 0.6)';
+          const warningColor = 'rgba(255, 206, 86, 0.6)';
+          const criticalColor = 'rgba(255, 99, 132, 0.6)';
+
+          // Generate a color for each bar based on its level
+          const colors = labels.map(label => {
+              const lowerBound = parseInt(label.split('-')[0]);
+            if (lowIsBad) {
+              if (lowerBound <= criticalThreshold) {
+                  return criticalColor;
+              } else if (lowerBound <= warningThreshold) {
+                  return warningColor;
+              } else {
+                  return okColor;
+              }
+            } else {
+              if (lowerBound >= criticalThreshold) {
+                  return criticalColor;
+              } else if (lowerBound >= warningThreshold) {
+                  return warningColor;
+              } else {
+                  return okColor;
+              }
+            }
+          });
+
+          return updateBarChart(
+            chart,
+            canvasId,
+            labels,
+            data,
+            title,
+            colors
+          );
       }
 
       // This single function now handles both initial load and updates.
@@ -173,12 +213,6 @@
           const healthData = HEALTH_ORDER.map(
             (label) => latestStat.health_distribution[label] || 0
           );
-          const hungerData = HUNGER_ORDER.map(
-            (label) => latestStat.hunger_distribution[label] || 0
-          );
-          const thirstData = THIRST_ORDER.map(
-            (label) => latestStat.thirst_distribution[label] || 0
-          );
 
           ageChart = updateBarChart(
             ageChart,
@@ -194,49 +228,11 @@
             healthData,
             "Health Distribution"
           );
-          hungerChart = updateBarChart(
-            hungerChart,
-            "hungerChart",
-            HUNGER_ORDER,
-            hungerData,
-            "Hunger Distribution"
-          );
-          thirstChart = updateBarChart(
-            thirstChart,
-            "thirstChart",
-            THIRST_ORDER,
-            thirstData,
-            "Thirst Distribution"
-          );
 
-          const energyLabels = Object.keys(latestStat.energy_distribution).sort((a, b) => parseInt(a) - parseInt(b));
-                const energyData = energyLabels.map(label => latestStat.energy_distribution[label] || 0);
+          energyChart = drawDistributionChart('Energy distribution', energyChart, "energyChart", latestStat.energy_distribution, ENERGY_TO_START_RESTING, ENERGY_TO_STOP_RESTING, true);
+          hungerChart = drawDistributionChart('Hunger distribution', hungerChart, "hungerChart", latestStat.hunger_distribution, HUNGER_TO_START_FORAGING, HUNGER_TO_START_FORAGING, false);
+          thirstChart = drawDistributionChart('Thirst distribution', thirstChart, "thirstChart", latestStat.thirst_distribution, THIRST_TO_START_DRINKING, THIRST_TO_START_DRINKING, false);
 
-                // Define colors for the states
-                const restedColor = 'rgba(75, 192, 192, 0.6)';
-                const tiredColor = 'rgba(255, 206, 86, 0.6)';
-                const exhaustedColor = 'rgba(255, 99, 132, 0.6)';
-
-                // Generate a color for each bar based on its energy level
-                const energyColors = energyLabels.map(label => {
-                    const lowerBound = parseInt(label.split('-')[0]);
-                    if (lowerBound <= ENERGY_TO_START_RESTING) {
-                        return exhaustedColor;
-                    } else if (lowerBound <= 70) { // Threshold for "Tired"
-                        return tiredColor;
-                    } else {
-                        return restedColor;
-                    }
-                });
-
-          energyDistributionChart = updateBarChart(
-            energyDistributionChart,
-            "energyChart",
-            energyLabels,
-            energyData,
-            'Energy Distribution',
-            energyColors
-          );
         } catch (error) {
           console.error("Error updating charts:", error);
         }

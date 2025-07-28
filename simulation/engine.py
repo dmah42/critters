@@ -3,11 +3,7 @@ import math
 import random
 import noise
 from simulation.terrain_type import TerrainType
-from simulation.brain import (
-    HUNGER_TO_START_FORAGING,
-    THIRST_TO_START_DRINKING,
-    ActionType,
-)
+from simulation.brain import ActionType
 from simulation.models import (
     AIState,
     CauseOfDeath,
@@ -308,8 +304,8 @@ def _record_statistics(session):
     carnivores = 0
     ages = {}
     health_bins = {"Healthy": 0, "Hurt": 0, "Critical": 0}
-    hunger_bins = {"Sated": 0, "Hungry": 0, "Starving": 0}
-    thirst_bins = {"Hydrated": 0, "Thirsty": 0, "Parched": 0}
+    hunger_bins = {}
+    thirst_bins = {}
     energies = {}
 
     for c in critters:
@@ -331,19 +327,15 @@ def _record_statistics(session):
         else:
             health_bins["Critical"] += 1
 
-        if c.hunger < HUNGER_TO_START_FORAGING:
-            hunger_bins["Sated"] += 1
-        elif c.hunger < CRITICAL_HUNGER:
-            hunger_bins["Hungry"] += 1
-        else:
-            hunger_bins["Starving"] += 1
+        hunger_bin = int(math.floor(c.hunger))
+        if not hunger_bin in hunger_bins:
+            hunger_bins[hunger_bin] = 0
+        hunger_bins[hunger_bin] += 1
 
-        if c.thirst < THIRST_TO_START_DRINKING:
-            thirst_bins["Hydrated"] += 1
-        elif c.thirst < CRITICAL_THIRST:
-            thirst_bins["Thirsty"] += 1
-        else:
-            thirst_bins["Parched"] += 1
+        thirst_bin = int(math.floor(c.thirst))
+        if not thirst_bin in thirst_bins:
+            thirst_bins[thirst_bin] = 0
+        thirst_bins[thirst_bin] += 1
 
         energy_bin = int(math.floor(c.energy))
         if not energy_bin in energies:
