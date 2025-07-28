@@ -3,7 +3,7 @@ import random
 from config import Config
 from simulation.engine import TerrainType, World
 from web_server import create_app, db
-from simulation.models import Critter, DietType
+from simulation.models import Critter, DeadCritter, DietType, SimulationStats, TileState
 
 
 def seed_population(seed, num_progenitors):
@@ -12,7 +12,7 @@ def seed_population(seed, num_progenitors):
     - Creates two 'dummy' parents.
     - Creates a number of progenitors with random stats.
     """
-    print(f"Seeding world with seed ${seed} and ${num_progenitors} progenitors")
+    print(f"Seeding world with seed {seed} and {num_progenitors} progenitors")
 
     world = World(seed=seed)
 
@@ -76,13 +76,23 @@ if __name__ == "__main__":
         default=20,
         help="The number of initial progenitors to create",
     )
+    parser.add_argument(
+        "--clear-history",
+        action="store_true",  # This makes it a boolean flag
+        help="Clear all existing critters, dead critters, and statistics before seeding.",
+    )
     args = parser.parse_args()
 
     # We need an application context to interact with the database.
     app = create_app()
     with app.app_context():
-        # Clear existing critters to re-seed.
-        db.session.query(Critter).delete()
-        db.session.commit()
+        if args.clear_history:
+            # Clear existing critters to re-seed.
+            db.session.query(Critter).delete()
+            db.session.query(DeadCritter).delete()
+            db.session.query(TileState).delete()
+            db.session.query(SimulationStats).delete()
+            db.session.commit()
+            print("All data cleared")
 
         seed_population(seed=Config.WORLD_SEED, num_progenitors=args.num_progenitors)
