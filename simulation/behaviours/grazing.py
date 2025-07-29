@@ -6,9 +6,12 @@ from simulation.terrain_type import TerrainType
 # 70% chance to go for the most food instead of the nearest
 STRATEGIST_PROBABILITY = 0.7
 
+# Don't even think about tiles with less than this amount of grass.
+MINIMUM_GRAZE_AMOUNT = 1.0
+
 
 class GrazingBehavior(ForagingBehavior):
-    def get_action(self, critter, world, all_critters):
+    def get_action(self, critter, world, _):
         """
         Determines the complete foraging action for a herbivore.
         Checks for food on the current tile first (EAT), then scans for
@@ -19,7 +22,7 @@ class GrazingBehavior(ForagingBehavior):
         current_tile = world.generate_tile(critter.x, critter.y)
         if (
             current_tile["terrain"] == TerrainType.GRASS
-            and current_tile["food_available"] > 0
+            and current_tile["food_available"] > MINIMUM_GRAZE_AMOUNT
         ):
             # If so, the correct action is to EAT.
             return {"type": ActionType.EAT}
@@ -33,7 +36,11 @@ class GrazingBehavior(ForagingBehavior):
             if not (sx == 0 and sy == 0)
         ]
 
-        food_tiles = [tile for tile in surroundings if tile["food_available"] > 0]
+        food_tiles = [
+            tile
+            for tile in surroundings
+            if tile["food_available"] > MINIMUM_GRAZE_AMOUNT
+        ]
 
         if food_tiles:
             # Choose a foraging strategy (unchanged)
