@@ -8,7 +8,7 @@ class MovingBehavior(ABC):
     """
 
     @abstractmethod
-    def get_action(self, critter, all_critters):
+    def get_action(self, critter, world, all_critters):
         """
         Determines the movement-related action for a critter.
         This method must be implemented by all subclasses.

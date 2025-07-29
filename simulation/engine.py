@@ -193,7 +193,7 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         _update_tile_food(session, critter.x, critter.y, new_tile_food)
         critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
         critter.hunger = max(critter.hunger, 0)
-        logger.info(f"    ate: hunger: {critter.hunger:.2f}")
+        logger.info(f"    ate {amount_to_eat}: hunger: {critter.hunger:.2f}")
 
     elif action_type == ActionType.ATTACK:
         prey = action["target"]
@@ -263,11 +263,15 @@ def _execute_move(critter, world, dx, dy, target=None):
     steps_to_take = int(critter.movement_progress)
     critter.movement_progress -= steps_to_take
 
+    hit_obstacle = False
+
     for _ in range(steps_to_take):
         new_x, new_y = critter.x + move_dx, critter.y + move_dy
         destination_tile = world.generate_tile(new_x, new_y)
 
         if destination_tile["terrain"] == TerrainType.WATER:
+            logger.info("    unable to move. water")
+            hit_obstacle = True
             break
 
         current_tile = world.generate_tile(critter.x, critter.y)
@@ -281,6 +285,7 @@ def _execute_move(critter, world, dx, dy, target=None):
 
         if critter.energy < energy_cost:
             logger.info("    unable to move. not enough energy")
+            hit_obstacle = True
             break
 
         critter.energy -= energy_cost
@@ -292,7 +297,11 @@ def _execute_move(critter, world, dx, dy, target=None):
         if target and critter.x == target[0] and critter.y == target[1]:
             break
 
-    critter.vx, critter.vy = critter.x - old_x, critter.y - old_y
+    if hit_obstacle:
+        # Force a reset of the direction of travel
+        critter.vx, critter.vy = 0, 0
+    else:
+        critter.vx, critter.vy = critter.x - old_x, critter.y - old_y
 
 
 def _handle_death(critter, cause, session, deaths_this_tick):

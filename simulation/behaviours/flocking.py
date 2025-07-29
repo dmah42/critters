@@ -4,14 +4,14 @@ from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import DietType
 
 FLOCKING_RADIUS = 8
-SEPARATION_DISTANCE = 1  # How close is "too close"
+SEPARATION_DISTANCE = 1.5  # How close is "too close"
 SEPARATION_WEIGHT = 1.4  # How strongly to avoid neighbors
-ALIGNMENT_WEIGHT = 1.2  # How strongly to match heading
+ALIGNMENT_WEIGHT = 1.1  # How strongly to match heading
 COHESION_WEIGHT = 1.2  # How strongly to move to the center
 
 
 class FlockingBehavior(MovingBehavior):
-    def get_action(self, critter, all_critters):
+    def get_action(self, critter, world, all_critters):
         """
         Calculates a movement vector based on the Boids algorithm
         Returns a WANDER action with a specific direction, or None.
@@ -27,7 +27,7 @@ class FlockingBehavior(MovingBehavior):
 
         if not flockmates:
             # No mates nearby, use the standard wandering behaviour.
-            return WanderingBehavior().get_action(critter, all_critters)
+            return WanderingBehavior().get_action(critter, world, all_critters)
 
         num_flockmates = len(flockmates)
 

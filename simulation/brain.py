@@ -1,3 +1,4 @@
+from simulation.behaviours.wandering import WanderingBehavior
 from simulation.goal_type import GoalType
 from simulation.action_type import ActionType
 from simulation.mapping import STATE_TO_GOAL_MAP
@@ -42,6 +43,7 @@ class CritterAI:
         self.water_seeking_module = modules.get("water_seeking")
         self.mate_seeking_module = modules.get("mate_seeking")
         self.moving_module = modules.get("moving")
+        self.wandering_module = WanderingBehavior()
 
     def determine_action(self):
         """
@@ -77,10 +79,18 @@ class CritterAI:
                 self.critter, self.all_critters
             )
 
+        elif goal == GoalType.WANDER:
+            # Social wandering
+            action = self.moving_module.get_action(
+                self.critter, self.world, self.all_critters
+            )
+
         # If a goal was chosen but the behaviour module found no specific action,
-        # wander in hope.
+        # wander determinedly in hope.
         if action is None:
-            action = self.moving_module.get_action(self.critter, self.all_critters)
+            action = self.wandering_module.get_action(
+                self.critter, self.world, self.all_critters
+            )
 
         return {"goal": goal, "action": action}
 
