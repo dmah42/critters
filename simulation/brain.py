@@ -1,6 +1,4 @@
-from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import AIState
-from simulation.terrain_type import TerrainType
 from simulation.action_type import ActionType
 
 ENERGY_TO_START_RESTING = 30.0
@@ -10,11 +8,13 @@ HEALTH_TO_BREED = 90.0
 MAX_HUNGER_TO_BREED = 15.0
 MAX_THIRST_TO_BREED = 15.0
 
-THIRST_TO_START_DRINKING = 20.0
-THIRST_TO_STOP_DRINKING = 5.0
+CRITICAL_THIRST = 75.0
+THIRST_TO_START_DRINKING = 40.0
+THIRST_TO_STOP_DRINKING = 20.0
 
-HUNGER_TO_START_FORAGING = 25.0
-HUNGER_TO_STOP_FORAGING = 16.0
+CRITICAL_HUNGER = 80.0
+HUNGER_TO_START_FORAGING = 50.0
+HUNGER_TO_STOP_FORAGING = 25.0
 
 SENSE_RADIUS = 5
 
@@ -38,68 +38,115 @@ class CritterAI:
 
     def determine_action(self):
         """
-        Goes through a priority list to determine the single best action for this tick.
-        Returns a dictionary representing the action, e.g., {'type': 'REST'}.
+        Determines the single best action using a two-phase process:
+        1. determine the primary GOAL
+        2. plan the best ACTION
         """
-        critter = self.critter  # for convenience
 
-        # --- High-Level State Checks ---
+        goal = self._get_primary_goal()
+
+        if goal == ActionType.FLEE:
+            return self.fleeing_module.get_action(self.critter, self.all_critters)
+
+        if goal == ActionType.REST:
+            return {"type": ActionType.REST}
+
+        if goal == ActionType.DRINK:
+            # If we can drink or see water, do it. otherwise walk to find it.
+            action = self.water_seeking_module.get_action(self.critter, self.world)
+            return (
+                action
+                if action
+                else self.moving_module.get_action(self.critter, self.all_critters)
+            )
+
+        if goal == ActionType.EAT:
+            # If we can eat or see food, do it. otherwise walk to find it.
+            action = self.foraging_module.get_action(
+                self.critter, self.world, self.all_critters
+            )
+            return (
+                action
+                if action
+                else self.moving_module.get_action(self.critter, self.all_critters)
+            )
+
+        if goal == ActionType.BREED:
+            # If we can breed or see a mate, do it. otherwise just wander.
+            action = self.mate_seeking_module.get_action(
+                self.critter, self.all_critters
+            )
+            return (
+                action
+                if action
+                else self.moving_module.get_action(self.critter, self.all_critters)
+            )
+
+        # Default: wander
+        return self.moving_module.get_action(self.critter, self.all_critters)
+
+    def _get_primary_goal(self):
+        """
+        Runs through a strict priority list to determine the single
+        most important goal for the critter on this tick
+        """
+        critter = self.critter
+
         is_tired = critter.energy < ENERGY_TO_START_RESTING
         is_thirsty = critter.thirst >= THIRST_TO_START_DRINKING
         is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
-        ready_to_breed = (
+        is_horny = (
             critter.health >= HEALTH_TO_BREED
             and critter.hunger < MAX_HUNGER_TO_BREED
             and critter.thirst < MAX_THIRST_TO_BREED
             and critter.breeding_cooldown == 0
         )
 
-        # --- Priority 1: FLEE (if the module exists) ---
-        if self.fleeing_module:
-            action = self.fleeing_module.get_action(critter, self.all_critters)
-            if action:
-                return action
+        # --- priority 1: flee ---
+        # TODO: cache this so we don't call get_action twice.
+        if self.fleeing_module and self.fleeing_module.get_action(
+            critter, self.all_critters
+        ):
+            return ActionType.FLEE
 
-        # --- Priority 2: REST and keep resting if we've started
-        if is_tired or (
+        # --- priority 2: rest ---
+        # If a critter is critically tired, it's only goal is to rest.
+        # This overrides all other needs except for fleeing.
+        if is_tired:
+            return ActionType.REST
+
+        # --- priority 3: other critical needs ---
+        if critter.thirst > CRITICAL_THIRST:
+            return ActionType.DRINK
+        if critter.hunger > CRITICAL_HUNGER:
+            return ActionType.EAT
+
+        # --- priority 3: hysteresis ---
+        # Rest comes before anything else.
+        if (
             critter.ai_state == AIState.RESTING
             and critter.energy < ENERGY_TO_STOP_RESTING
         ):
-            return {"type": ActionType.REST}
+            return ActionType.REST
+        if (
+            critter.ai_state in [AIState.DRINKING, AIState.SEEKING_WATER]
+            and critter.thirst > THIRST_TO_STOP_DRINKING
+        ):
+            return ActionType.DRINK
+        if (
+            critter.ai_state in [AIState.EATING, AIState.SEEKING_FOOD]
+            and critter.hunger > HUNGER_TO_STOP_FORAGING
+        ):
+            return ActionType.EAT
 
-        # --- Priority 3: DRINK or SEEK_WATER ---
-        if self.water_seeking_module:
-            if is_thirsty or (
-                critter.ai_state == AIState.THIRSTY
-                and critter.thirst > THIRST_TO_STOP_DRINKING
-            ):
-                action = self.water_seeking_module.get_action(critter, self.world)
-                if action:
-                    return action
+        # --- priority 4: new goal ---
+        if is_thirsty:
+            return ActionType.DRINK
+        if is_hungry:
+            return ActionType.EAT
+        if is_tired:
+            return ActionType.REST
+        if is_horny:
+            return ActionType.BREED
 
-        # --- Priority 4: EAT/ATTACK or SEEK_FOOD ---
-        if self.foraging_module:
-            if is_hungry or (
-                critter.ai_state == AIState.HUNGRY
-                and critter.hunger > HUNGER_TO_STOP_FORAGING
-            ):
-                action = self.foraging_module.get_action(
-                    critter, self.world, self.all_critters
-                )
-                if action:
-                    return action
-
-        # --- Priority 5: BREED or SEEK_MATE ---
-        if ready_to_breed and self.mate_seeking_module:
-            action = self.mate_seeking_module.get_action(critter, self.all_critters)
-            if action:
-                return action
-
-        # --- Final Priority: WANDER ---
-        if self.moving_module:
-            action = self.moving_module.get_action(critter, self.all_critters)
-            if action:
-                return action
-
-        # Fallback to a random wander
-        return WanderingBehavior().get_action(critter, self.all_critters)
+        return ActionType.WANDER

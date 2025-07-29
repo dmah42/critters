@@ -147,30 +147,14 @@ function updateStatsPanel() {
       (selectedCritter.health / selectedCritter.max_health) * 100;
     const energyPercent = (selectedCritter.energy / MAX_ENERGY) * 100;
 
-    // Determine status text based on AI thresholds
-    const energyStatus =
-      selectedCritter.energy < ENERGY_TO_START_RESTING
-        ? '<span class="status-text">(Tired)</span>'
-        : selectedCritter.energy < ENERGY_TO_STOP_RESTING
-        ? '<span class="status-text">(Resting)</span>'
-        : "";
-    const hungerStatus =
-      selectedCritter.hunger >= HUNGER_TO_START_FORAGING
-        ? '<span class="status-text">(Hungry)</span>'
-        : selectedCritter.hunger >= HUNGER_TO_STOP_FORAGING
-        ? '<span class="status-text">(Foraging)</span>'
-        : "";
-    const thirstStatus =
-      selectedCritter.thirst >= THIRST_TO_START_DRINKING
-        ? '<span class="status-text">(Thirsty)</span>'
-        : selectedCritter.thirst >= THIRST_TO_STOP_DRINKING
-        ? '<span class="status-text">(Drinking)</span>'
-        : "";
-
     // If a critter is selected, build the HTML with its stats
     statsPanel.innerHTML = `
       <h2>Critter Stats</h2>
       <p><span class="stat-label">ID:</span> ${selectedCritter.id}</p>
+      <p><span class="stat-label">Position:</span> (${selectedCritter.x}, ${
+      selectedCritter.y
+    })</p>
+      <p><span class="stat-label">Goal:</span> ${selectedCritter.ai_state}</p>
       <p><span class="stat-label">Diet:</span> ${selectedCritter.diet}</p>
       <p><span class="stat-label">Age:</span> ${selectedCritter.age}</p>
       <p><span class="stat-label">Speed:</span> ${selectedCritter.speed.toFixed(
@@ -190,16 +174,16 @@ function updateStatsPanel() {
       <div>
         <p><span class="stat-label">Energy:</span> ${selectedCritter.energy.toFixed(
           1
-        )} / ${MAX_ENERGY} ${energyStatus}</p>
+        )} / ${MAX_ENERGY}</p>
         <div class="stat-meter"><div class="energy-bar" style="width: ${energyPercent}%;"></div></div>
       </div>
 
       <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
         1
-      )} ${hungerStatus}</p>
+      )}</p>
       <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
         1
-      )} ${thirstStatus}</p>
+      )}</p>
     `;
   } else {
     // If no critter is selected, show the default message

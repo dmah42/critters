@@ -4,7 +4,7 @@ import math
 import random
 import noise
 from simulation.terrain_type import TerrainType
-from simulation.brain import ActionType
+from simulation.brain import CRITICAL_HUNGER, CRITICAL_THIRST, ActionType
 from simulation.models import (
     AIState,
     CauseOfDeath,
@@ -25,8 +25,8 @@ DIRT_TO_GRASS_RATIO = 0.0
 HUNGER_PER_TICK = 0.2
 THIRST_PER_TICK = 0.25
 BASE_ENERGY_COST_PER_MOVE = 0.1
-UPHILL_ENERGY_MULTIPLIER = 1.5
-DOWNHILL_ENERGY_MULTIPLIER = 0.75
+UPHILL_ENERGY_MULTIPLIER = 1.1
+DOWNHILL_ENERGY_MULTIPLIER = 0.8
 
 # AI constants
 HUNGER_RESTORED_PER_EAT = 10.0
@@ -37,9 +37,7 @@ MAX_ENERGY = 100.0
 
 DRINK_AMOUNT = 25.0
 
-HEALTH_DAMAGE_PER_TICK = 0.5
-CRITICAL_HUNGER = 80.0
-CRITICAL_THIRST = 75.0
+HEALTH_DAMAGE_PER_TICK = 0.1
 
 DAMAGE_PER_SIZE_POINT = 5.0
 
@@ -48,6 +46,20 @@ BREEDING_ENERGY_COST = 40.0
 BREEDING_COOLDOWN_TICKS = 500
 MUTATION_CHANCE = 0.1
 MUTATION_AMOUNT = 0.2
+
+ACTION_TO_STATE_MAP = {
+    # Attack maps to seeking food to ensure it doesn't give up the hunt.
+    ActionType.ATTACK: AIState.SEEKING_FOOD,
+    ActionType.BREED: AIState.BREEDING,
+    ActionType.DRINK: AIState.DRINKING,
+    ActionType.EAT: AIState.EATING,
+    ActionType.FLEE: AIState.FLEEING,
+    ActionType.REST: AIState.RESTING,
+    ActionType.SEEK_FOOD: AIState.SEEKING_FOOD,
+    ActionType.SEEK_WATER: AIState.SEEKING_WATER,
+    ActionType.SEEK_MATE: AIState.SEEKING_MATE,
+    ActionType.WANDER: AIState.IDLE,
+}
 
 
 logger = logging.getLogger(__name__)
@@ -96,7 +108,7 @@ def _process_critter_ai(world, session):
     all_critters = session.query(Critter).all()
 
     if not all_critters:
-        logger.warn("No living critters found.")
+        logger.warning("No living critters found.")
         return
 
     # Start tracking any critters that die this tick.
@@ -153,29 +165,33 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
 
     # --- Part 2: Get Action from the AI Brain ---
     # All complex decision-making is now handled by these two lines.
-    ai_brain = create_ai_for_critter(critter, world, all_critters)
-    action = ai_brain.determine_action()
+    brain = create_ai_for_critter(critter, world, all_critters)
+    action = brain.determine_action()
+
+    if not action:
+        raise RuntimeError(
+            f"CRITICAL BUG: CritterAI for {critter.id} returned a None action.\n"
+            f"  Critter: {critter.to_dict()}"
+        )
+
     action_type = action["type"]
 
-    # Assume IDLE unless we learn otherwise.
-    critter.ai_state = AIState.IDLE
+    critter.ai_state = ACTION_TO_STATE_MAP[action_type]
 
-    # --- Part 3: Execute the Chosen Action ---
+    # --- Part 3: Execute the action ---
+
     # This is a simple "switch" statement that executes the brain's decision.
     if action_type == ActionType.REST:
-        critter.ai_state = AIState.RESTING
         critter.energy += ENERGY_REGEN_PER_TICK
         critter.energy = min(critter.energy, MAX_ENERGY)
         logger.info(f"    rested: energy: {critter.energy:.2f}")
 
     elif action_type == ActionType.DRINK:
-        critter.ai_state = AIState.THIRSTY
         critter.thirst -= DRINK_AMOUNT
         critter.thirst = max(critter.thirst, 0)
         logger.info(f"    drank: thirst: {critter.thirst}")
 
     elif action_type == ActionType.EAT:
-        critter.ai_state = AIState.HUNGRY
         current_tile = _get_world_tile_view(world, session, critter.x, critter.y)
         amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
         new_tile_food = current_tile["food_available"] - amount_to_eat
@@ -185,7 +201,6 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         logger.info(f"    ate: hunger: {critter.hunger:.2f}")
 
     elif action_type == ActionType.ATTACK:
-        critter.ai_state = AIState.HUNGRY
         prey = action["target"]
         damage = critter.size * DAMAGE_PER_SIZE_POINT
 
@@ -204,12 +219,8 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         logger.info(f"    breeding: {mate.id}")
         _reproduce(critter, mate, session)
 
-    elif action_type == ActionType.WANDER:
-        # For a simple wander, just choose a random direction.
-        dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-        _execute_move(critter, world, dx, dy)
-
     elif action_type in [
+        ActionType.WANDER,
         ActionType.FLEE,
         ActionType.SEEK_WATER,
         ActionType.SEEK_FOOD,
@@ -218,10 +229,6 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         if action_type == ActionType.FLEE:
             predator = action["predator"]
             logger.info(f"    fleeing from {predator.id}")
-        elif action_type == ActionType.SEEK_FOOD:
-            critter.ai_state = AIState.HUNGRY
-        elif action_type == ActionType.SEEK_WATER:
-            critter.ai_state = AIState.THIRSTY
 
         target = action.get("target")  # Get the specific target tile if it exists
         _execute_move(
@@ -278,6 +285,11 @@ def _execute_move(critter, world, dx, dy, target=None):
             energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
         elif height_diff < 0:
             energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+
+        if critter.energy < energy_cost:
+            logger.info("    unable to move. not enough energy")
+            break
+
         critter.energy -= energy_cost
 
         critter.x = new_x
@@ -356,7 +368,7 @@ def _record_statistics(session):
     critters = session.query(Critter).all()
     population = len(critters)
     if population == 0:
-        logger.warn("No living critters")
+        logger.warning("No living critters")
         return
 
     herbivores = 0

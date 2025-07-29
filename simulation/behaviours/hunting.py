@@ -1,6 +1,10 @@
 from simulation.behaviours.foraging import ForagingBehavior
-from simulation.brain import SENSE_RADIUS, ActionType
+from simulation.brain import ActionType
 from simulation.models import DietType
+
+# Make this the same as flocking... if they can flock together,
+# they can smell each other
+HUNTING_RADIUS = 8
 
 
 class HuntingBehavior(ForagingBehavior):
@@ -28,8 +32,8 @@ class HuntingBehavior(ForagingBehavior):
             other
             for other in all_critters
             if other.diet == DietType.HERBIVORE
-            and abs(other.x - critter.x) <= SENSE_RADIUS
-            and abs(other.y - critter.y) <= SENSE_RADIUS
+            and abs(other.x - critter.x) <= HUNTING_RADIUS
+            and abs(other.y - critter.y) <= HUNTING_RADIUS
         ]
 
         if nearby_herbivores:

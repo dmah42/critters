@@ -1,12 +1,13 @@
 from simulation.action_type import ActionType
 from simulation.behaviours.moving import MovingBehavior
+from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import DietType
 
 FLOCKING_RADIUS = 8
-SEPARATION_DISTANCE = 2  # How close is "too close"
-SEPARATION_WEIGHT = 1.5  # How strongly to avoid neighbors
-ALIGNMENT_WEIGHT = 1.0  # How strongly to match heading
-COHESION_WEIGHT = 1.0  # How strongly to move to the center
+SEPARATION_DISTANCE = 1  # How close is "too close"
+SEPARATION_WEIGHT = 1.4  # How strongly to avoid neighbors
+ALIGNMENT_WEIGHT = 1.2  # How strongly to match heading
+COHESION_WEIGHT = 1.2  # How strongly to move to the center
 
 
 class FlockingBehavior(MovingBehavior):
@@ -25,7 +26,8 @@ class FlockingBehavior(MovingBehavior):
         ]
 
         if not flockmates:
-            return None
+            # No mates nearby, use the standard wandering behaviour.
+            return WanderingBehavior().get_action(critter, all_critters)
 
         num_flockmates = len(flockmates)
 
@@ -67,9 +69,5 @@ class FlockingBehavior(MovingBehavior):
             + (alignment_dy * ALIGNMENT_WEIGHT)
             + (cohesion_dy * COHESION_WEIGHT)
         )
-
-        # If everything perfectly cancels, don't stand still
-        if final_dx == 0 and final_dy == 0:
-            return None
 
         return {"type": ActionType.WANDER, "dx": final_dx, "dy": final_dy}

@@ -20,10 +20,15 @@ class DietType(enum.Enum):
 
 
 class AIState(enum.Enum):
-    IDLE = "idle"  # Default state, making decisions
-    RESTING = "resting"  # Committed to resting
-    THIRSTY = "thirsty"  # Committed to finding and drinking water
-    HUNGRY = "hungry"  # Committed to finding and eating food
+    IDLE = "idle"
+    FLEEING = "fleeing"
+    RESTING = "resting"
+    SEEKING_FOOD = "seeking food"
+    EATING = "eating"
+    SEEKING_WATER = "seeking water"
+    DRINKING = "drinking"
+    SEEKING_MATE = "seeking mate"
+    BREEDING = "breeding"
 
 
 class Player(db.Model):
@@ -106,7 +111,6 @@ class Critter(db.Model):
             self.health = self.size * HEALTH_PER_SIZE_POINT
 
     def to_dict(self):
-        # TODO: add more
         return {
             "id": self.id,
             "age": self.age,
@@ -120,6 +124,7 @@ class Critter(db.Model):
             "energy": self.energy,
             "hunger": self.hunger,
             "thirst": self.thirst,
+            "ai_state": self.ai_state.name,
             "owner_id": self.player_id,
         }
 
