@@ -253,11 +253,14 @@ def _execute_move(critter, world, dx, dy, target=None):
     Executes a move for a critter, checking for obstacles and goals.
     (This is a new helper function to hold the movement loop)
     """
+    old_x, old_y = critter.x, critter.y
+
     # Normalize the direction vector to get single steps
     move_dx = 1 if dx > 0 else -1 if dx < 0 else 0
     move_dy = 1 if dy > 0 else -1 if dy < 0 else 0
 
     if move_dx == 0 and move_dy == 0:
+        critter.vx, critter.vy = 0, 0
         return
 
     for _ in range(int(critter.speed)):
@@ -283,6 +286,8 @@ def _execute_move(critter, world, dx, dy, target=None):
         # Check if the goal of the move was met
         if target and critter.x == target[0] and critter.y == target[1]:
             break
+
+    critter.vx, critter.vy = critter.x - old_x, critter.y - old_y
 
 
 def _handle_death(critter, cause, session, deaths_this_tick):

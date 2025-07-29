@@ -1,3 +1,4 @@
+from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import AIState
 from simulation.terrain_type import TerrainType
 from simulation.action_type import ActionType
@@ -33,6 +34,7 @@ class CritterAI:
         self.foraging_module = modules.get("foraging")
         self.water_seeking_module = modules.get("water_seeking")
         self.mate_seeking_module = modules.get("mate_seeking")
+        self.moving_module = modules.get("moving")
 
     def determine_action(self):
         """
@@ -94,5 +96,10 @@ class CritterAI:
                 return action
 
         # --- Final Priority: WANDER ---
-        # If all else fails, wander randomly.
-        return {"type": ActionType.WANDER}
+        if self.moving_module:
+            action = self.moving_module.get_action(critter, self.all_critters)
+            if action:
+                return action
+
+        # Fallback to a random wander
+        return WanderingBehavior().get_action(critter, self.all_critters)

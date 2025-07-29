@@ -70,6 +70,10 @@ class Critter(db.Model):
     x = db.Column(db.Integer, default=0)
     y = db.Column(db.Integer, default=0)
 
+    # Velocity
+    vx = db.Column(db.Float, default=0.0)
+    vy = db.Column(db.Float, default=0.0)
+
     # Avoid breeding too often
     breeding_cooldown = db.Column(db.Integer, default=0)
 

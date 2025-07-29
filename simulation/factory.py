@@ -1,3 +1,5 @@
+from simulation.behaviours.flocking import FlockingBehavior
+from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import DietType
 from simulation.behaviours.water_seeking import WaterSeekingBehavior
 from simulation.behaviours.mate_seeking import MateSeekingBehavior
@@ -21,14 +23,18 @@ def create_ai_for_critter(critter, world, all_critters):
         herbivore_modules = {
             "foraging": GrazingBehavior(),
             "fleeing": FleeingBehavior(),
+            "moving": FlockingBehavior(),
         }
         modules = {**shared_modules, **herbivore_modules}
 
     elif critter.diet == DietType.CARNIVORE:
-        carnivore_modules = {"foraging": HuntingBehavior()}
+        carnivore_modules = {
+            "foraging": HuntingBehavior(),
+            "moving": WanderingBehavior(),
+        }
         modules = {**shared_modules, **carnivore_modules}
 
     else:
-        modules = shared_modules
+        raise NotImplementedError(f"unknown diet {critter.diet}")
 
     return CritterAI(critter, world, all_critters, modules)
