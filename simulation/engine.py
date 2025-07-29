@@ -94,6 +94,8 @@ def _process_critter_ai(world, session):
         return
 
     for critter in all_critters:
+        if critter in session.deleted:
+            continue
         _run_critter_logic(critter, world, session, all_critters)
 
     print(f"Processed AI for {len(all_critters)} critters.")
