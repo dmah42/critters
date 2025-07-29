@@ -1,5 +1,6 @@
 let populationChart,
   ageChart,
+  deathChart,
   healthChart,
   hungerChart,
   thirstChart,
@@ -64,6 +65,44 @@ function updateBarChart(
   }
 }
 
+function updatePieChart(chartInstance, canvasId, labels, data, title) {
+  if (chartInstance) {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets[0].data = data;
+    chartInstance.update();
+    return chartInstance;
+  } else {
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    return new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: title,
+            data: data,
+            backgroundColor: [
+              "rgba(255, 99, 132, 0.7)",
+              "rgba(54, 162, 235, 0.7)",
+              "rgba(255, 206, 86, 0.7)",
+              "rgba(75, 192, 192, 0.7)",
+            ],
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: "top",
+          },
+        },
+      },
+    });
+  }
+}
+
 function drawDistributionChart(
   title,
   chart,
@@ -109,7 +148,7 @@ function drawDistributionChart(
 }
 
 // This single function now handles both initial load and updates.
-async function fetchAndDrawCharts() {
+async function fetchAndDrawHistoryCharts() {
   try {
     const response = await fetch("/api/stats/history?limit=100");
     if (!response.ok) throw new Error("Failed to fetch stats history");
@@ -120,11 +159,8 @@ async function fetchAndDrawCharts() {
     // --- Prepare Data ---
     const latestStat = history[history.length - 1];
     const labels = history.map((s) => s.tick);
-    const popData = history.map((s) => s.population);
     const herbivoreData = history.map((s) => s.herbivore_population);
     const carnivoreData = history.map((s) => s.carnivore_population);
-    const ageLabels = Object.keys(latestStat.age_distribution);
-    const ageData = Object.values(latestStat.age_distribution);
 
     // --- Update or Create Population Chart ---
     if (populationChart) {
@@ -222,6 +258,33 @@ async function fetchAndDrawCharts() {
   }
 }
 
+async function fetchAndDrawDeathChart() {
+  try {
+    const response = await fetch("/api/stats/deaths");
+    if (!response.ok) return;
+    const deathStats = await response.json();
+
+    const labels = Object.keys(deathStats);
+    const data = Object.values(deathStats);
+
+    deathChart = updatePieChart(
+      deathChart,
+      "deathChart",
+      labels,
+      data,
+      "Cause of Death"
+    );
+  } catch (error) {
+    console.error("Error updating death chart:", error);
+  }
+}
+
+function fetchAndDrawCharts() {
+  fetchAndDrawHistoryCharts();
+  fetchAndDrawDeathChart();
+}
+
 // --- Initial Load and Live Update ---
 window.addEventListener("load", fetchAndDrawCharts);
-setInterval(fetchAndDrawCharts, 5000); // Call the same function every 5 seconds
+setInterval(fetchAndDrawHistoryCharts, 2000);
+setInterval(fetchAndDrawDeathChart, 60000);

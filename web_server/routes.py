@@ -1,4 +1,5 @@
 from flask import request, jsonify, Blueprint, render_template
+from sqlalchemy import func
 from config import Config
 from simulation.brain import (
     ENERGY_TO_START_RESTING,
@@ -229,6 +230,23 @@ def get_stats_histor():
     stats_history.reverse()
 
     return jsonify([s.to_dict() for s in stats_history])
+
+
+@main.route("/api/stats/deaths", methods=["GET"])
+def get_death_stats():
+    """
+    Returns the aggregate count for each cause of death
+    """
+    death_counts = (
+        db.session.query(DeadCritter.cause, func.count(DeadCritter.cause))
+        .group_by(DeadCritter.cause)
+        .all()
+    )
+
+    # Convert the list of tuples into a dict for the frontend.
+    return jsonify(
+        {cause.name: count for cause, count in death_counts if cause is not None}
+    )
 
 
 if __name__ == "__main__":
