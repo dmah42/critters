@@ -79,6 +79,10 @@ class Critter(db.Model):
     vx = db.Column(db.Float, default=0.0)
     vy = db.Column(db.Float, default=0.0)
 
+    movement_progress = db.Column(
+        db.Float, nullable=False, default=0.0, server_default="0.0"
+    )
+
     # Avoid breeding too often
     breeding_cooldown = db.Column(db.Integer, default=0)
 

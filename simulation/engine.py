@@ -259,7 +259,11 @@ def _execute_move(critter, world, dx, dy, target=None):
         critter.vx, critter.vy = 0, 0
         return
 
-    for _ in range(int(critter.speed)):
+    critter.movement_progress += critter.speed
+    steps_to_take = int(critter.movement_progress)
+    critter.movement_progress -= steps_to_take
+
+    for _ in range(steps_to_take):
         new_x, new_y = critter.x + move_dx, critter.y + move_dy
         destination_tile = world.generate_tile(new_x, new_y)
 
