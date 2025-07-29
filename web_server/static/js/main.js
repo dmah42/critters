@@ -6,9 +6,30 @@ const yInput = document.getElementById("y-coord");
 const widthInput = document.getElementById("width");
 const heightInput = document.getElementById("height");
 const drawButton = document.getElementById("draw-btn");
+const statsPanel = document.getElementById("stats-panel");
+const statsContent = document.getElementById("stats-content");
 
 const dataContainer = document.getElementById("simulation-data");
 const DEFAULT_GRASS_FOOD = parseFloat(dataContainer.dataset.defaultGrassFood);
+const ENERGY_TO_START_RESTING = parseInt(
+  dataContainer.dataset.energyToStartResting
+);
+const ENERGY_TO_STOP_RESTING = parseInt(
+  dataContainer.dataset.energyToStopResting
+);
+const HUNGER_TO_START_FORAGING = parseInt(
+  dataContainer.dataset.hungerToStartForaging
+);
+const HUNGER_TO_STOP_FORAGING = parseInt(
+  dataContainer.dataset.hungerToStopForaging
+);
+const THIRST_TO_START_DRINKING = parseInt(
+  dataContainer.dataset.thirstToStartDrinking
+);
+const THIRST_TO_STOP_DRINKING = parseInt(
+  dataContainer.dataset.thirstToStopDrinking
+);
+const MAX_ENERGY = parseInt(dataContainer.dataset.maxEnergy);
 
 let currentTerrainData = null;
 let currentView = {
@@ -17,8 +38,8 @@ let currentView = {
   w: parseInt(widthInput.value),
   h: parseInt(heightInput.value),
 };
-
 let critterDisplayData = {};
+let selectedCritter = null;
 
 // --- Color Map (must match TerrainType enum names) ---
 const colorMap = {
@@ -118,6 +139,120 @@ function drawTerrain(view) {
     ctx.fillStyle = finalColor;
     ctx.fillRect(x * tileWidth, y * tileHeight, tileWidth, tileHeight);
   }
+}
+
+function updateStatsPanel() {
+  if (selectedCritter) {
+    const healthPercent =
+      (selectedCritter.health / selectedCritter.max_health) * 100;
+    const energyPercent = (selectedCritter.energy / MAX_ENERGY) * 100;
+
+    // Determine status text based on AI thresholds
+    const energyStatus =
+      selectedCritter.energy < ENERGY_TO_START_RESTING
+        ? '<span class="status-text">(Tired)</span>'
+        : selectedCritter.energy < ENERGY_TO_STOP_RESTING
+        ? '<span class="status-text">(Resting)</span>'
+        : "";
+    const hungerStatus =
+      selectedCritter.hunger >= HUNGER_TO_START_FORAGING
+        ? '<span class="status-text">(Hungry)</span>'
+        : selectedCritter.hunger >= HUNGER_TO_STOP_FORAGING
+        ? '<span class="status-text">(Foraging)</span>'
+        : "";
+    const thirstStatus =
+      selectedCritter.thirst >= THIRST_TO_START_DRINKING
+        ? '<span class="status-text">(Thirsty)</span>'
+        : selectedCritter.thirst >= THIRST_TO_STOP_DRINKING
+        ? '<span class="status-text">(Drinking)</span>'
+        : "";
+
+    // If a critter is selected, build the HTML with its stats
+    statsPanel.innerHTML = `
+      <h2>Critter Stats</h2>
+      <p><span class="stat-label">ID:</span> ${selectedCritter.id}</p>
+      <p><span class="stat-label">Diet:</span> ${selectedCritter.diet}</p>
+      <p><span class="stat-label">Age:</span> ${selectedCritter.age}</p>
+      <p><span class="stat-label">Speed:</span> ${selectedCritter.speed.toFixed(
+        1
+      )}</p>
+      <p><span class="stat-label">Size:</span> ${selectedCritter.size.toFixed(
+        1
+      )}</p>
+
+      <div>
+        <p><span class="stat-label">Health:</span> ${selectedCritter.health.toFixed(
+          1
+        )} / ${selectedCritter.max_health.toFixed(1)}</p>
+        <div class="stat-meter"><div class="health-bar" style="width: ${healthPercent}%;"></div></div>
+      </div>
+            
+      <div>
+        <p><span class="stat-label">Energy:</span> ${selectedCritter.energy.toFixed(
+          1
+        )} / ${MAX_ENERGY} ${energyStatus}</p>
+        <div class="stat-meter"><div class="energy-bar" style="width: ${energyPercent}%;"></div></div>
+      </div>
+
+      <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
+        1
+      )} ${hungerStatus}</p>
+      <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
+        1
+      )} ${thirstStatus}</p>
+    `;
+  } else {
+    // If no critter is selected, show the default message
+    statsPanel.innerHTML = `
+            <h2>Critter Stats</h2>
+            <p>Click on a critter to view its details.</p>
+        `;
+  }
+}
+
+function handleCanvasClick(event) {
+  if (!currentTerrainData || !currentView) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  const tileWidth = canvas.width / currentView.w;
+  const tileHeight = canvas.height / currentView.h;
+  const startX = currentView.x - currentView.w / 2;
+  const startY = currentView.y - currentView.h / 2;
+
+  const clickedWorldX = Math.floor(startX + mouseX / tileWidth);
+  const clickedWorldY = Math.floor(startY + mouseY / tileHeight);
+
+  // Are there any critters there?
+  let closestCritter = null;
+  let minDistance = Infinity;
+  const CLICK_RADIUS = 1.5;
+
+  for (const id in critterDisplayData) {
+    const critter = critterDisplayData[id];
+
+    const distance = Math.sqrt(
+      Math.pow(critter.currentX - clickedWorldX, 2) +
+        Math.pow(critter.currentY - clickedWorldY, 2)
+    );
+
+    if (distance < CLICK_RADIUS && distance < minDistance) {
+      closestCritter = critter.critter;
+      minDistance = distance;
+    }
+  }
+
+  if (closestCritter) {
+    console.log("clicked on ", closestCritter);
+    selectedCritter = closestCritter;
+  } else {
+    console.log("didn't hit a critter");
+    selectedCritter = null;
+  }
+
+  updateStatsPanel();
 }
 
 async function handleManualUpdate() {
@@ -226,11 +361,21 @@ function animationLoop() {
     ctx.fill();
   }
 
+  // Update live stats
+  if (selectedCritter) {
+    const latestData = critterDisplayData[selectedCritter.id];
+    if (latestData) {
+      selectedCritter = latestData.critter;
+      updateStatsPanel();
+    }
+  }
+
   // Ask the browser to run this function again on the next frame
   requestAnimationFrame(animationLoop);
 }
 
 // --- Event Listeners ---
+canvas.addEventListener("click", handleCanvasClick);
 drawButton.addEventListener("click", handleManualUpdate);
 window.addEventListener("load", handleManualUpdate);
 setInterval(handleLiveUpdate, 3000);

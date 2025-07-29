@@ -10,7 +10,7 @@ from simulation.brain import (
     THIRST_TO_STOP_DRINKING,
 )
 from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
-from simulation.engine import DEFAULT_GRASS_FOOD, World
+from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, World
 
 from web_server import db
 from flask import current_app as app
@@ -25,7 +25,16 @@ CANVAS_SIZE = 600
 @main.route("/")
 def index():
     return render_template(
-        "index.html", canvas_size=CANVAS_SIZE, default_grass_food=DEFAULT_GRASS_FOOD
+        "index.html",
+        canvas_size=CANVAS_SIZE,
+        default_grass_food=DEFAULT_GRASS_FOOD,
+        energy_to_start_resting=ENERGY_TO_START_RESTING,
+        energy_to_stop_resting=ENERGY_TO_STOP_RESTING,
+        hunger_to_start_foraging=HUNGER_TO_START_FORAGING,
+        hunger_to_stop_foraging=HUNGER_TO_STOP_FORAGING,
+        thirst_to_start_drinking=THIRST_TO_START_DRINKING,
+        thirst_to_stop_drinking=THIRST_TO_STOP_DRINKING,
+        max_energy=MAX_ENERGY,
     )
 
 

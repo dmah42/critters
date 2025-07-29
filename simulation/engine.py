@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import random
 import noise
@@ -49,13 +50,18 @@ MUTATION_CHANCE = 0.1
 MUTATION_AMOUNT = 0.2
 
 
+logger = logging.getLogger(__name__)
+
+
 def run_simulation_tick(world, session):
     """Process one tick of the world simulation. Called periodically."""
-    print("+++")
+    print(".", end="")
+    logger.info("+++ Starting tick +++")
     _process_tile_regrowth(session)
     _process_critter_ai(world, session)
     _record_statistics(session)
-    print("---")
+    logger.info("+++ Ending tick +++")
+    print("|", end="", flush=True)
 
 
 def _process_tile_regrowth(session):
@@ -80,7 +86,7 @@ def _process_tile_regrowth(session):
     for tile in tiles_to_delete:
         session.delete(tile)
 
-    print(
+    logger.info(
         f"Processed regrowth for {len(depleted_tiles)} tiles.  Deleted {len(tiles_to_delete)} tiles"
     )
 
@@ -90,15 +96,20 @@ def _process_critter_ai(world, session):
     all_critters = session.query(Critter).all()
 
     if not all_critters:
-        print("No living critters found.")
+        logger.warn("No living critters found.")
         return
 
-    for critter in all_critters:
-        if critter in session.deleted:
-            continue
-        _run_critter_logic(critter, world, session, all_critters)
+    # Start tracking any critters that die this tick.
+    deaths_this_tick = set()
 
-    print(f"Processed AI for {len(all_critters)} critters.")
+    for critter in all_critters:
+        # Check if we have a ghost in the machine
+        if critter.id in deaths_this_tick:
+            logger.info(f"Skipping update for ghost {critter.id}")
+            continue
+        _run_critter_logic(critter, world, session, all_critters, deaths_this_tick)
+
+    logger.info(f"Processed AI for {len(all_critters)} critters.")
 
 
 def _get_world_tile_view(world, session, x, y):
@@ -114,14 +125,14 @@ def _get_world_tile_view(world, session, x, y):
     return base_tile
 
 
-def _run_critter_logic(critter, world, session, all_critters):
+def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
     """
     The main AI dispatcher for a single critter's turn.
     It creates the appropriate AI brain, gets an action, and executes it.
     """
     # --- Part 1: Universal State Updates (Health, Hunger, Death, etc.) ---
     # This initial block of code is the same as before.
-    print(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
+    logger.info(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
     critter.age += 1
     critter.hunger += HUNGER_PER_TICK
     critter.thirst += THIRST_PER_TICK
@@ -137,7 +148,7 @@ def _run_critter_logic(critter, world, session, all_critters):
             if critter.hunger > critter.thirst
             else CauseOfDeath.THIRST
         )
-        _handle_death(critter, cause, session)
+        _handle_death(critter, cause, session, deaths_this_tick)
         return
 
     # --- Part 2: Get Action from the AI Brain ---
@@ -155,13 +166,13 @@ def _run_critter_logic(critter, world, session, all_critters):
         critter.ai_state = AIState.RESTING
         critter.energy += ENERGY_REGEN_PER_TICK
         critter.energy = min(critter.energy, MAX_ENERGY)
-        print(f"    rested: energy: {critter.energy:.2f}")
+        logger.info(f"    rested: energy: {critter.energy:.2f}")
 
     elif action_type == ActionType.DRINK:
         critter.ai_state = AIState.THIRSTY
         critter.thirst -= DRINK_AMOUNT
         critter.thirst = max(critter.thirst, 0)
-        print(f"    drank: thirst: {critter.thirst}")
+        logger.info(f"    drank: thirst: {critter.thirst}")
 
     elif action_type == ActionType.EAT:
         critter.ai_state = AIState.HUNGRY
@@ -171,7 +182,7 @@ def _run_critter_logic(critter, world, session, all_critters):
         _update_tile_food(session, critter.x, critter.y, new_tile_food)
         critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
         critter.hunger = max(critter.hunger, 0)
-        print(f"    ate: hunger: {critter.hunger:.2f}")
+        logger.info(f"    ate: hunger: {critter.hunger:.2f}")
 
     elif action_type == ActionType.ATTACK:
         critter.ai_state = AIState.HUNGRY
@@ -180,17 +191,17 @@ def _run_critter_logic(critter, world, session, all_critters):
 
         prey.health -= damage
 
-        print(f"    attacking: {prey.id} for {damage:.2f}")
+        logger.info(f"    attacking: {prey.id} for {damage:.2f}")
 
         if prey.health <= 0:
-            _handle_death(prey, CauseOfDeath.PREDATION, session)
+            _handle_death(prey, CauseOfDeath.PREDATION, session, deaths_this_tick)
             critter.hunger = 0
         else:
-            print(f"      {prey.id} survived with {prey.health:.2f} health")
+            logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
 
     elif action_type == ActionType.BREED:
         mate = action["partner"]
-        print(f"    breeding: {mate.id}")
+        logger.info(f"    breeding: {mate.id}")
         _reproduce(critter, mate, session)
 
     elif action_type == ActionType.WANDER:
@@ -206,7 +217,7 @@ def _run_critter_logic(critter, world, session, all_critters):
     ]:
         if action_type == ActionType.FLEE:
             predator = action["predator"]
-            print(f"    fleeing from {predator.id}")
+            logger.info(f"    fleeing from {predator.id}")
         elif action_type == ActionType.SEEK_FOOD:
             critter.ai_state = AIState.HUNGRY
         elif action_type == ActionType.SEEK_WATER:
@@ -274,15 +285,21 @@ def _execute_move(critter, world, dx, dy, target=None):
             break
 
 
-def _handle_death(critter, cause, session):
+def _handle_death(critter, cause, session, deaths_this_tick):
     """Handles the death of a critter"""
 
     # Check that they are not already marked for death
-    for obj in session.new:
-        if isinstance(obj, DeadCritter) and obj.original_id == critter.id:
-            return
+    if critter.id in deaths_this_tick:
+        raise RuntimeError(
+            f"--- !!! WARNING: DUPLICATE DEATH ATTEMPT !!! ---\n"
+            f"Critter ID {critter.id} was already marked for death this tick.\n"
+            f"A second death was triggered by: {cause.name}.\n"
+        )
 
-    print(f"    {critter.id} died of {cause.name}")
+    # If it's a new death, add it to our log for this tick
+    deaths_this_tick.add(critter.id)
+
+    logger.info(f"    {critter.id} died of {cause.name}")
 
     dead_critter = DeadCritter(
         original_id=critter.id,
@@ -300,7 +317,7 @@ def _handle_death(critter, cause, session):
 
 def _reproduce(parent1, parent2, session):
     """Creates a new offspring from two parents"""
-    print(f"  {parent1} and {parent2} are breeding")
+    logger.info(f"  {parent1} and {parent2} are breeding")
 
     child_speed = random.choice([parent1.speed, parent2.speed])
     child_size = random.choice([parent1.size, parent2.size])
@@ -334,7 +351,7 @@ def _record_statistics(session):
     critters = session.query(Critter).all()
     population = len(critters)
     if population == 0:
-        print("No living critters")
+        logger.warn("No living critters")
         return
 
     herbivores = 0
@@ -351,7 +368,7 @@ def _record_statistics(session):
         elif c.diet == DietType.CARNIVORE:
             carnivores += 1
         else:
-            print(f"unknown diet type: {c.diet}")
+            raise RuntimeError(f"unknown diet type: {c.diet}")
 
         if not c.age in ages:
             ages[c.age] = 0
@@ -397,7 +414,7 @@ def _record_statistics(session):
     )
     session.add(stats)
 
-    print(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
+    logger.info(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
 
 
 class World:

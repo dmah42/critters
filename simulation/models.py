@@ -106,13 +106,17 @@ class Critter(db.Model):
         return {
             "id": self.id,
             "age": self.age,
+            "diet": self.diet.name,
+            "speed": self.speed,
+            "size": self.size,
             "x": self.x,
             "y": self.y,
+            "health": self.health,
+            "max_health": self.max_health,
             "energy": self.energy,
             "hunger": self.hunger,
             "thirst": self.thirst,
             "owner_id": self.player_id,
-            "diet": self.diet.name,
         }
 
     def __repr__(self):
