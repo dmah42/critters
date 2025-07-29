@@ -3,8 +3,10 @@ import logging
 import math
 import random
 import noise
+from simulation.goal_type import GoalType
+from simulation.mapping import GOAL_TO_STATE_MAP
 from simulation.terrain_type import TerrainType
-from simulation.brain import CRITICAL_HUNGER, CRITICAL_THIRST, ActionType
+from simulation.brain import CRITICAL_HUNGER, CRITICAL_THIRST, MAX_ENERGY, ActionType
 from simulation.models import (
     AIState,
     CauseOfDeath,
@@ -33,7 +35,6 @@ HUNGER_RESTORED_PER_EAT = 10.0
 EAT_AMOUNT = 5.0
 
 ENERGY_REGEN_PER_TICK = 5.0
-MAX_ENERGY = 100.0
 
 DRINK_AMOUNT = 25.0
 
@@ -46,21 +47,6 @@ BREEDING_ENERGY_COST = 40.0
 BREEDING_COOLDOWN_TICKS = 500
 MUTATION_CHANCE = 0.1
 MUTATION_AMOUNT = 0.2
-
-ACTION_TO_STATE_MAP = {
-    # Attack maps to seeking food to ensure it doesn't give up the hunt.
-    ActionType.ATTACK: AIState.SEEKING_FOOD,
-    ActionType.BREED: AIState.BREEDING,
-    ActionType.DRINK: AIState.DRINKING,
-    ActionType.EAT: AIState.EATING,
-    ActionType.FLEE: AIState.FLEEING,
-    ActionType.REST: AIState.RESTING,
-    ActionType.SEEK_FOOD: AIState.SEEKING_FOOD,
-    ActionType.SEEK_WATER: AIState.SEEKING_WATER,
-    ActionType.SEEK_MATE: AIState.SEEKING_MATE,
-    ActionType.WANDER: AIState.IDLE,
-}
-
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +152,9 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
     # --- Part 2: Get Action from the AI Brain ---
     # All complex decision-making is now handled by these two lines.
     brain = create_ai_for_critter(critter, world, all_critters)
-    action = brain.determine_action()
+    result = brain.determine_action()
+    goal = result["goal"]
+    action = result["action"]
 
     if not action:
         raise RuntimeError(
@@ -176,7 +164,14 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
 
     action_type = action["type"]
 
-    critter.ai_state = ACTION_TO_STATE_MAP[action_type]
+    # Map to an AI state for commitments to goals.
+    critter.ai_state = GOAL_TO_STATE_MAP[goal]
+    if action_type == ActionType.EAT:
+        critter.ai_state = AIState.EATING
+    elif action_type == ActionType.DRINK:
+        critter.ai_state = AIState.DRINKING
+    elif action_type == ActionType.BREED:
+        critter.ai_state = AIState.BREEDING
 
     # --- Part 3: Execute the action ---
 
@@ -219,14 +214,8 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         logger.info(f"    breeding: {mate.id}")
         _reproduce(critter, mate, session)
 
-    elif action_type in [
-        ActionType.WANDER,
-        ActionType.FLEE,
-        ActionType.SEEK_WATER,
-        ActionType.SEEK_FOOD,
-        ActionType.SEEK_MATE,
-    ]:
-        if action_type == ActionType.FLEE:
+    elif action_type == ActionType.MOVE:
+        if goal == GoalType.SURVIVE_DANGER:
             predator = action["predator"]
             logger.info(f"    fleeing from {predator.id}")
 

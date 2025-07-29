@@ -46,9 +46,9 @@ class HuntingBehavior(ForagingBehavior):
             )
             best_target = nearby_herbivores[0]
 
-            # If prey is found, the action is to SEEK_FOOD (hunt).
+            # If prey is found, the action is to MOVE (hunt).
             return {
-                "type": ActionType.SEEK_FOOD,
+                "type": ActionType.MOVE,
                 "dx": best_target.x - critter.x,
                 "dy": best_target.y - critter.y,
                 "target": (best_target.x, best_target.y),

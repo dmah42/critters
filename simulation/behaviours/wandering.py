@@ -30,4 +30,4 @@ class WanderingBehavior(MovingBehavior):
         else:
             dx, dy = random.choice(POSSIBLE_DIRECTIONS)
 
-        return {"type": ActionType.WANDER, "dx": dx, "dy": dy}
+        return {"type": ActionType.MOVE, "dx": dx, "dy": dy}

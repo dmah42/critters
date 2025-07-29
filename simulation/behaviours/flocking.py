@@ -70,4 +70,4 @@ class FlockingBehavior(MovingBehavior):
             + (cohesion_dy * COHESION_WEIGHT)
         )
 
-        return {"type": ActionType.WANDER, "dx": final_dx, "dy": final_dy}
+        return {"type": ActionType.MOVE, "dx": final_dx, "dy": final_dy}

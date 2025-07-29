@@ -42,9 +42,9 @@ class WaterSeekingBehavior:
             # Find the closest accessible land tile next to the water
             best_target_tile = self._find_closest_shore(critter, world, water_tiles)
             if best_target_tile:
-                # If a path is found, the action is to SEEK_WATER.
+                # If a path is found, the action is to MOVE.
                 return {
-                    "type": ActionType.SEEK_WATER,
+                    "type": ActionType.MOVE,
                     "dx": best_target_tile["x"] - critter.x,
                     "dy": best_target_tile["y"] - critter.y,
                     "target": (best_target_tile["x"], best_target_tile["y"]),

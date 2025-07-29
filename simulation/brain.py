@@ -1,8 +1,10 @@
-from simulation.models import AIState
+from simulation.goal_type import GoalType
 from simulation.action_type import ActionType
+from simulation.mapping import STATE_TO_GOAL_MAP
 
 ENERGY_TO_START_RESTING = 30.0
 ENERGY_TO_STOP_RESTING = 90.0
+MAX_ENERGY = 100.0
 
 HEALTH_TO_BREED = 90.0
 MAX_HUNGER_TO_BREED = 15.0
@@ -17,6 +19,11 @@ HUNGER_TO_START_FORAGING = 50.0
 HUNGER_TO_STOP_FORAGING = 25.0
 
 SENSE_RADIUS = 5
+
+# A bonus applied to the score of the current goal, making the AI more focused.
+# A higher value means more focused, a lower value means more easily distracted.
+# TODO: think about making this a critter trait.
+COMMITMENT_BONUS = 1.25
 
 
 class CritterAI:
@@ -38,115 +45,87 @@ class CritterAI:
 
     def determine_action(self):
         """
-        Determines the single best action using a two-phase process:
+        Determines the primary goal and single best action to achieve it.
         1. determine the primary GOAL
         2. plan the best ACTION
+        Returns a dictionary containing both.
         """
 
         goal = self._get_primary_goal()
 
-        if goal == ActionType.FLEE:
-            return self.fleeing_module.get_action(self.critter, self.all_critters)
+        action = None
 
-        if goal == ActionType.REST:
-            return {"type": ActionType.REST}
+        if goal == GoalType.SURVIVE_DANGER:
+            action = self.fleeing_module.get_action(self.critter, self.all_critters)
 
-        if goal == ActionType.DRINK:
+        elif goal == GoalType.RECOVER_ENERGY:
+            action = {"type": ActionType.REST}
+
+        elif goal == GoalType.QUENCH_THIRST:
             # If we can drink or see water, do it. otherwise walk to find it.
             action = self.water_seeking_module.get_action(self.critter, self.world)
-            return (
-                action
-                if action
-                else self.moving_module.get_action(self.critter, self.all_critters)
-            )
 
-        if goal == ActionType.EAT:
+        elif goal == GoalType.SATE_HUNGER:
             # If we can eat or see food, do it. otherwise walk to find it.
             action = self.foraging_module.get_action(
                 self.critter, self.world, self.all_critters
             )
-            return (
-                action
-                if action
-                else self.moving_module.get_action(self.critter, self.all_critters)
-            )
 
-        if goal == ActionType.BREED:
+        elif goal == GoalType.REPRODUCE:
             # If we can breed or see a mate, do it. otherwise just wander.
             action = self.mate_seeking_module.get_action(
                 self.critter, self.all_critters
             )
-            return (
-                action
-                if action
-                else self.moving_module.get_action(self.critter, self.all_critters)
-            )
 
-        # Default: wander
-        return self.moving_module.get_action(self.critter, self.all_critters)
+        # If a goal was chosen but the behaviour module found no specific action,
+        # wander in hope.
+        if action is None:
+            action = self.moving_module.get_action(self.critter, self.all_critters)
+
+        return {"goal": goal, "action": action}
 
     def _get_primary_goal(self):
         """
-        Runs through a strict priority list to determine the single
-        most important goal for the critter on this tick
+        Calculates a "need score" for all possible goals and returns the one
+        with the highest score.
         """
         critter = self.critter
 
-        is_tired = critter.energy < ENERGY_TO_START_RESTING
-        is_thirsty = critter.thirst >= THIRST_TO_START_DRINKING
-        is_hungry = critter.hunger >= HUNGER_TO_START_FORAGING
+        scores = {
+            GoalType.SURVIVE_DANGER: 0,
+            GoalType.RECOVER_ENERGY: 0,
+            GoalType.QUENCH_THIRST: 0,
+            GoalType.SATE_HUNGER: 0,
+            GoalType.REPRODUCE: 0,
+            GoalType.WANDER: 0.1,  # small base score to be the default
+        }
+
+        # Fleeing is the top priority.
+        # TODO: cache this so we don't call get_action twice.
+        if self.fleeing_module and self.fleeing_module.get_action(
+            critter, self.all_critters
+        ):
+            scores[GoalType.SURVIVE_DANGER] = 999  # ensure this wins
+
+        # Calculate scores for internal needs
+        scores[GoalType.RECOVER_ENERGY] = (MAX_ENERGY - critter.energy) / (
+            MAX_ENERGY - ENERGY_TO_START_RESTING
+        )
+        scores[GoalType.QUENCH_THIRST] = critter.thirst / THIRST_TO_START_DRINKING
+        scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
+
         is_horny = (
             critter.health >= HEALTH_TO_BREED
             and critter.hunger < MAX_HUNGER_TO_BREED
             and critter.thirst < MAX_THIRST_TO_BREED
             and critter.breeding_cooldown == 0
         )
-
-        # --- priority 1: flee ---
-        # TODO: cache this so we don't call get_action twice.
-        if self.fleeing_module and self.fleeing_module.get_action(
-            critter, self.all_critters
-        ):
-            return ActionType.FLEE
-
-        # --- priority 2: rest ---
-        # If a critter is critically tired, it's only goal is to rest.
-        # This overrides all other needs except for fleeing.
-        if is_tired:
-            return ActionType.REST
-
-        # --- priority 3: other critical needs ---
-        if critter.thirst > CRITICAL_THIRST:
-            return ActionType.DRINK
-        if critter.hunger > CRITICAL_HUNGER:
-            return ActionType.EAT
-
-        # --- priority 3: hysteresis ---
-        # Rest comes before anything else.
-        if (
-            critter.ai_state == AIState.RESTING
-            and critter.energy < ENERGY_TO_STOP_RESTING
-        ):
-            return ActionType.REST
-        if (
-            critter.ai_state in [AIState.DRINKING, AIState.SEEKING_WATER]
-            and critter.thirst > THIRST_TO_STOP_DRINKING
-        ):
-            return ActionType.DRINK
-        if (
-            critter.ai_state in [AIState.EATING, AIState.SEEKING_FOOD]
-            and critter.hunger > HUNGER_TO_STOP_FORAGING
-        ):
-            return ActionType.EAT
-
-        # --- priority 4: new goal ---
-        if is_thirsty:
-            return ActionType.DRINK
-        if is_hungry:
-            return ActionType.EAT
-        if is_tired:
-            return ActionType.REST
         if is_horny:
-            return ActionType.BREED
+            scores[GoalType.REPRODUCE] = 1.0
 
-        return ActionType.WANDER
+        # Apply the commitment bonus
+        committed_goal = STATE_TO_GOAL_MAP.get(critter.ai_state)
+        if committed_goal and committed_goal in scores and scores[committed_goal] > 0:
+            scores[committed_goal] *= COMMITMENT_BONUS
+
+        return max(scores, key=scores.get)

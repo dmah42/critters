@@ -2,13 +2,15 @@ import enum
 
 
 class ActionType(enum.Enum):
-    REST = "rest"
-    DRINK = "drink"
-    EAT = "eat"
-    FLEE = "flee"
-    SEEK_WATER = "seek_water"
-    SEEK_FOOD = "seek_food"
-    SEEK_MATE = "seek_mate"
-    BREED = "breed"
-    WANDER = "wander"
-    ATTACK = "attack"
+    """
+    Represents the specific, concrete action a critter will execute on this tick.
+    This is the "how" of the AI's decision.
+    """
+
+    REST = "rest"  # Stay still and recover energy
+    DRINK = "drink"  # Consume water from an adjacent tile
+    EAT = "eat"  # Consume food from the current tile
+    ATTACK = "attack"  # Attack an adjacent critter
+    BREED = "breed"  # Reproduce with an adjacent mate
+    MOVE = "move"  # Move towards a target destination
+    IDLE = "idle"  # Do nothing (e.g., a fully satisfied critter)

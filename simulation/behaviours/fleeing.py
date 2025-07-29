@@ -23,7 +23,7 @@ class FleeingBehavior:
             )
             # If a predator is found, the action is to FLEE.
             return {
-                "type": ActionType.FLEE,
+                "type": ActionType.MOVE,
                 "dx": critter.x - closest_predator.x,
                 "dy": critter.y - closest_predator.y,
                 "predator": closest_predator,

@@ -48,9 +48,9 @@ class GrazingBehavior(ForagingBehavior):
                     + abs(tile["y"] - critter.y),
                 )
 
-            # If a target is found, the action is to SEEK_FOOD.
+            # If a target is found, the action is to MOVE.
             return {
-                "type": ActionType.SEEK_FOOD,
+                "type": ActionType.MOVE,
                 "dx": best_tile["x"] - critter.x,
                 "dy": best_tile["y"] - critter.y,
                 "target": (best_tile["x"], best_tile["y"]),

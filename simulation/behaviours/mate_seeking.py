@@ -44,9 +44,8 @@ class MateSeekingBehavior:
             key=lambda c: abs(c.x - critter.x) + abs(c.y - critter.y),
         )
 
-        # The action is to SEEK_MATE.
         return {
-            "type": ActionType.SEEK_MATE,
+            "type": ActionType.MOVE,
             "dx": closest_mate.x - critter.x,
             "dy": closest_mate.y - critter.y,
             "target": (closest_mate.x, closest_mate.y),
