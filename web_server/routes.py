@@ -4,7 +4,9 @@ from simulation.brain import (
     ENERGY_TO_START_RESTING,
     ENERGY_TO_STOP_RESTING,
     HUNGER_TO_START_FORAGING,
+    HUNGER_TO_STOP_FORAGING,
     THIRST_TO_START_DRINKING,
+    THIRST_TO_STOP_DRINKING,
 )
 from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
 from simulation.engine import DEFAULT_GRASS_FOOD, World
@@ -33,7 +35,9 @@ def stats():
         energy_to_start_resting=ENERGY_TO_START_RESTING,
         energy_to_stop_resting=ENERGY_TO_STOP_RESTING,
         hunger_to_start_foraging=HUNGER_TO_START_FORAGING,
+        hunger_to_stop_foraging=HUNGER_TO_STOP_FORAGING,
         thirst_to_start_drinking=THIRST_TO_START_DRINKING,
+        thirst_to_stop_drinking=THIRST_TO_STOP_DRINKING,
     )
 
 
