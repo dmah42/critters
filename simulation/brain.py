@@ -81,7 +81,9 @@ class CritterAI:
                 critter.ai_state == AIState.HUNGRY
                 and critter.hunger > HUNGER_TO_STOP_FORAGING
             ):
-                action = self.foraging_module.get_action(critter, self.all_critters)
+                action = self.foraging_module.get_action(
+                    critter, self.world, self.all_critters
+                )
                 if action:
                     return action
 

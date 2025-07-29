@@ -1,9 +1,10 @@
+from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.models import DietType
 
 
-class HuntingBehavior:
-    def get_action(self, critter, all_critters):
+class HuntingBehavior(ForagingBehavior):
+    def get_action(self, critter, world, all_critters):
         """
         Determines the complete foraging action for a carnivore.
         Checks for adjacent prey first (ATTACK), then scans for distant

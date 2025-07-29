@@ -1,4 +1,5 @@
 import random
+from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.terrain_type import TerrainType
 
@@ -6,8 +7,8 @@ from simulation.terrain_type import TerrainType
 STRATEGIST_PROBABILITY = 0.7
 
 
-class GrazingBehavior:
-    def get_action(self, critter, world):
+class GrazingBehavior(ForagingBehavior):
+    def get_action(self, critter, world, all_critters):
         """
         Determines the complete foraging action for a herbivore.
         Checks for food on the current tile first (EAT), then scans for
