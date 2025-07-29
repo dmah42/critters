@@ -44,10 +44,8 @@ class TestSimulation(unittest.TestCase):
 
         # 2. Act: Get the height for 10 tiles in a vertical line
         for test_y in range(10):
-            tile = world._generate_procedural_tile(test_x, test_y)
+            tile = world.generate_tile(test_x, test_y)
             heights.append(tile["height"])
-
-        print(f"Generated heights for x=10: {heights}")
 
         # 3. Assert: Check if all the generated heights are the same
         # We do this by converting the list to a set to get unique values.
@@ -60,7 +58,7 @@ class TestSimulation(unittest.TestCase):
             "CRITICAL BUG: All generated heights for a vertical column are identical.",
         )
 
-    @patch("app.simulation.TileState.query")
+    @patch("simulation.engine.TileState.query")
     def test_get_tile_procedural_path_varies_on_y_axis(self, mock_query):
         """
         Tests the get_tile method's procedural path returns unique heights by mocking the database.
@@ -76,10 +74,8 @@ class TestSimulation(unittest.TestCase):
 
         # 2. Act: Get the height for 10 tiles in a vertical line
         for test_y in range(10):
-            tile = world._generate_procedural_tile(test_x, test_y)
+            tile = world.generate_tile(test_x, test_y)
             heights.append(tile["height"])
-
-        print(f"Generated heights for x=10: {heights}")
 
         # 3. Assert: Check if all the generated heights are the same
         # We do this by converting the list to a set to get unique values.
