@@ -39,8 +39,8 @@ def seed_population(seed, num_progenitors):
     progenitors = []
     for i in range(num_progenitors):
         while True:
-            rand_x = random.randint(-50, 50)
-            rand_y = random.randint(-50, 50)
+            rand_x = random.randint(-100, 100)
+            rand_y = random.randint(-100, 100)
 
             tile = world.generate_tile(rand_x, rand_y)
 
