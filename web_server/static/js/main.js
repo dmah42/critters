@@ -155,6 +155,15 @@ async function handleLiveUpdate() {
   try {
     // Use cached current view.
     const critterData = await fetchCritters(currentView);
+
+    // Remove any critter that isn't on the live list.
+    const liveCritterIds = new Set(critterData.critters.map((c) => c.id));
+    for (const id in critterDisplayData) {
+      if (!liveCritterIds.has(parseInt(id))) {
+        delete critterDisplayData[id];
+      }
+    }
+
     for (const critter of critterData.critters) {
       if (critterDisplayData[critter.id]) {
         critterDisplayData[critter.id].targetX = critter.x;
