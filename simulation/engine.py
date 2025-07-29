@@ -276,6 +276,12 @@ def _execute_move(critter, world, dx, dy, target=None):
 
 def _handle_death(critter, cause, session):
     """Handles the death of a critter"""
+
+    # Check that they are not already marked for death
+    for obj in session.new:
+        if isinstance(obj, DeadCritter) and obj.original_id == critter.id:
+            return
+
     print(f"    {critter.id} died of {cause.name}")
 
     dead_critter = DeadCritter(
