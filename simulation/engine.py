@@ -14,7 +14,6 @@ from simulation.models import (
     TileState,
 )
 from simulation.factory import create_ai_for_critter
-from web_server import db
 
 # Terrain constants
 DEFAULT_GRASS_FOOD = 10.0
@@ -100,6 +99,19 @@ def _process_critter_ai(world, session):
     print(f"Processed AI for {len(all_critters)} critters.")
 
 
+def _get_world_tile_view(world, session, x, y):
+    """
+    Gets complete tile data
+    """
+    base_tile = world.generate_tile(x, y)
+
+    saved_state = session.query(TileState).get((x, y))
+    if saved_state:
+        base_tile["food_available"] = saved_state.food_available
+
+    return base_tile
+
+
 def _run_critter_logic(critter, world, session, all_critters):
     """
     The main AI dispatcher for a single critter's turn.
@@ -151,13 +163,13 @@ def _run_critter_logic(critter, world, session, all_critters):
 
     elif action_type == ActionType.EAT:
         critter.ai_state = AIState.HUNGRY
-        current_tile = world.generate_tile(critter.x, critter.y)
+        current_tile = _get_world_tile_view(world, session, critter.x, critter.y)
         amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
         new_tile_food = current_tile["food_available"] - amount_to_eat
-        world.update_tile_food(critter.x, critter.y, new_tile_food)
+        _update_tile_food(session, critter.x, critter.y, new_tile_food)
         critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
         critter.hunger = max(critter.hunger, 0)
-        print(f"    ate: hunger: {critter.hunger}")
+        print(f"    ate: hunger: {critter.hunger:.2f}")
 
     elif action_type == ActionType.ATTACK:
         critter.ai_state = AIState.HUNGRY
@@ -211,6 +223,18 @@ def _run_critter_logic(critter, world, session, all_critters):
         raise NotImplementedError(f"Unimplemented action '{action_type.name}'")
 
 
+def _update_tile_food(session, x, y, new_food_value):
+    """
+    Updates the food value for a specific tile and saves it to the session.
+    """
+    tile = session.query(TileState).get((x, y))
+    if tile:
+        tile.food_available = new_food_value
+    else:
+        tile = TileState(x=x, y=y, food_available=new_food_value)
+        session.add(tile)
+
+
 def _execute_move(critter, world, dx, dy, target=None):
     """
     Executes a move for a critter, checking for obstacles and goals.
@@ -255,7 +279,7 @@ def _handle_death(critter, cause, session):
     dead_critter = DeadCritter(
         original_id=critter.id,
         age=critter.age,
-        cause=critter.cause,
+        cause=cause,
         speed=critter.speed,
         size=critter.size,
         player_id=critter.player_id,
@@ -397,19 +421,6 @@ class World:
 
         self.water_level = -0.3
         self.mountain_level = 0.6
-
-    def update_tile_food(self, x, y, new_food_value):
-        """
-        Updates the food value for a specific tile and saves it to the db.
-        """
-        tile = TileState.query.get((x, y))
-        if tile:
-            tile.food_available = new_food_value
-        else:
-            tile = TileState(x=x, y=y, food_available=new_food_value)
-            db.session.add(tile)
-
-        db.session.commit()
 
     def generate_tile(self, x, y):
         """The core generation logic."""

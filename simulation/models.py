@@ -128,7 +128,7 @@ class DeadCritter(db.Model):
 
     # stats snapshot
     age = db.Column(db.Integer, nullable=False)
-    cause_of_death = db.Column(db.Enum(CauseOfDeath))
+    cause = db.Column(db.Enum(CauseOfDeath))
 
     # genes snapshot
     speed = db.Column(db.Float)
