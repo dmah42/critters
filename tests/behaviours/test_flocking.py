@@ -12,20 +12,21 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from simulation.action_type import ActionType
 from simulation.behaviours.flocking import FlockingBehavior
-from simulation.models import DietType
+from simulation.models import AIState, DietType
 
 
 # --- Mock Objects for Testing ---
 class MockCritter:
     """A fake Critter for testing movement behaviors."""
 
-    def __init__(self, x, y, vx, vy, diet):
+    def __init__(self, x, y, vx, vy, diet, ai_state=AIState.IDLE):
         self.id = random.randint(1, 1000)
         self.x = x
         self.y = y
         self.vx = vx
         self.vy = vy
         self.diet = diet
+        self.ai_state = ai_state
 
 
 class MockWorld:
@@ -92,6 +93,31 @@ class TestFlockingBehavior(unittest.TestCase):
         self.assertIsNotNone(action)
         self.assertEqual(action["type"], ActionType.MOVE)
         self.assertLess(action["dx"], 0)
+
+    def test_flocking_separation_is_ignored_for_suitor(self):
+        """
+        Tests that a critter will NOT flee from a nearby flockmate if that
+        flockmate is in the SEEKING_MATE state.
+        """
+        # Critter B, the target of the approach
+        target_critter = MockCritter(x=0, y=0, diet=DietType.HERBIVORE)
+
+        # Critter A, the suitor, is very close and in the SEEKING_MATE state
+        suitor_critter = MockCritter(
+            x=1, y=0, diet=DietType.HERBIVORE, ai_state=AIState.SEEKING_MATE
+        )
+
+        all_critters = [target_critter, suitor_critter]
+        behavior = FlockingBehavior()
+
+        # Get the action for the TARGET critter
+        action = behavior.get_action(target_critter, self.world, all_critters)
+
+        # Assert: The target critter should NOT have a separation vector.
+        # Its 'dx' should be 0 because it's ignoring the suitor and has no
+        # other flockmates to cohere with.
+        self.assertIsNotNone(action)
+        self.assertEqual(action["dx"], 0)
 
 
 # This allows you to run the tests directly

@@ -1,10 +1,10 @@
 from simulation.action_type import ActionType
 from simulation.behaviours.moving import MovingBehavior
 from simulation.behaviours.wandering import WanderingBehavior
-from simulation.models import DietType
+from simulation.models import AIState, DietType
 
 FLOCKING_RADIUS = 8
-SEPARATION_DISTANCE = 1.5  # How close is "too close"
+SEPARATION_DISTANCE = 1.4  # How close is "too close"
 SEPARATION_WEIGHT = 1.4  # How strongly to avoid neighbors
 ALIGNMENT_WEIGHT = 1.1  # How strongly to match heading
 COHESION_WEIGHT = 1.2  # How strongly to move to the center
@@ -41,10 +41,14 @@ class FlockingBehavior(MovingBehavior):
         center_y /= num_flockmates
         cohesion_dx, cohesion_dy = center_x - critter.x, center_y - critter.y
 
-        # --- Rule 2: Separation ---
+        # --- Rule 2: Separation (with social awareness) ---
         separation_dx, separation_dy = 0, 0
 
         for mate in flockmates:
+            # Ignore separation for a critter that is actively seeking a mate.
+            if mate.ai_state == AIState.SEEKING_MATE:
+                continue
+
             distance_sq = (mate.x - critter.x) ** 2 + (mate.y - critter.y) ** 2
             if distance_sq > 0 and distance_sq < SEPARATION_DISTANCE**2:
                 separation_dx += (critter.x - mate.x) / distance_sq
