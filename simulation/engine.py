@@ -158,6 +158,7 @@ def _run_critter_logic(
 
     action_type = action["type"]
 
+    critter.last_action = action_type
     # Map to an AI state for commitments to goals.
     critter.ai_state = GOAL_TO_STATE_MAP[goal]
     if action_type == ActionType.EAT:

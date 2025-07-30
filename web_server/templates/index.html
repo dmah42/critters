@@ -86,6 +86,16 @@
       #stats-panel .stat-label {
         font-weight: bold;
       }
+      #stats-panel h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+      }
+      #stats-panel .stat-group {
+        margin-bottom: 15px;
+      }
 
       .stat-meter {
         background-color: #e9ecef;
@@ -128,7 +138,9 @@
       ></canvas>
       <div id="stats-panel">
         <h2>Critter stats</h2>
-        <p>Click on a critter to view its details.</p>
+        <div id="stats-content">
+          <p>Click on a critter to view its details.</p>
+        </div>
       </div>
     </div>
 

@@ -31,6 +31,8 @@ const THIRST_TO_STOP_DRINKING = parseInt(
 );
 const MAX_ENERGY = parseInt(dataContainer.dataset.maxEnergy);
 
+const CRITTER_DRAW_RADIUS = 4;
+
 let currentTerrainData = null;
 let currentView = {
   x: parseInt(xInput.value),
@@ -147,44 +149,55 @@ function updateStatsPanel() {
       (selectedCritter.health / selectedCritter.max_health) * 100;
     const energyPercent = (selectedCritter.energy / MAX_ENERGY) * 100;
 
-    // If a critter is selected, build the HTML with its stats
-    statsPanel.innerHTML = `
-      <h2>Critter Stats</h2>
-      <p><span class="stat-label">ID:</span> ${selectedCritter.id}</p>
-      <p><span class="stat-label">Position:</span> (${selectedCritter.x}, ${
-      selectedCritter.y
-    })</p>
-      <p><span class="stat-label">Goal:</span> ${selectedCritter.ai_state}</p>
-      <p><span class="stat-label">Diet:</span> ${selectedCritter.diet}</p>
-      <p><span class="stat-label">Age:</span> ${selectedCritter.age}</p>
-      <p><span class="stat-label">Speed:</span> ${selectedCritter.speed.toFixed(
-        1
-      )}</p>
-      <p><span class="stat-label">Size:</span> ${selectedCritter.size.toFixed(
-        1
-      )}</p>
+    statsContent.innerHTML = `
+            <!-- Section 1: Meters -->
+            <h3>Metrics</h3>
+            <div class="stat-group">
+                <p><span class="stat-label">Health:</span> ${selectedCritter.health.toFixed(
+                  1
+                )} / ${selectedCritter.max_health.toFixed(1)}</p>
+                <div class="stat-meter"><div class="health-bar" style="width: ${healthPercent}%;"></div></div>
+            </div>
+            <div class="stat-group">
+                <p><span class="stat-label">Energy:</span> ${selectedCritter.energy.toFixed(
+                  1
+                )} / ${MAX_ENERGY}</p>
+                <div class="stat-meter"><div class="energy-bar" style="width: ${energyPercent}%;"></div></div>
+            </div>
+            <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
+              1
+            )}</p>
+            <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
+              1
+            )}</p>
 
-      <div>
-        <p><span class="stat-label">Health:</span> ${selectedCritter.health.toFixed(
-          1
-        )} / ${selectedCritter.max_health.toFixed(1)}</p>
-        <div class="stat-meter"><div class="health-bar" style="width: ${healthPercent}%;"></div></div>
-      </div>
+            <!-- Section 2: Dynamic AI Stuff -->
+            <h3>AI State</h3>
+            <p><span class="stat-label">Goal:</span> ${
+              selectedCritter.ai_state
+            }</p>
+            <p><span class="stat-label">Last Action:</span> ${
+              selectedCritter.last_action || "N/A"
+            }</p>
+            <p><span class="stat-label">Position:</span> (${
+              selectedCritter.x
+            }, ${selectedCritter.y})</p>
+            <p><span class="stat-label">Velocity:</span> (${
+              selectedCritter.vx
+            }, ${selectedCritter.vy})</p>
             
-      <div>
-        <p><span class="stat-label">Energy:</span> ${selectedCritter.energy.toFixed(
-          1
-        )} / ${MAX_ENERGY}</p>
-        <div class="stat-meter"><div class="energy-bar" style="width: ${energyPercent}%;"></div></div>
-      </div>
-
-      <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
-        1
-      )}</p>
-      <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
-        1
-      )}</p>
-    `;
+            <!-- Section 3: Basic Info (Genetics) -->
+            <h3>Genetics</h3>
+            <p><span class="stat-label">ID:</span> ${selectedCritter.id}</p>
+            <p><span class="stat-label">Diet:</span> ${selectedCritter.diet}</p>
+            <p><span class="stat-label">Age:</span> ${selectedCritter.age}</p>
+            <p><span class="stat-label">Speed:</span> ${selectedCritter.speed.toFixed(
+              1
+            )}</p>
+            <p><span class="stat-label">Size:</span> ${selectedCritter.size.toFixed(
+              1
+            )}</p>
+        `;
   } else {
     // If no critter is selected, show the default message
     statsPanel.innerHTML = `
@@ -206,23 +219,30 @@ function handleCanvasClick(event) {
   const startX = currentView.x - currentView.w / 2;
   const startY = currentView.y - currentView.h / 2;
 
-  const clickedWorldX = Math.floor(startX + mouseX / tileWidth);
-  const clickedWorldY = Math.floor(startY + mouseY / tileHeight);
-
   // Are there any critters there?
   let closestCritter = null;
   let minDistance = Infinity;
-  const CLICK_RADIUS = 1.5;
+
+  const CRITTER_CLICK_TOLERANCE = 6;
 
   for (const id in critterDisplayData) {
     const critter = critterDisplayData[id];
 
+    // Use pixel space
+    const critterCanvasX =
+      (critter.currentX - startX) * tileWidth + tileWidth / 2;
+    const critterCanvasY =
+      (critter.currentY - startY) * tileHeight + tileHeight / 2;
+
     const distance = Math.sqrt(
-      Math.pow(critter.currentX - clickedWorldX, 2) +
-        Math.pow(critter.currentY - clickedWorldY, 2)
+      Math.pow(critterCanvasX - mouseX, 2) +
+        Math.pow(critterCanvasY - mouseY, 2)
     );
 
-    if (distance < CLICK_RADIUS && distance < minDistance) {
+    if (
+      distance < CRITTER_DRAW_RADIUS + CRITTER_CLICK_TOLERANCE &&
+      distance < minDistance
+    ) {
       closestCritter = critter.critter;
       minDistance = distance;
     }
@@ -338,7 +358,7 @@ function animationLoop() {
     ctx.arc(
       canvasX + tileWidth / 2,
       canvasY + tileHeight / 2,
-      tileWidth / 2.0,
+      CRITTER_DRAW_RADIUS,
       0,
       2 * Math.PI
     );

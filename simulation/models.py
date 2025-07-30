@@ -1,4 +1,6 @@
 import json
+from typing import Any, Dict, List
+from simulation.action_type import ActionType
 from web_server import db
 from datetime import datetime, timezone
 import enum
@@ -99,6 +101,8 @@ class Critter(db.Model):
         server_default=AIState.IDLE.value,
     )
 
+    last_action = db.Column(db.Enum(ActionType), nullable=True)
+
     @property
     def children(self):
         return Critter.query.filter(
@@ -106,7 +110,7 @@ class Critter(db.Model):
         ).all()
 
     @property
-    def max_health(self):
+    def max_health(self) -> float:
         return self.size * HEALTH_PER_SIZE_POINT
 
     def __init__(self, *args, **kwargs):
@@ -114,7 +118,7 @@ class Critter(db.Model):
         if "health" not in kwargs:
             self.health = self.size * HEALTH_PER_SIZE_POINT
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
             "age": self.age,
@@ -123,12 +127,15 @@ class Critter(db.Model):
             "size": self.size,
             "x": self.x,
             "y": self.y,
+            "vx": self.vx,
+            "vy": self.vy,
             "health": self.health,
             "max_health": self.max_health,
             "energy": self.energy,
             "hunger": self.hunger,
             "thirst": self.thirst,
             "ai_state": self.ai_state.name,
+            "last_action": self.last_action.name if self.last_action else None,
             "owner_id": self.player_id,
         }
 
