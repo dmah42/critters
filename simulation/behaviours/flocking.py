@@ -1,17 +1,21 @@
+from typing import Any, Dict, List
 from simulation.action_type import ActionType
 from simulation.behaviours.moving import MovingBehavior
 from simulation.behaviours.wandering import WanderingBehavior
-from simulation.models import AIState, DietType
+from simulation.models import AIState, Critter, DietType
+from simulation.world import World
 
-FLOCKING_RADIUS = 8
-SEPARATION_DISTANCE = 1.4  # How close is "too close"
-SEPARATION_WEIGHT = 1.4  # How strongly to avoid neighbors
-ALIGNMENT_WEIGHT = 1.1  # How strongly to match heading
-COHESION_WEIGHT = 1.2  # How strongly to move to the center
+FLOCKING_RADIUS: int = 8
+SEPARATION_DISTANCE: float = 1.4  # How close is "too close"
+SEPARATION_WEIGHT: float = 1.4  # How strongly to avoid neighbors
+ALIGNMENT_WEIGHT: float = 1.1  # How strongly to match heading
+COHESION_WEIGHT: float = 1.2  # How strongly to move to the center
 
 
 class FlockingBehavior(MovingBehavior):
-    def get_action(self, critter, world, all_critters):
+    def get_action(
+        self, critter: Critter, world: World, all_critters: List[Critter]
+    ) -> Dict[str, Any]:
         """
         Calculates a movement vector based on the Boids algorithm
         Returns a WANDER action with a specific direction, or None.

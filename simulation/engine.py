@@ -16,9 +16,9 @@ from simulation.models import (
     TileState,
 )
 from simulation.factory import create_ai_for_critter
+from simulation.world import DEFAULT_GRASS_FOOD
 
 # Terrain constants
-DEFAULT_GRASS_FOOD = 10.0
 GRASS_REGROWTH_RATE = 0.1
 
 # Critter constants

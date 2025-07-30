@@ -1,7 +1,6 @@
 import logging
 import noise
 
-from simulation.engine import DEFAULT_GRASS_FOOD
 from simulation.models import TileState
 from simulation.terrain_type import TerrainType
 
@@ -24,6 +23,7 @@ TERRAIN_LACUNARITY = 2.0
 WATER_LEVEL = -0.3
 MOUNTAIN_LEVEL = 0.6
 
+DEFAULT_GRASS_FOOD = 10.0
 DIRT_TO_GRASS_LEVEL = 0.0
 
 WORLD_CHUNK_SIZE = 32

@@ -1,6 +1,7 @@
+from typing import Any, Dict, List
 from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import ActionType
-from simulation.models import DietType
+from simulation.models import Critter, DietType
 
 # Make this the same as flocking... if they can flock together,
 # they can smell each other
@@ -8,7 +9,9 @@ HUNTING_RADIUS = 8
 
 
 class HuntingBehavior(ForagingBehavior):
-    def get_action(self, critter, world, all_critters):
+    def get_action(
+        self, critter: Critter, _, all_critters: List[Critter]
+    ) -> Dict[str, Any]:
         """
         Determines the complete foraging action for a carnivore.
         Checks for adjacent prey first (ATTACK), then scans for distant

@@ -1,4 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List
+
+from simulation.models import Critter
+from simulation.world import World
 
 
 class MovingBehavior(ABC):
@@ -8,7 +12,9 @@ class MovingBehavior(ABC):
     """
 
     @abstractmethod
-    def get_action(self, critter, world, all_critters):
+    def get_action(
+        self, critter: Critter, world: World, all_critters: List[Critter]
+    ) -> Dict[str, Any]:
         """
         Determines the movement-related action for a critter.
         This method must be implemented by all subclasses.

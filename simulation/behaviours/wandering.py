@@ -2,7 +2,9 @@ import random
 from simulation import logger
 from simulation.action_type import ActionType
 from simulation.behaviours.moving import MovingBehavior
+from simulation.models import Critter
 from simulation.terrain_type import TerrainType
+from simulation.world import World
 
 DIRECTION_CHANGE_PROBABILITY = 0.1
 
@@ -20,7 +22,7 @@ POSSIBLE_DIRECTIONS = [
 
 
 class WanderingBehavior(MovingBehavior):
-    def get_action(self, critter, world, _):
+    def get_action(self, critter: Critter, world: World, _):
         """
         Determines a direction in which to wander, biasing towards
         the critter's last known velocity.
@@ -44,6 +46,8 @@ class WanderingBehavior(MovingBehavior):
 
         momentum_is_valid = momentum_direction in valid_directions
 
+        dx: float
+        dy: float
         if (
             has_momentum
             and momentum_is_valid

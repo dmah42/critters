@@ -1,7 +1,10 @@
 import random
+from typing import Any, Dict
 from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import SENSE_RADIUS, ActionType
+from simulation.models import Critter
 from simulation.terrain_type import TerrainType
+from simulation.world import World
 
 # 70% chance to go for the most food instead of the nearest
 STRATEGIST_PROBABILITY = 0.7
@@ -11,7 +14,7 @@ MINIMUM_GRAZE_AMOUNT = 1.0
 
 
 class GrazingBehavior(ForagingBehavior):
-    def get_action(self, critter, world, _):
+    def get_action(self, critter: Critter, world: World, _) -> Dict[str, Any]:
         """
         Determines the complete foraging action for a herbivore.
         Checks for food on the current tile first (EAT), then scans for
