@@ -1,3 +1,4 @@
+import logging
 import noise
 
 from simulation.engine import DEFAULT_GRASS_FOOD
@@ -25,6 +26,10 @@ MOUNTAIN_LEVEL = 0.6
 
 DIRT_TO_GRASS_LEVEL = 0.0
 
+WORLD_CHUNK_SIZE = 32
+
+logger = logging.getLogger(__name__)
+
 
 class World:
     """
@@ -36,15 +41,49 @@ class World:
         """Initializes the world with a seed for the noise functions."""
         self.seed = seed
         self.session = session
+        # Store loaded chunks
+        # Format: {(chunk_x, chunk_y): {(tile_x, tile_y): TileState, ...}}
+        self._chunk_cache = {}
 
     def get_tile(self, x, y):
+        # Determine which chunk this tile belongs to
+        chunk_x = x // WORLD_CHUNK_SIZE
+        chunk_y = y // WORLD_CHUNK_SIZE
+
+        if (chunk_x, chunk_y) not in self._chunk_cache:
+            self._load_chunk(chunk_x, chunk_y)
+
         base_tile = self._generate_procedural_tile(x, y)
 
-        saved_state = self.session.query(TileState).get((x, y))
+        saved_state = self._chunk_cache[(chunk_x, chunk_y)].get((x, y))
         if saved_state:
             base_tile["food_available"] = saved_state.food_available
 
         return base_tile
+
+    def _load_chunk(self, chunk_x, chunk_y):
+        """
+        Performs a single, efficient batch query to fetch all tile states
+        for the given chunk.
+        """
+        min_x = chunk_x * WORLD_CHUNK_SIZE
+        max_x = min_x + (WORLD_CHUNK_SIZE - 1)
+        min_y = chunk_y * WORLD_CHUNK_SIZE
+        max_y = min_y + (WORLD_CHUNK_SIZE - 1)
+
+        overrides_list = (
+            self.session.query(TileState)
+            .filter(
+                TileState.x.between(min_x, max_x), TileState.y.between(min_y, max_y)
+            )
+            .all()
+        )
+
+        chunk_data = {(tile.x, tile.y): tile for tile in overrides_list}
+
+        self._chunk_cache[(chunk_x, chunk_y)] = chunk_data
+
+        logger.debug(f"Loaded chunk ({chunk_x}, {chunk_y})")
 
     def _generate_procedural_tile(self, x, y):
         """The core generation logic."""
