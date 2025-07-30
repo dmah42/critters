@@ -2,6 +2,7 @@ import json
 import logging
 import math
 import random
+from typing import List
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
 from simulation.terrain_type import TerrainType
@@ -16,7 +17,9 @@ from simulation.models import (
     TileState,
 )
 from simulation.factory import create_ai_for_critter
-from simulation.world import DEFAULT_GRASS_FOOD
+from simulation.world import DEFAULT_GRASS_FOOD, World
+from sqlalchemy.orm import Session
+
 
 # Terrain constants
 GRASS_REGROWTH_RATE = 0.1
@@ -49,7 +52,7 @@ MUTATION_AMOUNT = 0.2
 logger = logging.getLogger(__name__)
 
 
-def run_simulation_tick(world, session):
+def run_simulation_tick(world: World, session: Session):
     """Process one tick of the world simulation. Called periodically."""
     print(".", end="")
     logger.info("+++ Starting tick +++")
@@ -60,7 +63,7 @@ def run_simulation_tick(world, session):
     print("|", end="", flush=True)
 
 
-def _process_tile_regrowth(session):
+def _process_tile_regrowth(session: Session):
     """
     Finds all depleted grass tiles and handles regrowth.
     If a tile regrows completely, remove the record.
@@ -87,7 +90,7 @@ def _process_tile_regrowth(session):
     )
 
 
-def _process_critter_ai(world, session):
+def _process_critter_ai(world: World, session: Session):
     """Handles the state changes and actions for living critters"""
     all_critters = session.query(Critter).all()
 
@@ -108,7 +111,13 @@ def _process_critter_ai(world, session):
     logger.info(f"Processed AI for {len(all_critters)} critters.")
 
 
-def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
+def _run_critter_logic(
+    critter: Critter,
+    world: World,
+    session: Session,
+    all_critters: List[Critter],
+    deaths_this_tick: set,
+):
     """
     The main AI dispatcher for a single critter's turn.
     It creates the appropriate AI brain, gets an action, and executes it.
@@ -217,7 +226,7 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         raise NotImplementedError(f"Unimplemented action '{action_type.name}'")
 
 
-def _update_tile_food(session, x, y, new_food_value):
+def _update_tile_food(session, x: int, y: int, new_food_value: float):
     """
     Updates the food value for a specific tile and saves it to the session.
     """
@@ -229,7 +238,7 @@ def _update_tile_food(session, x, y, new_food_value):
         session.add(tile)
 
 
-def _execute_move(critter, world, dx, dy, target=None):
+def _execute_move(critter: Critter, world: World, dx: float, dy: float, target=None):
     """
     Executes a move for a critter, checking for obstacles and goals.
     (This is a new helper function to hold the movement loop)
@@ -289,7 +298,9 @@ def _execute_move(critter, world, dx, dy, target=None):
         critter.vx, critter.vy = critter.x - old_x, critter.y - old_y
 
 
-def _handle_death(critter, cause, session, deaths_this_tick):
+def _handle_death(
+    critter: Critter, cause: CauseOfDeath, session: Session, deaths_this_tick: set
+):
     """Handles the death of a critter"""
 
     # Check that they are not already marked for death
@@ -319,7 +330,7 @@ def _handle_death(critter, cause, session, deaths_this_tick):
     session.delete(critter)
 
 
-def _reproduce(parent1, parent2, session):
+def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     """Creates a new offspring from two parents"""
     logger.info(f"  {parent1} and {parent2} are breeding")
 
@@ -350,7 +361,7 @@ def _reproduce(parent1, parent2, session):
     parent2.breeding_cooldown = BREEDING_COOLDOWN_TICKS
 
 
-def _record_statistics(session):
+def _record_statistics(session: Session):
     """Calculates and saves the current sim stats"""
     critters = session.query(Critter).all()
     population = len(critters)

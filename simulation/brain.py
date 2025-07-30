@@ -1,7 +1,11 @@
+from typing import Any, Dict, List
+from simulation.behaviours.behavior import Behavior
 from simulation.behaviours.wandering import WanderingBehavior
 from simulation.goal_type import GoalType
 from simulation.action_type import ActionType
 from simulation.mapping import STATE_TO_GOAL_MAP
+from simulation.models import Critter
+from simulation.world import World
 
 ENERGY_TO_START_RESTING = 30.0
 ENERGY_TO_STOP_RESTING = 90.0
@@ -28,7 +32,13 @@ COMMITMENT_BONUS = 1.25
 
 
 class CritterAI:
-    def __init__(self, critter, world, all_critters, modules):
+    def __init__(
+        self,
+        critter: Critter,
+        world: World,
+        all_critters: List[Critter],
+        modules: Dict[str, Behavior],
+    ):
         """
         Initializes the AI brain with the critter it controls and its
         set of behavior modules.
@@ -45,7 +55,7 @@ class CritterAI:
         self.moving_module = modules.get("moving")
         self.wandering_module = WanderingBehavior()
 
-    def determine_action(self):
+    def determine_action(self) -> Dict[str, Any]:
         """
         Determines the primary goal and single best action to achieve it.
         1. determine the primary GOAL
@@ -53,19 +63,23 @@ class CritterAI:
         Returns a dictionary containing both.
         """
 
-        goal = self._get_primary_goal()
+        goal: GoalType = self._get_primary_goal()
 
-        action = None
+        action: ActionType = None
 
         if goal == GoalType.SURVIVE_DANGER:
-            action = self.fleeing_module.get_action(self.critter, self.all_critters)
+            action = self.fleeing_module.get_action(
+                self.critter, self.world, self.all_critters
+            )
 
         elif goal == GoalType.RECOVER_ENERGY:
             action = {"type": ActionType.REST}
 
         elif goal == GoalType.QUENCH_THIRST:
             # If we can drink or see water, do it. otherwise walk to find it.
-            action = self.water_seeking_module.get_action(self.critter, self.world)
+            action = self.water_seeking_module.get_action(
+                self.critter, self.world, self.all_critters
+            )
 
         elif goal == GoalType.SATE_HUNGER:
             # If we can eat or see food, do it. otherwise walk to find it.
@@ -76,7 +90,7 @@ class CritterAI:
         elif goal == GoalType.REPRODUCE:
             # If we can breed or see a mate, do it. otherwise just wander.
             action = self.mate_seeking_module.get_action(
-                self.critter, self.all_critters
+                self.critter, self.world, self.all_critters
             )
 
         elif goal == GoalType.WANDER:
@@ -94,7 +108,7 @@ class CritterAI:
 
         return {"goal": goal, "action": action}
 
-    def _get_primary_goal(self):
+    def _get_primary_goal(self) -> GoalType:
         """
         Calculates a "need score" for all possible goals and returns the one
         with the highest score.
@@ -113,7 +127,7 @@ class CritterAI:
         # Fleeing is the top priority.
         # TODO: cache this so we don't call get_action twice.
         if self.fleeing_module and self.fleeing_module.get_action(
-            critter, self.all_critters
+            critter, self.world, self.all_critters
         ):
             scores[GoalType.SURVIVE_DANGER] = 999  # ensure this wins
 

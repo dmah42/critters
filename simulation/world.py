@@ -1,5 +1,8 @@
 import logging
+from typing import Any, Dict
 import noise
+
+from sqlalchemy.orm import Session
 
 from simulation.models import TileState
 from simulation.terrain_type import TerrainType
@@ -37,7 +40,7 @@ class World:
     on the fly.  Nothing is stored in memory.
     """
 
-    def __init__(self, seed, session):
+    def __init__(self, seed: int, session: Session):
         """Initializes the world with a seed for the noise functions."""
         self.seed = seed
         self.session = session
@@ -45,7 +48,7 @@ class World:
         # Format: {(chunk_x, chunk_y): {(tile_x, tile_y): TileState, ...}}
         self._chunk_cache = {}
 
-    def get_tile(self, x, y):
+    def get_tile(self, x: int, y: int) -> Dict[str, Any]:
         # Determine which chunk this tile belongs to
         chunk_x = x // WORLD_CHUNK_SIZE
         chunk_y = y // WORLD_CHUNK_SIZE
@@ -61,7 +64,7 @@ class World:
 
         return base_tile
 
-    def _load_chunk(self, chunk_x, chunk_y):
+    def _load_chunk(self, chunk_x: int, chunk_y: int):
         """
         Performs a single, efficient batch query to fetch all tile states
         for the given chunk.
@@ -85,7 +88,7 @@ class World:
 
         logger.debug(f"Loaded chunk ({chunk_x}, {chunk_y})")
 
-    def _generate_procedural_tile(self, x, y):
+    def _generate_procedural_tile(self, x: int, y: int) -> Dict[str, Any]:
         """The core generation logic."""
         height_val = (
             noise.pnoise2(

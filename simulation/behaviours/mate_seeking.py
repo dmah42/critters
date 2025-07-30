@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from simulation.behaviours.behavior import Behavior
 from simulation.brain import (
     HEALTH_TO_BREED,
     MAX_HUNGER_TO_BREED,
@@ -9,9 +10,9 @@ from simulation.brain import (
 from simulation.models import Critter
 
 
-class MateSeekingBehavior:
+class MateSeekingBehavior(Behavior):
     def get_action(
-        self, critter: Critter, all_critters: List[Critter]
+        self, critter: Critter, _, all_critters: List[Critter]
     ) -> Dict[str, Any]:
         """
         Determines the complete breeding-related action for a critter.

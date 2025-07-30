@@ -1,12 +1,13 @@
 from typing import Any, Dict
+from simulation.behaviours.behavior import Behavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.models import Critter
 from simulation.terrain_type import TerrainType
 from simulation.world import World
 
 
-class WaterSeekingBehavior:
-    def get_action(self, critter: Critter, world: World) -> Dict[str, Any]:
+class WaterSeekingBehavior(Behavior):
+    def get_action(self, critter: Critter, world: World, _) -> Dict[str, Any]:
         """
         Determines the complete water-related action for a critter.
         Checks for adjacent water first (DRINK), then scans for distant

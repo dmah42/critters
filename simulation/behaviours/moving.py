@@ -1,11 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any, Dict, List
 
+from simulation.behaviours.behavior import Behavior
 from simulation.models import Critter
 from simulation.world import World
 
 
-class MovingBehavior(ABC):
+class MovingBehavior(Behavior):
     """
     An abstract base class that defines the contract for all moving
     behaviors (e.g., flocking, wandering).

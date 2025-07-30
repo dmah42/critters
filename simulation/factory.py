@@ -1,15 +1,19 @@
+from typing import List
 from simulation.behaviours.flocking import FlockingBehavior
 from simulation.behaviours.wandering import WanderingBehavior
-from simulation.models import DietType
+from simulation.models import Critter, DietType
 from simulation.behaviours.water_seeking import WaterSeekingBehavior
 from simulation.behaviours.mate_seeking import MateSeekingBehavior
 from simulation.behaviours.grazing import GrazingBehavior
 from simulation.behaviours.fleeing import FleeingBehavior
 from simulation.behaviours.hunting import HuntingBehavior
 from simulation.brain import CritterAI
+from simulation.world import World
 
 
-def create_ai_for_critter(critter, world, all_critters):
+def create_ai_for_critter(
+    critter: Critter, world: World, all_critters: List[Critter]
+) -> CritterAI:
     """
     Factory function that assembles the correct AI brain and modules
     based on the critter's diet.

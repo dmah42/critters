@@ -1,11 +1,12 @@
 from typing import Any, Dict, List
+from simulation.behaviours.behavior import Behavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.models import Critter, DietType
 
 
-class FleeingBehavior:
+class FleeingBehavior(Behavior):
     def get_action(
-        self, critter: Critter, all_critters: List[Critter]
+        self, critter: Critter, _, all_critters: List[Critter]
     ) -> Dict[str, Any]:
         """
         Scans for nearby predators. If one is found, returns a FLEE action.
