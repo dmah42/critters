@@ -99,25 +99,25 @@ class TestFlockingBehavior(unittest.TestCase):
         Tests that a critter will NOT flee from a nearby flockmate if that
         flockmate is in the SEEKING_MATE state.
         """
+        world = MockWorld()
         # Critter B, the target of the approach
-        target_critter = MockCritter(x=0, y=0, diet=DietType.HERBIVORE)
+        target_critter = MockCritter(x=0, y=0, vx=1, vy=0, diet=DietType.HERBIVORE)
 
         # Critter A, the suitor, is very close and in the SEEKING_MATE state
         suitor_critter = MockCritter(
-            x=1, y=0, diet=DietType.HERBIVORE, ai_state=AIState.SEEKING_MATE
+            x=1, y=0, vx=1, vy=0, diet=DietType.HERBIVORE, ai_state=AIState.SEEKING_MATE
         )
 
         all_critters = [target_critter, suitor_critter]
         behavior = FlockingBehavior()
 
         # Get the action for the TARGET critter
-        action = behavior.get_action(target_critter, self.world, all_critters)
+        action = behavior.get_action(target_critter, world, all_critters)
 
-        # Assert: The target critter should NOT have a separation vector.
-        # Its 'dx' should be 0 because it's ignoring the suitor and has no
-        # other flockmates to cohere with.
+        # Assert: The target critter should be moving TOWARDS the suitor.
+        # It is ignoring the separation rule and still applying cohesion.
         self.assertIsNotNone(action)
-        self.assertEqual(action["dx"], 0)
+        self.assertGreater(action["dx"], 0)
 
 
 # This allows you to run the tests directly

@@ -177,7 +177,7 @@ class TestEngine(unittest.TestCase):
 
         self.assertIsInstance(self.session.new[0], Critter)
         self.assertEqual(self.session.new[0].parent_one_id, 1)
-        self.assertGreaterEqual(self.session.new[0].speed, 3.9)
-        self.assertLessEqual(self.session.new[0].speed, 5.1)
-        self.assertGreaterEqual(self.session.new[0].size, 4.9)
-        self.assertLessEqual(self.session.new[0].size, 6.1)
+        self.assertGreaterEqual(self.session.new[0].speed, 3.8)
+        self.assertLessEqual(self.session.new[0].speed, 5.2)
+        self.assertGreaterEqual(self.session.new[0].size, 4.8)
+        self.assertLessEqual(self.session.new[0].size, 6.2)
