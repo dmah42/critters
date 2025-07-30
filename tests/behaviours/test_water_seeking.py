@@ -23,7 +23,7 @@ class MockWorld:
     def __init__(self, water_locations):
         self.water_locations = set(water_locations)
 
-    def generate_tile(self, x, y):
+    def get_tile(self, x, y):
         terrain = (
             TerrainType.WATER if (x, y) in self.water_locations else TerrainType.GRASS
         )
@@ -53,7 +53,7 @@ class TestWaterSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(critter, world)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.SEEK_WATER)
+        self.assertEqual(action["type"], ActionType.MOVE)
         # The target should be a land tile next to the water
         self.assertIn(action["target"], [(4, 5), (5, 4), (4, 4)])
 

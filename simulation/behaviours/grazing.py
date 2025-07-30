@@ -19,7 +19,8 @@ class GrazingBehavior(ForagingBehavior):
         Returns a complete action dictionary, or None.
         """
         # 1. First, check if we are on a tile with food.
-        current_tile = world.generate_tile(critter.x, critter.y)
+        current_tile = world.get_tile(critter.x, critter.y)
+
         if (
             current_tile["terrain"] == TerrainType.GRASS
             and current_tile["food_available"] > MINIMUM_GRAZE_AMOUNT
@@ -30,7 +31,7 @@ class GrazingBehavior(ForagingBehavior):
         # 2. If not on a food tile, scan the wider area to move towards.
         scan_range = range(-SENSE_RADIUS, SENSE_RADIUS + 1)
         surroundings = [
-            world.generate_tile(critter.x + sx, critter.y + sy)
+            world.get_tile(critter.x + sx, critter.y + sy)
             for sy in scan_range
             for sx in scan_range
             if not (sx == 0 and sy == 0)

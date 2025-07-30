@@ -6,8 +6,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from config import Config
-from simulation.engine import World, run_simulation_tick
+from simulation.engine import run_simulation_tick
 from simulation.logger import setup_logging
+from simulation.world import World
 
 
 def main():
@@ -37,12 +38,12 @@ def main():
 
     setup_logging(console_log_enabled=args.console_log, log_filename=args.log_file)
 
-    world = World(seed=Config.WORLD_SEED)
+    session = Session()
+    world = World(seed=Config.WORLD_SEED, session=session)
 
     print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
     while True:
-        session = Session()
         try:
             run_simulation_tick(world, session)
             session.commit()

@@ -1,0 +1,92 @@
+import noise
+
+from simulation.engine import DEFAULT_GRASS_FOOD
+from simulation.models import TileState
+from simulation.terrain_type import TerrainType
+
+# Elevation noise parameters -- low frequency for large features
+# Zoom level: larger == more zoomed
+HEIGHT_SCALE = 200.0
+# Octaves: larger = more rugged
+HEIGHT_OCTAVES = 6
+# Persistence and lacunarity affect roughness.
+HEIGHT_PERSISTENCE = 0.5
+HEIGHT_LACUNARITY = 2.0
+
+# Terrain noise parameters -- high frequency for patches of grass
+TERRAIN_SCALE = 100.0
+TERRAIN_OCTAVES = 3
+TERRAIN_PERSISTENCE = 0.5
+TERRAIN_LACUNARITY = 2.0
+
+
+WATER_LEVEL = -0.3
+MOUNTAIN_LEVEL = 0.6
+
+DIRT_TO_GRASS_LEVEL = 0.0
+
+
+class World:
+    """
+    Represents the game world, procedural generating terrain
+    on the fly.  Nothing is stored in memory.
+    """
+
+    def __init__(self, seed, session):
+        """Initializes the world with a seed for the noise functions."""
+        self.seed = seed
+        self.session = session
+
+    def get_tile(self, x, y):
+        base_tile = self._generate_procedural_tile(x, y)
+
+        saved_state = self.session.query(TileState).get((x, y))
+        if saved_state:
+            base_tile["food_available"] = saved_state.food_available
+
+        return base_tile
+
+    def _generate_procedural_tile(self, x, y):
+        """The core generation logic."""
+        height_val = (
+            noise.pnoise2(
+                x / HEIGHT_SCALE,
+                y / HEIGHT_SCALE,
+                octaves=HEIGHT_OCTAVES,
+                persistence=HEIGHT_PERSISTENCE,
+                lacunarity=HEIGHT_LACUNARITY,
+                base=self.seed,
+            )
+            * 1.5
+        )
+
+        terrain = None
+        if height_val < WATER_LEVEL:
+            terrain = TerrainType.WATER
+        elif height_val >= MOUNTAIN_LEVEL:
+            terrain = TerrainType.MOUNTAIN
+        else:
+            # If it's land, calculate a second noise value for terrain type ---
+            # We add an offset (e.g., 1000) to the seed to ensure this noise map
+            # is completely different from the height map.
+            terrain_val = noise.pnoise2(
+                x / TERRAIN_SCALE,
+                y / TERRAIN_SCALE,
+                octaves=TERRAIN_OCTAVES,
+                persistence=TERRAIN_PERSISTENCE,
+                lacunarity=TERRAIN_LACUNARITY,
+                base=self.seed + 1000,
+            )
+
+            terrain = TerrainType.DIRT  # Default to dirt
+            if terrain_val > DIRT_TO_GRASS_LEVEL:
+                terrain = TerrainType.GRASS  # Fertile patches of grass
+
+        tile = {
+            "x": x,
+            "y": y,
+            "height": height_val,
+            "terrain": terrain,
+            "food_available": DEFAULT_GRASS_FOOD if terrain == TerrainType.GRASS else 0,
+        }
+        return tile

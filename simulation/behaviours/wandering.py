@@ -27,7 +27,7 @@ class WanderingBehavior(MovingBehavior):
         """
         valid_directions = []
         for dx, dy in POSSIBLE_DIRECTIONS:
-            tile = world.generate_tile(critter.x + dx, critter.y + dy)
+            tile = world.get_tile(critter.x + dx, critter.y + dy)
             if tile["terrain"] != TerrainType.WATER:
                 valid_directions.append((dx, dy))
 
@@ -51,6 +51,7 @@ class WanderingBehavior(MovingBehavior):
         ):
             dx, dy = critter.vx, critter.vy
         else:
-            dx, dy = random.choice(POSSIBLE_DIRECTIONS)
+            chosen_direction = random.choice(valid_directions)
+            dx, dy = chosen_direction
 
         return {"type": ActionType.MOVE, "dx": dx, "dy": dy}

@@ -12,7 +12,7 @@ class WaterSeekingBehavior:
         """
         # 1. First, check if we are already next to water.
         surroundings = [
-            world.generate_tile(critter.x + dx, critter.y + dy)
+            world.get_tile(critter.x + dx, critter.y + dy)
             for dy in [-1, 0, 1]
             for dx in [-1, 0, 1]
             if not (dx == 0 and dy == 0)
@@ -28,7 +28,7 @@ class WaterSeekingBehavior:
         # 2. If not adjacent, scan the wider area for water to move towards.
         scan_range = range(-SENSE_RADIUS, SENSE_RADIUS + 1)
         wide_surroundings = [
-            world.generate_tile(critter.x + sx, critter.y + sy)
+            world.get_tile(critter.x + sx, critter.y + sy)
             for sy in scan_range
             for sx in scan_range
             if not (sx == 0 and sy == 0)
@@ -66,7 +66,7 @@ class WaterSeekingBehavior:
                 if dx == 0 and dy == 0:
                     continue
 
-                potential_shore_tile = world.generate_tile(
+                potential_shore_tile = world.get_tile(
                     closest_water_tile["x"] + dx, closest_water_tile["y"] + dy
                 )
                 if potential_shore_tile["terrain"] != TerrainType.WATER:

@@ -5,6 +5,8 @@ import sys
 import os
 import random
 
+from simulation.terrain_type import TerrainType
+
 # Add the project root to the Python path to allow imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -26,24 +28,37 @@ class MockCritter:
         self.diet = diet
 
 
+class MockWorld:
+    """A fake world with limited functionality"""
+
+    def get_tile(self, x, y):
+        return {"x": x, "y": y, "terrain": TerrainType.GRASS}
+
+
 class TestFlockingBehavior(unittest.TestCase):
 
-    def test_flocking_returns_none_with_no_flockmates(self):
+    def test_lone_herbivore_falls_back_to_wandering(self):
         """
-        Tests that FlockingBehavior returns None if there are no nearby flockmates.
+        Tests that FlockingBehavior correctly falls back to wandering when a
+        critter has no flockmates.
         """
         critter = MockCritter(x=0, y=0, vx=0, vy=0, diet=DietType.HERBIVORE)
+        world = MockWorld()
         behavior = FlockingBehavior()
 
-        action = behavior.get_action(critter, [critter])  # Only itself in the list
+        # Act: Get the action when the critter is alone
+        action = behavior.get_action(critter, world, [critter])
 
-        self.assertIsNone(action)
+        # Assert: The action should now be a valid MOVE action, not None.
+        self.assertIsNotNone(action)
+        self.assertEqual(action["type"], ActionType.MOVE)
 
     def test_flocking_cohesion_moves_towards_center(self):
         """
         Tests the Cohesion rule: a critter should move towards the center of its flock.
         """
         critter = MockCritter(x=0, y=0, vx=0, vy=0, diet=DietType.HERBIVORE)
+        world = MockWorld()
         # Place all flockmates in a cluster far away
         flockmates = [
             MockCritter(x=5, y=5, vx=1, vy=-1, diet=DietType.HERBIVORE),
@@ -52,11 +67,11 @@ class TestFlockingBehavior(unittest.TestCase):
         all_critters = [critter] + flockmates
         behavior = FlockingBehavior()
 
-        action = behavior.get_action(critter, all_critters)
+        action = behavior.get_action(critter, world, all_critters)
 
         # Assert: The direction should be positive on both axes, towards the flock
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.WANDER)
+        self.assertEqual(action["type"], ActionType.MOVE)
         self.assertGreater(action["dx"], 0)
         self.assertGreater(action["dy"], 0)
 
@@ -65,16 +80,17 @@ class TestFlockingBehavior(unittest.TestCase):
         Tests the Separation rule: a critter should move away from a very close neighbor.
         """
         critter = MockCritter(x=0, y=0, vx=0, vy=0, diet=DietType.HERBIVORE)
+        world = MockWorld()
         # Place a single flockmate extremely close
         close_mate = MockCritter(x=1, y=0, vx=-1, vy=0, diet=DietType.HERBIVORE)
         all_critters = [critter, close_mate]
         behavior = FlockingBehavior()
 
-        action = behavior.get_action(critter, all_critters)
+        action = behavior.get_action(critter, world, all_critters)
 
         # Assert: The direction should be negative on the x-axis, away from the neighbor
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.WANDER)
+        self.assertEqual(action["type"], ActionType.MOVE)
         self.assertLess(action["dx"], 0)
 
 

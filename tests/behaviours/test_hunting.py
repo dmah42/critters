@@ -24,7 +24,7 @@ class MockCritter:
 class MockWorld:
     """A fake World that returns predictable terrain for testing."""
 
-    def generate_tile(self, x, y):
+    def get_tile(self, x, y):
         # For this test, we'll just say there's food at (1, 1)
         has_food = 10.0 if x == 1 and y == 1 else 0.0
         return {"x": x, "y": y, "terrain": "grass", "food_available": has_food}
@@ -63,7 +63,7 @@ class TestHuntingBehavior(unittest.TestCase):
         action = behavior.get_action(self.carnivore, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.SEEK_FOOD)
+        self.assertEqual(action["type"], ActionType.MOVE)
         self.assertEqual(action["target"], (weak_far_prey.x, weak_far_prey.y))
 
     def test_hunts_closest_prey_when_health_is_equal(self):
@@ -76,7 +76,7 @@ class TestHuntingBehavior(unittest.TestCase):
         action = behavior.get_action(self.carnivore, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.SEEK_FOOD)
+        self.assertEqual(action["type"], ActionType.MOVE)
         self.assertEqual(action["target"], (close_prey.x, close_prey.y))
 
     def test_returns_none_if_no_prey_in_range(self):

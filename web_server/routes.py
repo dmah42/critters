@@ -10,8 +10,9 @@ from simulation.brain import (
     THIRST_TO_STOP_DRINKING,
 )
 from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
-from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, World
+from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY
 
+from simulation.world import World
 from web_server import db
 from flask import current_app as app
 
@@ -170,19 +171,11 @@ def get_world_terrain_data():
     width = request.args.get("w", default=50, type=int)
     height = request.args.get("h", default=50, type=int)
 
-    world = World(seed=Config.WORLD_SEED)
+    world = World(seed=Config.WORLD_SEED, session=db.session)
 
     tile_data = []
     start_x = center_x - (width // 2)
-    end_x = start_x + width
     start_y = center_y - (height // 2)
-    end_y = start_y + height
-
-    overrides_list = TileState.query.filter(
-        TileState.x.between(start_x, end_x), TileState.y.between(start_y, end_y)
-    ).all()
-
-    overrides_map = {(tile.x, tile.y): tile for tile in overrides_list}
 
     step = 1
     if width > CANVAS_SIZE:
@@ -193,12 +186,7 @@ def get_world_terrain_data():
             current_x = start_x + x_offset
             current_y = start_y + y_offset
 
-            tile = world.generate_tile(current_x, current_y)
-
-            if (current_x, current_y) in overrides_map:
-                tile["food_available"] = overrides_map[
-                    (current_x, current_y)
-                ].food_available
+            tile = world.get_tile(current_x, current_y)
 
             tile["terrain"] = tile["terrain"].name
             tile_data.append(tile)

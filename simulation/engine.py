@@ -2,7 +2,6 @@ import json
 import logging
 import math
 import random
-import noise
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
 from simulation.terrain_type import TerrainType
@@ -21,7 +20,6 @@ from simulation.factory import create_ai_for_critter
 # Terrain constants
 DEFAULT_GRASS_FOOD = 10.0
 GRASS_REGROWTH_RATE = 0.1
-DIRT_TO_GRASS_RATIO = 0.0
 
 # Critter constants
 HUNGER_PER_TICK = 0.2
@@ -110,19 +108,6 @@ def _process_critter_ai(world, session):
     logger.info(f"Processed AI for {len(all_critters)} critters.")
 
 
-def _get_world_tile_view(world, session, x, y):
-    """
-    Gets complete tile data
-    """
-    base_tile = world.generate_tile(x, y)
-
-    saved_state = session.query(TileState).get((x, y))
-    if saved_state:
-        base_tile["food_available"] = saved_state.food_available
-
-    return base_tile
-
-
 def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
     """
     The main AI dispatcher for a single critter's turn.
@@ -187,7 +172,7 @@ def _run_critter_logic(critter, world, session, all_critters, deaths_this_tick):
         logger.info(f"    drank: thirst: {critter.thirst}")
 
     elif action_type == ActionType.EAT:
-        current_tile = _get_world_tile_view(world, session, critter.x, critter.y)
+        current_tile = world.get_tile(critter.x, critter.y)
         amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
         new_tile_food = current_tile["food_available"] - amount_to_eat
         _update_tile_food(session, critter.x, critter.y, new_tile_food)
@@ -267,14 +252,14 @@ def _execute_move(critter, world, dx, dy, target=None):
 
     for _ in range(steps_to_take):
         new_x, new_y = critter.x + move_dx, critter.y + move_dy
-        destination_tile = world.generate_tile(new_x, new_y)
+        destination_tile = world.get_tile(new_x, new_y)
 
         if destination_tile["terrain"] == TerrainType.WATER:
             logger.info("    unable to move. water")
             hit_obstacle = True
             break
 
-        current_tile = world.generate_tile(critter.x, critter.y)
+        current_tile = world.get_tile(critter.x, critter.y)
 
         height_diff = destination_tile["height"] - current_tile["height"]
         energy_cost = BASE_ENERGY_COST_PER_MOVE
@@ -434,79 +419,3 @@ def _record_statistics(session):
     session.add(stats)
 
     logger.info(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
-
-
-class World:
-    """
-    Represents the game world, procedural generating terrain
-    on the fly.  Nothing is stored in memory.
-    """
-
-    def __init__(self, seed):
-        """Initializes the world with a seed for the noise functions."""
-        self.seed = seed
-
-        # Elevation noise parameters -- low frequency for large features
-        # Zoom level: larger == more zoomed
-        self.height_scale = 200.0
-
-        # Octaves: larger = more rugged
-        self.height_octaves = 6
-
-        # Persistence and lacunarit affect roughness.
-        self.height_persistence = 0.5
-        self.height_lacunarity = 2.0
-
-        # Terrain noise parameters -- high frequency for patches of grass
-        self.terrain_scale = 100.0
-        self.terrain_octaves = 3
-        self.terrain_persistence = 0.5
-        self.terrain_lacunarity = 2.0
-
-        self.water_level = -0.3
-        self.mountain_level = 0.6
-
-    def generate_tile(self, x, y):
-        """The core generation logic."""
-        height_val = (
-            noise.pnoise2(
-                x / self.height_scale,
-                y / self.height_scale,
-                octaves=self.height_octaves,
-                persistence=self.height_persistence,
-                lacunarity=self.height_lacunarity,
-                base=self.seed,
-            )
-            * 1.5
-        )
-
-        terrain = None
-        if height_val < self.water_level:
-            terrain = TerrainType.WATER
-        elif height_val >= self.mountain_level:
-            terrain = TerrainType.MOUNTAIN
-        else:
-            # If it's land, calculate a second noise value for terrain type ---
-            # We add an offset (e.g., 1000) to the seed to ensure this noise map
-            # is completely different from the height map.
-            terrain_val = noise.pnoise2(
-                x / self.terrain_scale,
-                y / self.terrain_scale,
-                octaves=self.terrain_octaves,
-                persistence=self.terrain_persistence,
-                lacunarity=self.terrain_lacunarity,
-                base=self.seed + 1000,
-            )
-
-            terrain = TerrainType.DIRT  # Default to dirt
-            if terrain_val > DIRT_TO_GRASS_RATIO:
-                terrain = TerrainType.GRASS  # Fertile patches of grass
-
-        tile = {
-            "x": x,
-            "y": y,
-            "height": height_val,
-            "terrain": terrain,
-            "food_available": DEFAULT_GRASS_FOOD if terrain == TerrainType.GRASS else 0,
-        }
-        return tile

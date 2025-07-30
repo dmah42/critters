@@ -51,7 +51,7 @@ class TestMateSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(self.critter, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.SEEK_MATE)
+        self.assertEqual(action["type"], ActionType.MOVE)
         self.assertEqual(action["target"], (close_mate.x, close_mate.y))
 
     def test_ignores_mate_on_cooldown(self):
