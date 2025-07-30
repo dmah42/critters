@@ -11,7 +11,7 @@ from simulation.terrain_type import TerrainType
 # Zoom level: larger == more zoomed
 HEIGHT_SCALE = 200.0
 # Octaves: larger = more rugged
-HEIGHT_OCTAVES = 6
+HEIGHT_OCTAVES = 5
 # Persistence and lacunarity affect roughness.
 HEIGHT_PERSISTENCE = 0.5
 HEIGHT_LACUNARITY = 2.0
@@ -23,7 +23,7 @@ TERRAIN_PERSISTENCE = 0.5
 TERRAIN_LACUNARITY = 2.0
 
 
-WATER_LEVEL = -0.3
+WATER_LEVEL = -0.2
 MOUNTAIN_LEVEL = 0.6
 
 DEFAULT_GRASS_FOOD = 10.0
