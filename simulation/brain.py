@@ -23,6 +23,8 @@ CRITICAL_HUNGER = 80.0
 HUNGER_TO_START_FORAGING = 50.0
 HUNGER_TO_STOP_FORAGING = 25.0
 
+CRITICAL_ENERGY = 5.0
+
 SENSE_RADIUS = 5
 
 # A bonus applied to the score of the current goal, making the AI more focused.
@@ -129,9 +131,14 @@ class CritterAI:
         if self.fleeing_module and self.fleeing_module.get_action(
             critter, self.world, self.all_critters
         ):
-            scores[GoalType.SURVIVE_DANGER] = 999  # ensure this wins
+            return GoalType.SURVIVE_DANGER
 
         # Calculate scores for internal needs
+
+        # Exhaustion is to be avoided at all costs.
+        if critter.energy <= CRITICAL_ENERGY:
+            return GoalType.RECOVER_ENERGY
+
         scores[GoalType.RECOVER_ENERGY] = (MAX_ENERGY - critter.energy) / (
             MAX_ENERGY - ENERGY_TO_START_RESTING
         )
