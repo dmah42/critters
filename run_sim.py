@@ -38,13 +38,12 @@ def main():
 
     setup_logging(console_log_enabled=args.console_log, log_filename=args.log_file)
 
-    session = Session()
-    world = World(seed=Config.WORLD_SEED, session=session)
-
     print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
     while True:
         try:
+            session = Session()
+            world = World(seed=Config.WORLD_SEED, session=session)
             run_simulation_tick(world, session)
             session.commit()
         except Exception as e:
