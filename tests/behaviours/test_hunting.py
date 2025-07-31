@@ -13,12 +13,13 @@ from simulation.models import DietType
 
 
 class MockCritter:
-    def __init__(self, x, y, diet, health=100.0):
+    def __init__(self, x, y, diet, health=100.0, is_ghost=False):
         self.id = random.randint(1, 1000)
         self.x = x
         self.y = y
         self.diet = diet
         self.health = health
+        self.is_ghost = is_ghost
 
 
 class MockWorld:
@@ -27,7 +28,13 @@ class MockWorld:
     def get_tile(self, x, y):
         # For this test, we'll just say there's food at (1, 1)
         has_food = 10.0 if x == 1 and y == 1 else 0.0
-        return {"x": x, "y": y, "terrain": "grass", "food_available": has_food}
+        return {
+            "x": x,
+            "y": y,
+            "terrain": "grass",
+            "food_available": has_food,
+            "height": y,
+        }
 
 
 class TestHuntingBehavior(unittest.TestCase):
@@ -35,6 +42,26 @@ class TestHuntingBehavior(unittest.TestCase):
     def setUp(self):
         self.carnivore = MockCritter(x=0, y=0, diet=DietType.CARNIVORE)
         self.world = MockWorld()
+
+    def test_ignores_ghost_prey(self):
+        """
+        Tests that a carnivore will ignore a nearby 'ghost' prey and
+        target a living one further away.
+        """
+        # A very tempting, close-by prey, but it's a ghost
+        ghost_prey = MockCritter(x=1, y=1, diet=DietType.HERBIVORE, is_ghost=True)
+        # A healthy, living prey that is further away
+        living_prey = MockCritter(x=4, y=4, diet=DietType.HERBIVORE, is_ghost=False)
+
+        all_critters = [self.carnivore, ghost_prey, living_prey]
+
+        behavior = HuntingBehavior()
+        action = behavior.get_action(self.carnivore, self.world, all_critters)
+
+        # Assert: The carnivore should ignore the ghost and target the living prey
+        self.assertIsNotNone(action)
+        self.assertEqual(action["type"], ActionType.MOVE)
+        self.assertEqual(action["target"], (living_prey.x, living_prey.y))
 
     def test_attacks_adjacent_prey_immediately(self):
         """A carnivore should always attack adjacent prey, regardless of other options."""

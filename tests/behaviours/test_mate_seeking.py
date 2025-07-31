@@ -24,10 +24,27 @@ class MockCritter:
         self.breeding_cooldown = cooldown
 
 
+class MockWorld:
+    """A fake World that returns predictable terrain for testing."""
+
+    def get_tile(self, x, y):
+        # For this test, we'll just say there's food at (1, 1)
+        has_food = 10.0 if x == 1 and y == 1 else 0.0
+        # Also just set the height to be the same as y
+        return {
+            "x": x,
+            "y": y,
+            "terrain": "grass",
+            "food_available": has_food,
+            "height": y,
+        }
+
+
 class TestMateSeekingBehavior(unittest.TestCase):
 
     def setUp(self):
         self.critter = MockCritter(x=0, y=0, diet=DietType.HERBIVORE)
+        self.world = MockWorld()
 
     def test_breeds_with_adjacent_ready_mate(self):
         """Should return a BREED action if a suitable mate is adjacent."""
@@ -35,7 +52,7 @@ class TestMateSeekingBehavior(unittest.TestCase):
         all_critters = [self.critter, mate]
 
         behavior = MateSeekingBehavior()
-        action = behavior.get_action(self.critter, all_critters)
+        action = behavior.get_action(self.critter, self.world, all_critters)
 
         self.assertIsNotNone(action)
         self.assertEqual(action["type"], ActionType.BREED)
@@ -48,7 +65,7 @@ class TestMateSeekingBehavior(unittest.TestCase):
         all_critters = [self.critter, far_mate, close_mate]
 
         behavior = MateSeekingBehavior()
-        action = behavior.get_action(self.critter, all_critters)
+        action = behavior.get_action(self.critter, self.world, all_critters)
 
         self.assertIsNotNone(action)
         self.assertEqual(action["type"], ActionType.MOVE)
@@ -60,7 +77,7 @@ class TestMateSeekingBehavior(unittest.TestCase):
         all_critters = [self.critter, mate_on_cooldown]
 
         behavior = MateSeekingBehavior()
-        action = behavior.get_action(self.critter, all_critters)
+        action = behavior.get_action(self.critter, self.world, all_critters)
         self.assertIsNone(action)
 
     def test_ignores_mate_of_different_species(self):
@@ -69,5 +86,5 @@ class TestMateSeekingBehavior(unittest.TestCase):
         all_critters = [self.critter, carnivore_mate]
 
         behavior = MateSeekingBehavior()
-        action = behavior.get_action(self.critter, all_critters)
+        action = behavior.get_action(self.critter, None, all_critters)
         self.assertIsNone(action)

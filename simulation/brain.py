@@ -32,6 +32,8 @@ SENSE_RADIUS = 5
 # TODO: think about making this a critter trait.
 COMMITMENT_BONUS = 1.25
 
+# TODO: we need pathfinding.  that's next.
+
 
 class CritterAI:
     def __init__(
@@ -107,7 +109,6 @@ class CritterAI:
             action = self.wandering_module.get_action(
                 self.critter, self.world, self.all_critters
             )
-
         return {"goal": goal, "action": action}
 
     def _get_primary_goal(self) -> GoalType:

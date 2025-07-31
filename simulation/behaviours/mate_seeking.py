@@ -8,11 +8,13 @@ from simulation.brain import (
     ActionType,
 )
 from simulation.models import Critter
+from simulation.pathfinding import find_path
+from simulation.world import World
 
 
 class MateSeekingBehavior(Behavior):
     def get_action(
-        self, critter: Critter, _, all_critters: List[Critter]
+        self, critter: Critter, world: World, all_critters: List[Critter]
     ) -> Dict[str, Any]:
         """
         Determines the complete breeding-related action for a critter.
@@ -49,9 +51,19 @@ class MateSeekingBehavior(Behavior):
             key=lambda c: abs(c.x - critter.x) + abs(c.y - critter.y),
         )
 
-        return {
-            "type": ActionType.MOVE,
-            "dx": closest_mate.x - critter.x,
-            "dy": closest_mate.y - critter.y,
-            "target": (closest_mate.x, closest_mate.y),
-        }
+        start_pos = (critter.x, critter.y)
+        end_pos = (closest_mate.x, closest_mate.y)
+        path = find_path(world, start_pos, end_pos)
+
+        if path and len(path) > 1:
+            next_step = path[1]
+
+            return {
+                "type": ActionType.MOVE,
+                "dx": next_step[0] - critter.x,
+                "dy": next_step[1] - critter.y,
+                "target": end_pos,
+            }
+
+        # If there's no path to the mate, just return None
+        return None

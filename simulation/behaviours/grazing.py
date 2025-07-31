@@ -3,6 +3,7 @@ from typing import Any, Dict
 from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.models import Critter
+from simulation.pathfinding import find_path
 from simulation.terrain_type import TerrainType
 from simulation.world import World
 
@@ -59,13 +60,20 @@ class GrazingBehavior(ForagingBehavior):
                     + abs(tile["y"] - critter.y),
                 )
 
-            # If a target is found, the action is to MOVE.
-            return {
-                "type": ActionType.MOVE,
-                "dx": best_tile["x"] - critter.x,
-                "dy": best_tile["y"] - critter.y,
-                "target": (best_tile["x"], best_tile["y"]),
-            }
+            # Find a path to the tile
+            end_pos = (best_tile["x"], best_tile["y"])
+            path = find_path(world, (critter.x, critter.y), end_pos)
+
+            if path and len(path) > 1:
+                # The next step is the second element
+                next_step = path[1]
+
+                return {
+                    "type": ActionType.MOVE,
+                    "dx": next_step[0] - critter.x,
+                    "dy": next_step[1] - critter.y,
+                    "target": end_pos,
+                }
 
         # 3. If no action can be taken, return None.
         return None

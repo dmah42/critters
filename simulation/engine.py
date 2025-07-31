@@ -17,7 +17,7 @@ from simulation.models import (
     TileState,
 )
 from simulation.factory import create_ai_for_critter
-from simulation.world import DEFAULT_GRASS_FOOD, World
+from simulation.world import DEFAULT_GRASS_FOOD, World, get_energy_cost
 from sqlalchemy.orm import Session
 
 
@@ -27,9 +27,6 @@ GRASS_REGROWTH_RATE = 0.1
 # Critter constants
 HUNGER_PER_TICK = 0.2
 THIRST_PER_TICK = 0.25
-BASE_ENERGY_COST_PER_MOVE = 0.1
-UPHILL_ENERGY_MULTIPLIER = 1.1
-DOWNHILL_ENERGY_MULTIPLIER = 0.8
 
 # AI constants
 HUNGER_RESTORED_PER_EAT = 10.0
@@ -98,15 +95,11 @@ def _process_critter_ai(world: World, session: Session):
         logger.warning("No living critters found.")
         return
 
-    # Start tracking any critters that die this tick.
-    deaths_this_tick = set()
-
     for critter in all_critters:
-        # Check if we have a ghost in the machine
-        if critter.id in deaths_this_tick:
+        if critter.is_ghost:
             logger.info(f"Skipping update for ghost {critter.id}")
             continue
-        _run_critter_logic(critter, world, session, all_critters, deaths_this_tick)
+        _run_critter_logic(critter, world, session, all_critters)
 
     logger.info(f"Processed AI for {len(all_critters)} critters.")
 
@@ -116,7 +109,6 @@ def _run_critter_logic(
     world: World,
     session: Session,
     all_critters: List[Critter],
-    deaths_this_tick: set,
 ):
     """
     The main AI dispatcher for a single critter's turn.
@@ -140,7 +132,7 @@ def _run_critter_logic(
             if critter.hunger > critter.thirst
             else CauseOfDeath.THIRST
         )
-        _handle_death(critter, cause, session, deaths_this_tick)
+        _handle_death(critter, cause, session)
         return
 
     # --- Part 2: Get Action from the AI Brain ---
@@ -199,7 +191,7 @@ def _run_critter_logic(
         logger.info(f"    attacking: {prey.id} for {damage:.2f}")
 
         if prey.health <= 0:
-            _handle_death(prey, CauseOfDeath.PREDATION, session, deaths_this_tick)
+            _handle_death(prey, CauseOfDeath.PREDATION, session)
             critter.hunger = 0
         else:
             logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
@@ -271,12 +263,7 @@ def _execute_move(critter: Critter, world: World, dx: float, dy: float, target=N
 
         current_tile = world.get_tile(critter.x, critter.y)
 
-        height_diff = destination_tile["height"] - current_tile["height"]
-        energy_cost = BASE_ENERGY_COST_PER_MOVE
-        if height_diff > 0:
-            energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
-        elif height_diff < 0:
-            energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+        energy_cost = get_energy_cost(current_tile, destination_tile)
 
         if critter.energy < energy_cost:
             logger.info("    unable to move. not enough energy")
@@ -299,21 +286,18 @@ def _execute_move(critter: Critter, world: World, dx: float, dy: float, target=N
         critter.vx, critter.vy = critter.x - old_x, critter.y - old_y
 
 
-def _handle_death(
-    critter: Critter, cause: CauseOfDeath, session: Session, deaths_this_tick: set
-):
+def _handle_death(critter: Critter, cause: CauseOfDeath, session: Session):
     """Handles the death of a critter"""
 
     # Check that they are not already marked for death
-    if critter.id in deaths_this_tick:
+    if critter.is_ghost:
         raise RuntimeError(
             f"--- !!! WARNING: DUPLICATE DEATH ATTEMPT !!! ---\n"
-            f"Critter ID {critter.id} was already marked for death this tick.\n"
+            f"Critter ID {critter.id} was already a ghost this tick.\n"
             f"A second death was triggered by: {cause.name}.\n"
         )
 
-    # If it's a new death, add it to our log for this tick
-    deaths_this_tick.add(critter.id)
+    critter.is_ghost = True
 
     logger.info(f"    {critter.id} died of {cause.name}")
 

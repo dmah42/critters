@@ -51,7 +51,7 @@ class TestFleeing(unittest.TestCase):
         all_critters = [self.herbivore, self.carnivore]
 
         # Act: Get the action from the behavior module
-        action = fleeing_behavior.get_action(self.herbivore, all_critters)
+        action = fleeing_behavior.get_action(self.herbivore, self.world, all_critters)
 
         # Assert: Check that the action is correct
         self.assertIsNotNone(action)
@@ -71,7 +71,7 @@ class TestFleeing(unittest.TestCase):
         fleeing_behavior = FleeingBehavior()
         all_critters = [self.herbivore, self.carnivore]
 
-        action = fleeing_behavior.get_action(self.herbivore, all_critters)
+        action = fleeing_behavior.get_action(self.herbivore, self.world, all_critters)
 
         # Assert that no action was returned
         self.assertIsNone(action)

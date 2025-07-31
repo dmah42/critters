@@ -22,6 +22,9 @@ TERRAIN_OCTAVES = 3
 TERRAIN_PERSISTENCE = 0.5
 TERRAIN_LACUNARITY = 2.0
 
+BASE_ENERGY_COST_PER_MOVE = 0.1
+UPHILL_ENERGY_MULTIPLIER = 1.1
+DOWNHILL_ENERGY_MULTIPLIER = 0.8
 
 WATER_LEVEL = -0.2
 MOUNTAIN_LEVEL = 0.6
@@ -32,6 +35,22 @@ DIRT_TO_GRASS_LEVEL = 0.0
 WORLD_CHUNK_SIZE = 32
 
 logger = logging.getLogger(__name__)
+
+
+def get_energy_cost(start_tile: Dict[str, Any], end_tile: Dict[str, Any]) -> float:
+    """
+    Calculates the energy cost to move from one tile to another
+    based on their height difference
+    """
+    height_diff = end_tile["height"] - start_tile["height"]
+    energy_cost = BASE_ENERGY_COST_PER_MOVE
+
+    if height_diff > 0:
+        energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
+    elif height_diff < 0:
+        energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+
+    return energy_cost
 
 
 class World:

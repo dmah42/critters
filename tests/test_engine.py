@@ -40,6 +40,7 @@ class MockCritter:
         breeding_cooldown=0,
         parent_one_id=0,
         parent_two_id=0,
+        is_ghost=False,
     ):
         self.id = id if id is not None else random.randint(1, 1000)
         self.x = x
@@ -58,6 +59,7 @@ class MockCritter:
         self.parent_two_id = parent_two_id
         # Add a placeholder for player_id
         self.player_id = None
+        self.is_ghost = is_ghost
 
 
 class MockWorld:
@@ -118,7 +120,6 @@ class TestEngine(unittest.TestCase):
     def setUp(self):
         self.world = MockWorld()
         self.session = MockSession()
-        self.deaths_this_tick = set()
 
     def test_critter_rests_when_tired(self):
         """Tests that an exhausted critter's only action is to rest."""
@@ -130,7 +131,6 @@ class TestEngine(unittest.TestCase):
             self.world,
             self.session,
             [tired_critter],
-            self.deaths_this_tick,
         )
 
         self.assertGreater(tired_critter.energy, ENERGY_TO_START_RESTING - 1)
@@ -146,7 +146,6 @@ class TestEngine(unittest.TestCase):
             world_with_food,
             self.session,
             [hungry_critter],
-            self.deaths_this_tick,
         )
 
         self.assertLess(hungry_critter.hunger, HUNGER_TO_START_FORAGING + 1)
@@ -156,13 +155,16 @@ class TestEngine(unittest.TestCase):
         """Tests that the death handler correctly archives a critter."""
         critter_to_die = MockCritter(id=123, age=100)
 
-        _handle_death(
-            critter_to_die, CauseOfDeath.STARVATION, self.session, self.deaths_this_tick
-        )
+        _handle_death(critter_to_die, CauseOfDeath.STARVATION, self.session)
 
         self.assertEqual(len(self.session.new), 1)
         self.assertEqual(self.session.new[0].original_id, 123)
         self.assertIn(critter_to_die, self.session.deleted)
+
+    def test_handle_death_fails_for_ghost(self):
+        with self.assertRaises(RuntimeError):
+            critter_to_die = MockCritter(id=123, age=100, is_ghost=True)
+            _handle_death(critter_to_die, CauseOfDeath.STARVATION, self.session)
 
     def test_reproduce_creates_child(self):
         """Tests that reproduction creates a new critter."""

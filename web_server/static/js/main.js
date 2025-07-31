@@ -201,9 +201,11 @@ function updateStatsPanel() {
   } else {
     // If no critter is selected, show the default message
     statsPanel.innerHTML = `
-            <h2>Critter Stats</h2>
+          <h2>Critter stats</h2>
+          <div id="stats-content">
             <p>Click on a critter to view its details.</p>
-        `;
+          </div>
+    `;
   }
 }
 

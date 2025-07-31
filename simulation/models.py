@@ -1,6 +1,7 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict
 from simulation.action_type import ActionType
+from sqlalchemy import orm
 from web_server import db
 from datetime import datetime, timezone
 import enum
@@ -118,6 +119,17 @@ class Critter(db.Model):
         if "health" not in kwargs:
             self.health = self.size * HEALTH_PER_SIZE_POINT
 
+        # A transient, in-memory flag to mark if a critter has died this tick.
+        self.is_ghost: bool = False
+
+    @orm.reconstructor
+    def init_on_load(self):
+        """
+        Called by SQLAlchemy every time a Critter is loaded from the database.
+        """
+        # Initialize transient attributes.
+        self.is_ghost = False
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -136,6 +148,7 @@ class Critter(db.Model):
             "thirst": self.thirst,
             "ai_state": self.ai_state.name,
             "last_action": self.last_action.name if self.last_action else None,
+            "is_ghost": self.is_ghost,
             "owner_id": self.player_id,
         }
 

@@ -42,6 +42,7 @@ class MockWorld:
             "y": y,
             "terrain": TerrainType.GRASS,
             "food_available": food_amount,
+            "height": y,
         }
 
 
