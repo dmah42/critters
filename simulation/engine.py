@@ -210,6 +210,7 @@ def _run_critter_logic(
         _execute_move(
             critter,
             world,
+            all_critters,
             action["dx"],
             action["dy"],
             target=target,
@@ -231,7 +232,14 @@ def _update_tile_food(session, x: int, y: int, new_food_value: float):
         session.add(tile)
 
 
-def _execute_move(critter: Critter, world: World, dx: float, dy: float, target=None):
+def _execute_move(
+    critter: Critter,
+    world: World,
+    all_critters: List[Critter],
+    dx: float,
+    dy: float,
+    target=None,
+):
     """
     Executes a move for a critter, checking for obstacles and goals.
     (This is a new helper function to hold the movement loop)
@@ -252,12 +260,18 @@ def _execute_move(critter: Critter, world: World, dx: float, dy: float, target=N
 
     hit_obstacle = False
 
+    occupied_positions = {(c.x, c.y) for c in all_critters if c.id != critter.id}
+
     for _ in range(steps_to_take):
         new_x, new_y = critter.x + move_dx, critter.y + move_dy
         destination_tile = world.get_tile(new_x, new_y)
 
-        if destination_tile["terrain"] == TerrainType.WATER:
-            logger.info("    unable to move. water")
+        # Don't let critters get in the same space or step on water.
+        if (
+            destination_tile["terrain"] == TerrainType.WATER
+            or (new_x, new_y) in occupied_positions
+        ):
+            logger.info("    unable to move. obstacle.")
             hit_obstacle = True
             break
 
