@@ -5,7 +5,6 @@ set -e
 source .venv/bin/activate
 
 TIMER=5.0
-SEED=123
 
 if [ $# -eq 1 ]; then
   TIMER=$1
