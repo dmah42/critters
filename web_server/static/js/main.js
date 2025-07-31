@@ -31,7 +31,7 @@ const THIRST_TO_STOP_DRINKING = parseInt(
 );
 const MAX_ENERGY = parseInt(dataContainer.dataset.maxEnergy);
 
-const CRITTER_DRAW_RADIUS = 4;
+const CRITTER_DRAW_RADIUS = 3;
 
 let currentTerrainData = null;
 let currentView = {
