@@ -230,6 +230,7 @@ class SimulationStats(db.Model):
     hunger_distribution = db.Column(db.Text)
     thirst_distribution = db.Column(db.Text)
     energy_distribution = db.Column(db.Text)
+    goal_distribution = db.Column(db.Text)
 
     def to_dict(self):
         return {
@@ -251,5 +252,8 @@ class SimulationStats(db.Model):
             ),
             "energy_distribution": (
                 json.loads(self.energy_distribution) if self.energy_distribution else {}
+            ),
+            "goal_distribution": (
+                json.loads(self.goal_distribution) if self.goal_distribution else {}
             ),
         }

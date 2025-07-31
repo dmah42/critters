@@ -375,6 +375,7 @@ def _record_statistics(session: Session):
     hunger_bins = {}
     thirst_bins = {}
     energies = {}
+    goals = {}
 
     for c in critters:
         if c.diet == DietType.HERBIVORE:
@@ -396,19 +397,16 @@ def _record_statistics(session: Session):
             health_bins["Critical"] += 1
 
         hunger_bin = int(math.floor(c.hunger))
-        if not hunger_bin in hunger_bins:
-            hunger_bins[hunger_bin] = 0
-        hunger_bins[hunger_bin] += 1
+        hunger_bins[hunger_bin] = hunger_bins.get(hunger_bin, 0) + 1
 
         thirst_bin = int(math.floor(c.thirst))
-        if not thirst_bin in thirst_bins:
-            thirst_bins[thirst_bin] = 0
-        thirst_bins[thirst_bin] += 1
+        thirst_bins[thirst_bin] = thirst_bins.get(thirst_bin, 0) + 1
 
         energy_bin = int(math.floor(c.energy))
-        if not energy_bin in energies:
-            energies[energy_bin] = 0
-        energies[energy_bin] += 1
+        energies[energy_bin] = energies.get(energy_bin, 0) + 1
+
+        goal_bin = c.ai_state.name
+        goals[goal_bin] = goals.get(goal_bin, 0) + 1
 
     last_stat = (
         session.query(SimulationStats).order_by(SimulationStats.tick.desc()).first()
@@ -425,6 +423,7 @@ def _record_statistics(session: Session):
         hunger_distribution=json.dumps(hunger_bins),
         thirst_distribution=json.dumps(thirst_bins),
         energy_distribution=json.dumps(energies),
+        goal_distribution=json.dumps(goals),
     )
     session.add(stats)
 

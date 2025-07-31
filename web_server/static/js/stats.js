@@ -4,7 +4,8 @@ let populationChart,
   healthChart,
   hungerChart,
   thirstChart,
-  energyChart;
+  energyChart,
+  goalChart;
 
 const HEALTH_ORDER = ["Healthy", "Hurt", "Critical"];
 
@@ -27,6 +28,20 @@ const THIRST_TO_START_DRINKING = parseInt(
 const THIRST_TO_STOP_DRINKING = parseInt(
   dataContainer.dataset.thirstToStopDrinking
 );
+
+const GOAL_COLOR_MAP = {
+  IDLE: "#6c757d", // Grey
+  WANDER: "#6c757d", // Grey
+  RESTING: "#007bff", // Blue
+  SEEKING_WATER: "#17a2b8", // Teal
+  DRINKING: "#17a2b8", // Teal
+  SEEKING_FOOD: "#fd7e14", // Orange
+  EATING: "#28a745", // Green
+  ATTACK: "#dc3545", // Red
+  FLEEING: "#ffc107", // Yellow
+  SEEKING_MATE: "#e83e8c", // Pink
+  BREEDING: "#e83e8c", // Pink
+};
 
 function updateBarChart(
   chartInstance,
@@ -65,10 +80,20 @@ function updateBarChart(
   }
 }
 
-function updatePieChart(chartInstance, canvasId, labels, data, title) {
+function updatePieChart(
+  chartInstance,
+  canvasId,
+  labels,
+  data,
+  title,
+  colors = null
+) {
   if (chartInstance) {
     chartInstance.data.labels = labels;
     chartInstance.data.datasets[0].data = data;
+    if (colors) {
+      chartInstance.data.datasets[0].backgroundColor = colors;
+    }
     chartInstance.update();
     return chartInstance;
   } else {
@@ -81,11 +106,13 @@ function updatePieChart(chartInstance, canvasId, labels, data, title) {
           {
             label: title,
             data: data,
-            backgroundColor: [
+            backgroundColor: colors || [
               "rgba(255, 99, 132, 0.7)",
               "rgba(54, 162, 235, 0.7)",
               "rgba(255, 206, 86, 0.7)",
               "rgba(75, 192, 192, 0.7)",
+              "rgba(153, 102, 255, 0.7)",
+              "rgba(255, 159, 64, 0.7)",
             ],
             hoverOffset: 4,
           },
@@ -252,6 +279,23 @@ async function fetchAndDrawHistoryCharts() {
       THIRST_TO_START_DRINKING,
       THIRST_TO_STOP_DRINKING,
       false
+    );
+
+    const goalLabels = Object.keys(latestStat.goal_distribution).sort();
+    const goalData = goalLabels.map(
+      (label) => latestStat.goal_distribution[label]
+    );
+    const goalColors = goalLabels.map(
+      (label) => GOAL_COLOR_MAP[label] || "#343a40"
+    );
+
+    goalChart = updatePieChart(
+      goalChart,
+      "goalChart",
+      goalLabels,
+      goalData,
+      "Goal Distribution",
+      goalColors
     );
   } catch (error) {
     console.error("Error updating charts:", error);
