@@ -122,6 +122,26 @@ function updatePieChart(
   }
 }
 
+function createHistogramData(rawData, binSize, maxVal) {
+  const labels = [];
+  const data = [];
+  for (let i = 0; i < maxVal; i += binSize) {
+    const binStart = i;
+    const binEnd = i + binSize - 1;
+    labels.push(`${binStart}-${binEnd}`);
+    data.push(0);
+  }
+
+  for (const [value, count] of Object.entries(rawData)) {
+    const binIndex = Math.floor(parseInt(value) / binSize);
+    if (binIndex < data.length) {
+      data[binIndex] += count;
+    }
+  }
+
+  return { labels, data };
+}
+
 // --- Main Fetching and Drawing Logic ---
 async function fetchAndDrawHistoryCharts() {
   try {
@@ -197,20 +217,21 @@ async function fetchAndDrawHistoryCharts() {
     );
 
     // --- Energy Chart (Grouped Bar with Threshold Coloring) ---
-    const allEnergyKeys = [
-      ...Object.keys(latestStat.herbivore_energy_distribution),
-      ...Object.keys(latestStat.carnivore_energy_distribution),
-    ];
-    const energyLabels = [...new Set(allEnergyKeys)]
-      .map((k) => parseInt(k))
-      .sort((a, b) => a - b);
+    const herbivoreEnergyHist = createHistogramData(
+      latestStat.herbivore_energy_distribution,
+      10,
+      100
+    );
+    const carnivoreEnergyHist = createHistogramData(
+      latestStat.carnivore_energy_distribution,
+      10,
+      100
+    );
     const energyDatasets = [
       {
         label: "Herbivores",
-        data: energyLabels.map(
-          (l) => latestStat.herbivore_energy_distribution[l] || 0
-        ),
-        backgroundColor: energyLabels.map((label) => {
+        data: herbivoreEnergyHist.data,
+        backgroundColor: herbivoreEnergyHist.labels.map((label) => {
           if (label <= CRITICAL_ENERGY) return COLORS.green.crit;
           if (label <= ENERGY_TO_START_RESTING) return COLORS.green.warn;
           return COLORS.green.good;
@@ -218,10 +239,8 @@ async function fetchAndDrawHistoryCharts() {
       },
       {
         label: "Carnivores",
-        data: energyLabels.map(
-          (l) => latestStat.carnivore_energy_distribution[l] || 0
-        ),
-        backgroundColor: energyLabels.map((label) => {
+        data: carnivoreEnergyHist.data,
+        backgroundColor: carnivoreEnergyHist.labels.map((label) => {
           if (label <= CRITICAL_ENERGY) return COLORS.red.crit;
           if (label <= ENERGY_TO_START_RESTING) return COLORS.red.warn;
           return COLORS.red.good;
@@ -231,25 +250,26 @@ async function fetchAndDrawHistoryCharts() {
     energyChart = updateBarChart(
       energyChart,
       "energyChart",
-      energyLabels,
+      herbivoreEnergyHist.labels,
       energyDatasets
     );
 
     // --- Hunger Chart (Grouped Bar with Threshold Coloring) ---
-    const allHungerKeys = [
-      ...Object.keys(latestStat.herbivore_hunger_distribution),
-      ...Object.keys(latestStat.carnivore_hunger_distribution),
-    ];
-    const hungerLabels = [...new Set(allHungerKeys)]
-      .map((k) => parseInt(k))
-      .sort((a, b) => a - b);
+    const herbivoreHungerHist = createHistogramData(
+      latestStat.herbivore_hunger_distribution,
+      10,
+      100
+    );
+    const carnivoreHungerHist = createHistogramData(
+      latestStat.carnivore_hunger_distribution,
+      10,
+      100
+    );
     const hungerDatasets = [
       {
         label: "Herbivores",
-        data: hungerLabels.map(
-          (l) => latestStat.herbivore_hunger_distribution[l] || 0
-        ),
-        backgroundColor: hungerLabels.map((label) => {
+        data: herbivoreHungerHist.data,
+        backgroundColor: herbivoreHungerHist.labels.map((label) => {
           if (label >= CRITICAL_HUNGER) return COLORS.green.crit;
           if (label >= HUNGER_TO_START_FORAGING) return COLORS.green.warn;
           return COLORS.green.good;
@@ -257,10 +277,8 @@ async function fetchAndDrawHistoryCharts() {
       },
       {
         label: "Carnivores",
-        data: hungerLabels.map(
-          (l) => latestStat.carnivore_hunger_distribution[l] || 0
-        ),
-        backgroundColor: hungerLabels.map((label) => {
+        data: carnivoreHungerHist.data,
+        backgroundColor: carnivoreHungerHist.labels.map((label) => {
           if (label >= CRITICAL_HUNGER) return COLORS.red.crit;
           if (label >= HUNGER_TO_START_FORAGING) return COLORS.red.warn;
           return COLORS.red.good;
@@ -270,25 +288,26 @@ async function fetchAndDrawHistoryCharts() {
     hungerChart = updateBarChart(
       hungerChart,
       "hungerChart",
-      hungerLabels,
+      herbivoreHungerHist.labels,
       hungerDatasets
     );
 
     // --- Thirst Chart (Grouped Bar with Threshold Coloring) ---
-    const allThirstKeys = [
-      ...Object.keys(latestStat.herbivore_thirst_distribution),
-      ...Object.keys(latestStat.carnivore_thirst_distribution),
-    ];
-    const thirstLabels = [...new Set(allThirstKeys)]
-      .map((k) => parseInt(k))
-      .sort((a, b) => a - b);
+    const herbivoreThirstHist = createHistogramData(
+      latestStat.herbivore_thirst_distribution,
+      10,
+      100
+    );
+    const carnivoreThirstHist = createHistogramData(
+      latestStat.carnivore_thirst_distribution,
+      10,
+      100
+    );
     const thirstDatasets = [
       {
         label: "Herbivores",
-        data: thirstLabels.map(
-          (l) => latestStat.herbivore_thirst_distribution[l] || 0
-        ),
-        backgroundColor: thirstLabels.map((label) => {
+        data: herbivoreThirstHist.data,
+        backgroundColor: herbivoreThirstHist.labels.map((label) => {
           if (label >= CRITICAL_THIRST) return COLORS.green.crit;
           if (label >= THIRST_TO_START_DRINKING) return COLORS.green.warn;
           return COLORS.green.good;
@@ -296,10 +315,8 @@ async function fetchAndDrawHistoryCharts() {
       },
       {
         label: "Carnivores",
-        data: thirstLabels.map(
-          (l) => latestStat.carnivore_thirst_distribution[l] || 0
-        ),
-        backgroundColor: thirstLabels.map((label) => {
+        data: carnivoreThirstHist.data,
+        backgroundColor: carnivoreThirstHist.labels.map((label) => {
           if (label >= CRITICAL_THIRST) return COLORS.red.crit;
           if (label >= THIRST_TO_START_DRINKING) return COLORS.red.warn;
           return COLORS.red.good;
@@ -309,7 +326,7 @@ async function fetchAndDrawHistoryCharts() {
     thirstChart = updateBarChart(
       thirstChart,
       "thirstChart",
-      thirstLabels,
+      herbivoreThirstHist.labels,
       thirstDatasets
     );
 
@@ -318,26 +335,41 @@ async function fetchAndDrawHistoryCharts() {
       ...Object.keys(latestStat.herbivore_age_distribution),
       ...Object.keys(latestStat.carnivore_age_distribution),
     ];
-    const ageLabels = [...new Set(allAgeKeys)]
-      .map((k) => parseInt(k))
-      .sort((a, b) => a - b);
+
+    // 2. Find the highest age in the current data, defaulting to a reasonable value.
+    const maxAge =
+      allAgeKeys.length > 0
+        ? Math.max(...allAgeKeys.map((k) => parseInt(k)))
+        : 100;
+
+    const herbivoreAgeHist = createHistogramData(
+      latestStat.herbivore_age_distribution,
+      Math.floor(maxAge / 50),
+      maxAge
+    );
+    const carnivoreAgeHist = createHistogramData(
+      latestStat.carnivore_age_distribution,
+      Math.floor(maxAge / 50),
+      maxAge
+    );
     const ageDatasets = [
       {
         label: "Herbivores",
-        data: ageLabels.map(
-          (l) => latestStat.herbivore_age_distribution[l] || 0
-        ),
+        data: herbivoreAgeHist.data,
         backgroundColor: "rgba(75, 192, 75, 0.6)",
       },
       {
         label: "Carnivores",
-        data: ageLabels.map(
-          (l) => latestStat.carnivore_age_distribution[l] || 0
-        ),
+        data: carnivoreAgeHist.data,
         backgroundColor: "rgba(255, 99, 132, 0.6)",
       },
     ];
-    ageChart = updateBarChart(ageChart, "ageChart", ageLabels, ageDatasets);
+    ageChart = updateBarChart(
+      ageChart,
+      "ageChart",
+      herbivoreAgeHist.labels,
+      ageDatasets
+    );
 
     // --- Goal Chart (Pie) ---
     const goalDistributionData = latestStat.goal_distribution;
