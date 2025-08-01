@@ -6,7 +6,14 @@ from typing import List
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
 from simulation.terrain_type import TerrainType
-from simulation.brain import CRITICAL_HUNGER, CRITICAL_THIRST, MAX_ENERGY, ActionType
+from simulation.brain import (
+    CRITICAL_HUNGER,
+    CRITICAL_THIRST,
+    MAX_ENERGY,
+    MAX_HUNGER,
+    MAX_THIRST,
+    ActionType,
+)
 from simulation.models import (
     AIState,
     CauseOfDeath,
@@ -131,7 +138,7 @@ def _run_critter_logic(
     start_energy: float = critter.energy
 
     critter.age += 1
-    critter.thirst += THIRST_PER_TICK
+    critter.thirst = min(critter.thirst + THIRST_PER_TICK, MAX_THIRST)
     if critter.breeding_cooldown > 0:
         critter.breeding_cooldown -= 1
 
@@ -176,8 +183,7 @@ def _run_critter_logic(
 
     # This is a simple "switch" statement that executes the brain's decision.
     if action_type == ActionType.REST:
-        critter.energy += ENERGY_REGEN_PER_TICK
-        critter.energy = min(critter.energy, MAX_ENERGY)
+        critter.energy = min(critter.energy + ENERGY_REGEN_PER_TICK, MAX_ENERGY)
         logger.info(f"    rested: energy: {critter.energy:.2f}")
 
     elif action_type == ActionType.DRINK:
@@ -254,7 +260,7 @@ def _run_critter_logic(
     hunger_increase = (
         BASE_METABOLIC_RATE + (energy_spent * ENERGY_TO_HUNGER_RATIO)
     ) * critter.metabolism
-    critter.hunger += hunger_increase
+    critter.hunger = min(critter.hunger + hunger_increase, MAX_HUNGER)
 
 
 def _update_tile_food(session, x: int, y: int, new_food_value: float):
