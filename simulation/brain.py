@@ -34,9 +34,7 @@ SENSE_RADIUS = 5
 # A bonus applied to the score of the current goal, making the AI more focused.
 # A higher value means more focused, a lower value means more easily distracted.
 # TODO: think about making this a critter trait.
-COMMITMENT_BONUS = 1.25
-
-# TODO: we need pathfinding.  that's next.
+COMMITMENT_BONUS = 1.75
 
 
 class CritterAI:
@@ -170,11 +168,16 @@ class CritterAI:
             GoalType.WANDER: 0.1,  # small base score to be the default
         }
 
-        scores[GoalType.RECOVER_ENERGY] = (MAX_ENERGY - critter.energy) / (
-            MAX_ENERGY - ENERGY_TO_START_RESTING
-        )
-        scores[GoalType.QUENCH_THIRST] = critter.thirst / THIRST_TO_START_DRINKING
-        scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
+        if critter.energy < ENERGY_TO_START_RESTING:
+            scores[GoalType.RECOVER_ENERGY] = (MAX_ENERGY - critter.energy) / (
+                MAX_ENERGY - ENERGY_TO_START_RESTING
+            )
+
+        if critter.thirst >= THIRST_TO_START_DRINKING:
+            scores[GoalType.QUENCH_THIRST] = critter.thirst / THIRST_TO_START_DRINKING
+
+        if critter.hunger >= HUNGER_TO_START_FORAGING:
+            scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
 
         is_horny = (
             critter.energy >= MIN_ENERGY_TO_BREED
