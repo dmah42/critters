@@ -279,6 +279,7 @@ def _run_critter_logic(
             all_critters,
             action["dx"],
             action["dy"],
+            goal,
             target=target,
         )
 
@@ -313,11 +314,11 @@ def _execute_move(
     all_critters: List[Critter],
     dx: float,
     dy: float,
+    goal: GoalType,
     target=None,
 ):
     """
-    Executes a move for a critter, checking for obstacles and goals.
-    (This is a new helper function to hold the movement loop)
+    Executes a move with variable speed for a critter, checking for obstacles and goals.
     """
     old_x, old_y = critter.x, critter.y
 
@@ -329,9 +330,17 @@ def _execute_move(
         critter.vx, critter.vy = 0, 0
         return
 
-    critter.movement_progress += critter.speed
-    steps_to_take = int(critter.movement_progress)
-    critter.movement_progress -= steps_to_take
+    if goal == GoalType.SURVIVE_DANGER or (
+        critter.diet == DietType.CARNIVORE and goal == GoalType.SATE_HUNGER
+    ):
+        # Full speed sprint
+        critter.movement_progress += critter.speed
+        steps_to_take = int(critter.movement_progress)
+        critter.movement_progress -= steps_to_take
+    else:
+        # Low priority goals use a slower walking pace.
+        max_walk_speed = max(1, int(critter.speed))
+        steps_to_take = random.randint(1, max_walk_speed)
 
     hit_obstacle = False
 
