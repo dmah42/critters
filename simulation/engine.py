@@ -25,14 +25,24 @@ from sqlalchemy.orm import Session
 GRASS_REGROWTH_RATE = 0.1
 
 # Critter constants
-HUNGER_PER_TICK = 0.2
 THIRST_PER_TICK = 0.25
 
 # AI constants
-HUNGER_RESTORED_PER_EAT = 10.0
-EAT_AMOUNT = 5.0
+HUNGER_RESTORED_PER_GRASS_EATEN = 10.0
+HUNGER_RESTORED_PER_PREY_EATEN = 15.0
+
+GRASS_EAT_AMOUNT = 5.0
 
 ENERGY_REGEN_PER_TICK = 5.0
+
+# Base hunger increase per tick, even for an idle critter.
+BASE_METABOLIC_RATE = 0.05
+
+# The factor to convert spent energy into hunger.
+ENERGY_TO_HUNGER_RATIO = 0.2
+
+# The factor that converts food into energy.
+FOOD_TO_ENERGY_RATIO = 2.0
 
 DRINK_AMOUNT = 25.0
 
@@ -117,8 +127,10 @@ def _run_critter_logic(
     # --- Part 1: Universal State Updates (Health, Hunger, Death, etc.) ---
     # This initial block of code is the same as before.
     logger.info(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
+
+    start_energy: float = critter.energy
+
     critter.age += 1
-    critter.hunger += HUNGER_PER_TICK
     critter.thirst += THIRST_PER_TICK
     if critter.breeding_cooldown > 0:
         critter.breeding_cooldown -= 1
@@ -175,12 +187,20 @@ def _run_critter_logic(
 
     elif action_type == ActionType.EAT:
         current_tile = world.get_tile(critter.x, critter.y)
-        amount_to_eat = min(current_tile["food_available"], EAT_AMOUNT)
+        amount_to_eat = min(current_tile["food_available"], GRASS_EAT_AMOUNT)
         new_tile_food = current_tile["food_available"] - amount_to_eat
         _update_tile_food(session, critter.x, critter.y, new_tile_food)
-        critter.hunger -= (amount_to_eat / EAT_AMOUNT) * HUNGER_RESTORED_PER_EAT
+
+        critter.hunger -= (
+            amount_to_eat / GRASS_EAT_AMOUNT
+        ) * HUNGER_RESTORED_PER_GRASS_EATEN
         critter.hunger = max(critter.hunger, 0)
-        logger.info(f"    ate {amount_to_eat}: hunger: {critter.hunger:.2f}")
+
+        energy_gained = amount_to_eat * FOOD_TO_ENERGY_RATIO
+        critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
+        logger.info(
+            f"    ate {amount_to_eat}: hunger: {critter.hunger:.2f}, energy: {critter.energy:.2f}"
+        )
 
     elif action_type == ActionType.ATTACK:
         prey = action["target"]
@@ -192,7 +212,15 @@ def _run_critter_logic(
 
         if prey.health <= 0:
             _handle_death(prey, CauseOfDeath.PREDATION, session)
-            critter.hunger = 0
+
+            hunger_restored = prey.size * HUNGER_RESTORED_PER_PREY_EATEN
+            critter.hunger = max(critter.hunger - hunger_restored, 0)
+
+            energy_gained = prey.size * FOOD_TO_ENERGY_RATIO
+            critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
+            logger.info(
+                f"    kill successful: hunger: {critter.hunger:.2f}, energy: {critter.energy:.2f}"
+            )
         else:
             logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
 
@@ -218,6 +246,15 @@ def _run_critter_logic(
 
     else:
         raise NotImplementedError(f"Unimplemented action '{action_type.name}'")
+
+    # Calculate energy spent and correlative hunger. Clamped so we don't apply
+    # negative hunger when resting.
+    energy_spent: float = max(start_energy - critter.energy, 0)
+
+    hunger_increase = (
+        BASE_METABOLIC_RATE + (energy_spent * ENERGY_TO_HUNGER_RATIO)
+    ) * critter.metabolism
+    critter.hunger += hunger_increase
 
 
 def _update_tile_food(session, x: int, y: int, new_food_value: float):
@@ -335,6 +372,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
 
     child_speed = random.choice([parent1.speed, parent2.speed])
     child_size = random.choice([parent1.size, parent2.size])
+    child_metabolism = random.choice([parent1.metabolism, parent2.metabolism])
 
     if random.random() < MUTATION_CHANCE:
         child_speed += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
@@ -342,6 +380,9 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     if random.random() < MUTATION_CHANCE:
         child_size += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
         child_size = max(child_size, 1.0)
+    if random.random() < MUTATION_CHANCE:
+        child_metabolism += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
+        child_metabolism = max(child_size, 0.5)
 
     child = Critter(
         parent_one_id=parent1.id,
@@ -351,6 +392,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
         y=parent1.y,
         speed=child_speed,
         size=child_size,
+        metabolism=child_metabolism,
     )
     session.add(child)
 

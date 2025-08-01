@@ -33,7 +33,7 @@ const GOAL_COLOR_MAP = {
   IDLE: "#6c757d", // Grey
   WANDER: "#6c757d", // Grey
   RESTING: "#007bff", // Blue
-  SEEKING_WATER: "#17a2b8", // Teal
+  SEEKING_WATER: "#0792a8", // Dark Teal
   DRINKING: "#17a2b8", // Teal
   SEEKING_FOOD: "#fd7e14", // Orange
   EATING: "#28a745", // Green

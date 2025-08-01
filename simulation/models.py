@@ -70,9 +70,10 @@ class Critter(db.Model):
     thirst = db.Column(db.Float, default=0.0)
 
     # Genetics
-    age = db.Column(db.Integer, default=0)
-    speed = db.Column(db.Float, default=5.0)
-    size = db.Column(db.Float, default=5.0)
+    age = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    speed = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
+    size = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
+    metabolism = db.Column(db.Float, nullable=False, default=1.0, server_default="1.0")
 
     # Position
     x = db.Column(db.Integer, default=0)
@@ -137,6 +138,7 @@ class Critter(db.Model):
             "diet": self.diet.name,
             "speed": self.speed,
             "size": self.size,
+            "metabolism": self.metabolism,
             "x": self.x,
             "y": self.y,
             "vx": self.vx,
