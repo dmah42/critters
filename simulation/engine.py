@@ -58,6 +58,10 @@ HEALTH_DAMAGE_PER_TICK = 0.1
 
 DAMAGE_PER_SIZE_POINT = 5.0
 
+# A value of 0.8 means a prey with the same speed as
+# the attacker has an 80% chance to escape
+ESCAPE_CHANCE_MULTIPLIER = 0.8
+
 ## Breeding constants
 BREEDING_ENERGY_COST = 40.0
 BREEDING_COOLDOWN_TICKS = 500
@@ -218,32 +222,45 @@ def _run_critter_logic(
 
     elif action_type == ActionType.ATTACK:
         prey = action["target"]
-        damage = critter.size * DAMAGE_PER_SIZE_POINT
 
-        prey.health -= damage
+        # Base escape chance on the speed difference.
+        escape_chance_modifier = prey.speed / critter.speed
+        # There's always a 5% chance the predator wins
+        final_escape_chance = min(
+            escape_chance_modifier * ESCAPE_CHANCE_MULTIPLIER, 0.95
+        )
 
-        logger.info(f"    attacking: {prey.id} for {damage:.2f}")
-
-        if prey.health <= 0:
-            _handle_death(prey, CauseOfDeath.PREDATION, session)
-
-            hunger_restored = prey.size * HUNGER_RESTORED_PER_PREY_EATEN
-            critter.hunger = max(critter.hunger - hunger_restored, 0)
-
-            energy_gained = prey.size * FOOD_TO_ENERGY_RATIO
-            critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
-
-            thirst_quenched = prey.size * THIRST_QUENCHED_PER_EAT
-            critter.thirst = max(critter.thirst - thirst_quenched, 0)
-
-            logger.info(
-                f"    kill successful: "
-                f"hunger: {critter.hunger:.2f}, "
-                f"thirst: {critter.thirst:.2f}, "
-                f"energy: {critter.energy:.2f}"
-            )
+        if random.random() < final_escape_chance:
+            logger.info(f"    attack failed: {prey.id} escaped from {critter.id}")
+            # TODO: consider an energy cost for the attack
+            # critter.energy -= FAILED_ATTACK_ENERGY_COST
         else:
-            logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
+            damage = critter.size * DAMAGE_PER_SIZE_POINT
+
+            prey.health -= damage
+
+            logger.info(f"    attacked: {prey.id} for {damage:.2f}")
+
+            if prey.health <= 0:
+                _handle_death(prey, CauseOfDeath.PREDATION, session)
+
+                hunger_restored = prey.size * HUNGER_RESTORED_PER_PREY_EATEN
+                critter.hunger = max(critter.hunger - hunger_restored, 0)
+
+                energy_gained = prey.size * FOOD_TO_ENERGY_RATIO
+                critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
+
+                thirst_quenched = prey.size * THIRST_QUENCHED_PER_EAT
+                critter.thirst = max(critter.thirst - thirst_quenched, 0)
+
+                logger.info(
+                    f"    kill successful: "
+                    f"hunger: {critter.hunger:.2f}, "
+                    f"thirst: {critter.thirst:.2f}, "
+                    f"energy: {critter.energy:.2f}"
+                )
+            else:
+                logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
 
     elif action_type == ActionType.BREED:
         mate = action["partner"]
