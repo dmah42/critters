@@ -69,10 +69,9 @@ In your first terminal, start the continuous simulation loop. This process will 
 python run_sim.py --tick-timer 2.0 --console-log
 ```
 
-or just use `run_sim.sh`.
-
 #### Options:
 * `-t`, `--tick-timer`: The time in seconds between sim ticks (Default: 5.0)
+* `-s`, `--world-size`: The side length of the square in which to create critters.
 * `--console-log`: Enable logging to the console (logs will still go to the file).
 * `--log-file`: The name of the file to save logs to (Default: `simulation.log`)
 

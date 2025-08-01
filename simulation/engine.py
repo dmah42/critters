@@ -52,6 +52,7 @@ ENERGY_TO_HUNGER_RATIO = 0.2
 FOOD_TO_ENERGY_RATIO = 2.0
 
 DRINK_AMOUNT = 25.0
+THIRST_QUENCHED_PER_EAT = 2.0
 
 HEALTH_DAMAGE_PER_TICK = 0.1
 
@@ -204,8 +205,15 @@ def _run_critter_logic(
 
         energy_gained = amount_to_eat * FOOD_TO_ENERGY_RATIO
         critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
+
+        thirst_quenched = amount_to_eat * THIRST_QUENCHED_PER_EAT
+        critter.thirst = max(critter.thirst - thirst_quenched, 0)
+
         logger.info(
-            f"    ate {amount_to_eat}: hunger: {critter.hunger:.2f}, energy: {critter.energy:.2f}"
+            f"    ate {amount_to_eat}: "
+            f"hunger: {critter.hunger:.2f}, "
+            f"thirst: {critter.thirst:.2f}, "
+            f"energy: {critter.energy:.2f}"
         )
 
     elif action_type == ActionType.ATTACK:
@@ -224,8 +232,15 @@ def _run_critter_logic(
 
             energy_gained = prey.size * FOOD_TO_ENERGY_RATIO
             critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
+
+            thirst_quenched = prey.size * THIRST_QUENCHED_PER_EAT
+            critter.thirst = max(critter.thirst - thirst_quenched, 0)
+
             logger.info(
-                f"    kill successful: hunger: {critter.hunger:.2f}, energy: {critter.energy:.2f}"
+                f"    kill successful: "
+                f"hunger: {critter.hunger:.2f}, "
+                f"thirst: {critter.thirst:.2f}, "
+                f"energy: {critter.energy:.2f}"
             )
         else:
             logger.info(f"      {prey.id} survived with {prey.health:.2f} health")

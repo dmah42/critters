@@ -125,6 +125,11 @@ function updatePieChart(
 function createHistogramData(rawData, binSize, maxVal) {
   const labels = [];
   const data = [];
+
+  if (binSize <= 0) {
+    return { labels, data };
+  }
+
   for (let i = 0; i < maxVal; i += binSize) {
     const binStart = i;
     const binEnd = i + binSize - 1;

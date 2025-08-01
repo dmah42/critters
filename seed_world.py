@@ -7,13 +7,16 @@ from web_server import create_app, db
 from simulation.models import Critter, DeadCritter, DietType, SimulationStats, TileState
 
 
-def seed_population(seed, num_progenitors):
+def seed_population(seed: int, world_size: int, num_progenitors: int):
     """
     Creates the initial population for the world.
     - Creates two 'dummy' parents.
     - Creates a number of progenitors with random stats.
     """
-    print(f"Seeding world with seed {seed} and {num_progenitors} progenitors")
+    print(
+        f"Seeding world size {world_size} with "
+        f"seed {seed} and {num_progenitors} progenitors"
+    )
 
     world = World(seed=seed, session=db.session)
 
@@ -40,8 +43,8 @@ def seed_population(seed, num_progenitors):
     progenitors = []
     for _ in range(num_progenitors):
         while True:
-            rand_x = random.randint(-200, 200)
-            rand_y = random.randint(-200, 200)
+            rand_x = random.randint(-world_size // 2, world_size // 2)
+            rand_y = random.randint(-world_size // 2, world_size // 2)
 
             tile = world.get_tile(rand_x, rand_y)
 
@@ -79,6 +82,13 @@ if __name__ == "__main__":
         help="The number of initial progenitors to create",
     )
     parser.add_argument(
+        "-s",
+        "--world-size",
+        type=int,
+        default=200,
+        help="The length of the side of the square in which to spawn critters",
+    )
+    parser.add_argument(
         "--clear-history",
         action="store_true",  # This makes it a boolean flag
         help="Clear all existing critters, dead critters, and statistics before seeding.",
@@ -97,4 +107,8 @@ if __name__ == "__main__":
             db.session.commit()
             print("All data cleared")
 
-        seed_population(seed=Config.WORLD_SEED, num_progenitors=args.num_progenitors)
+        seed_population(
+            seed=Config.WORLD_SEED,
+            world_size=args.world_size,
+            num_progenitors=args.num_progenitors,
+        )

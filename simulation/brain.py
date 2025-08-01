@@ -7,23 +7,24 @@ from simulation.mapping import STATE_TO_GOAL_MAP
 from simulation.models import Critter
 from simulation.world import World
 
-ENERGY_TO_START_RESTING = 30.0
+ENERGY_TO_START_RESTING = 20.0
 ENERGY_TO_STOP_RESTING = 90.0
 MAX_ENERGY = 100.0
 
+MIN_ENERGY_TO_BREED = 50.0
 
-HEALTH_TO_BREED = 90.0
+MIN_HEALTH_TO_BREED = 90.0
 MAX_HUNGER_TO_BREED = 15.0
 MAX_THIRST_TO_BREED = 15.0
 
 MAX_THIRST = 100.0
 CRITICAL_THIRST = 75.0
-THIRST_TO_START_DRINKING = 40.0
+THIRST_TO_START_DRINKING = 60.0
 THIRST_TO_STOP_DRINKING = 20.0
 
 MAX_HUNGER = 100.0
 CRITICAL_HUNGER = 80.0
-HUNGER_TO_START_FORAGING = 50.0
+HUNGER_TO_START_FORAGING = 70.0
 HUNGER_TO_STOP_FORAGING = 25.0
 
 CRITICAL_ENERGY = 5.0
@@ -60,6 +61,7 @@ class CritterAI:
         self.water_seeking_module = modules.get("water_seeking")
         self.mate_seeking_module = modules.get("mate_seeking")
         self.moving_module = modules.get("moving")
+        self.breeding_module = modules.get("breeding")
         self.wandering_module = WanderingBehavior()
 
     def determine_action(self) -> Dict[str, Any]:
@@ -94,7 +96,13 @@ class CritterAI:
                 self.critter, self.world, self.all_critters
             )
 
-        elif goal == GoalType.REPRODUCE:
+        elif goal == GoalType.BREED:
+            # There must be a viable mate nearby.  Do something about it.
+            action = self.breeding_module.get_action(
+                self.critter, self.world, self.all_critters
+            )
+
+        elif goal == GoalType.SEEK_MATE:
             # If we can breed or see a mate, do it. otherwise just wander.
             action = self.mate_seeking_module.get_action(
                 self.critter, self.world, self.all_critters
@@ -121,15 +129,6 @@ class CritterAI:
         """
         critter = self.critter
 
-        scores = {
-            GoalType.SURVIVE_DANGER: 0,
-            GoalType.RECOVER_ENERGY: 0,
-            GoalType.QUENCH_THIRST: 0,
-            GoalType.SATE_HUNGER: 0,
-            GoalType.REPRODUCE: 0,
-            GoalType.WANDER: 0.1,  # small base score to be the default
-        }
-
         # Fleeing is the top priority.
         # TODO: cache this so we don't call get_action twice.
         if self.fleeing_module and self.fleeing_module.get_action(
@@ -137,11 +136,39 @@ class CritterAI:
         ):
             return GoalType.SURVIVE_DANGER
 
-        # Calculate scores for internal needs
-
-        # Exhaustion is to be avoided at all costs.
+        # Critical needs come first
         if critter.energy <= CRITICAL_ENERGY:
             return GoalType.RECOVER_ENERGY
+
+        if critter.thirst > CRITICAL_THIRST:
+            return GoalType.QUENCH_THIRST
+
+        if critter.hunger > CRITICAL_HUNGER:
+            return GoalType.SATE_HUNGER
+
+        # Opportunities to reproduce should be taken
+        if self.breeding_module:
+            if (
+                critter.health >= MIN_HEALTH_TO_BREED
+                and critter.hunger < MAX_HUNGER_TO_BREED
+                and critter.thirst < MAX_THIRST_TO_BREED
+                and critter.energy >= MIN_ENERGY_TO_BREED
+                and critter.breeding_cooldown == 0
+            ):
+
+                if self.breeding_module.get_action(
+                    critter, self.world, self.all_critters
+                ):
+                    return GoalType.BREED
+
+        # Calculate scores for any internal needs
+        scores = {
+            GoalType.RECOVER_ENERGY: 0,
+            GoalType.QUENCH_THIRST: 0,
+            GoalType.SATE_HUNGER: 0,
+            GoalType.SEEK_MATE: 0,
+            GoalType.WANDER: 0.1,  # small base score to be the default
+        }
 
         scores[GoalType.RECOVER_ENERGY] = (MAX_ENERGY - critter.energy) / (
             MAX_ENERGY - ENERGY_TO_START_RESTING
@@ -150,13 +177,14 @@ class CritterAI:
         scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
 
         is_horny = (
-            critter.health >= HEALTH_TO_BREED
+            critter.energy >= MIN_ENERGY_TO_BREED
+            and critter.health >= MIN_HEALTH_TO_BREED
             and critter.hunger < MAX_HUNGER_TO_BREED
             and critter.thirst < MAX_THIRST_TO_BREED
             and critter.breeding_cooldown == 0
         )
         if is_horny:
-            scores[GoalType.REPRODUCE] = 1.0
+            scores[GoalType.SEEK_MATE] = 1.0
 
         # Apply the commitment bonus
         committed_goal = STATE_TO_GOAL_MAP.get(critter.ai_state)

@@ -28,6 +28,8 @@ class MockCritter:
         id=None,
         x=0,
         y=0,
+        vx=0,
+        vy=0,
         diet=DietType.HERBIVORE,
         health=100.0,
         energy=100.0,
@@ -45,14 +47,18 @@ class MockCritter:
         self.id = id if id is not None else random.randint(1, 1000)
         self.x = x
         self.y = y
+        self.vx = vx
+        self.vy = vy
         self.diet = diet
         self.health = health
         self.energy = energy
         self.hunger = hunger
         self.thirst = thirst
+        self.movement_progress = 0.0
         self.age = age
         self.speed = speed
         self.size = size
+        self.metabolism = 1.0
         self.ai_state = ai_state
         self.breeding_cooldown = breeding_cooldown
         self.parent_one_id = parent_one_id
@@ -79,7 +85,13 @@ class MockWorld:
         if y > 5:  # Let's add some water for testing
             terrain = TerrainType.WATER
 
-        return {"x": x, "y": y, "terrain": terrain, "food_available": food_amount}
+        return {
+            "x": x,
+            "y": y,
+            "terrain": terrain,
+            "food_available": food_amount,
+            "height": y,
+        }
 
 
 class MockQuery:

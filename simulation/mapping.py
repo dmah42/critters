@@ -7,7 +7,8 @@ GOAL_TO_STATE_MAP = {
     GoalType.SURVIVE_DANGER: AIState.FLEEING,
     GoalType.QUENCH_THIRST: AIState.SEEKING_WATER,
     GoalType.SATE_HUNGER: AIState.SEEKING_FOOD,
-    GoalType.REPRODUCE: AIState.SEEKING_MATE,
+    GoalType.BREED: AIState.BREEDING,
+    GoalType.SEEK_MATE: AIState.SEEKING_MATE,
     GoalType.WANDER: AIState.IDLE,
 }
 
@@ -19,4 +20,3 @@ STATE_TO_GOAL_MAP = {state: goal for goal, state in GOAL_TO_STATE_MAP.items()}
 # as they all map to the same general goal.
 STATE_TO_GOAL_MAP[AIState.DRINKING] = GoalType.QUENCH_THIRST
 STATE_TO_GOAL_MAP[AIState.EATING] = GoalType.SATE_HUNGER
-STATE_TO_GOAL_MAP[AIState.BREEDING] = GoalType.REPRODUCE

@@ -1,4 +1,5 @@
 from typing import List
+from simulation.behaviours.breeding import BreedingBehavior
 from simulation.behaviours.flocking import FlockingBehavior
 from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import Critter, DietType
@@ -21,6 +22,7 @@ def create_ai_for_critter(
     shared_modules = {
         "water_seeking": WaterSeekingBehavior(),
         "mate_seeking": MateSeekingBehavior(),
+        "breeding": BreedingBehavior(),
     }
 
     if critter.diet == DietType.HERBIVORE:

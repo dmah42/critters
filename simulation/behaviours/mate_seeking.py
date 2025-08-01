@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 from simulation.behaviours.behavior import Behavior
 from simulation.brain import (
-    HEALTH_TO_BREED,
+    MIN_HEALTH_TO_BREED,
     MAX_HUNGER_TO_BREED,
     MAX_THIRST_TO_BREED,
     SENSE_RADIUS,
@@ -30,7 +30,7 @@ class MateSeekingBehavior(Behavior):
             and other.diet == critter.diet
             and abs(other.x - critter.x) <= SENSE_RADIUS
             and abs(other.y - critter.y) <= SENSE_RADIUS
-            and other.health >= HEALTH_TO_BREED
+            and other.health >= MIN_HEALTH_TO_BREED
             and other.hunger < MAX_HUNGER_TO_BREED
             and other.thirst < MAX_THIRST_TO_BREED
             and other.breeding_cooldown == 0
