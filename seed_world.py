@@ -55,6 +55,7 @@ def seed_population(seed, num_progenitors):
             # Assign random stats
             speed=random.uniform(3.0, 7.0),
             size=random.uniform(3.0, 7.0),
+            metabolism=random.uniform(0.8, 1.2),
             # Place them randomly in the world near the origin
             x=rand_x,
             y=rand_y,
