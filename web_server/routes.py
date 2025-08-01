@@ -2,6 +2,9 @@ from flask import request, jsonify, Blueprint, render_template
 from sqlalchemy import func
 from config import Config
 from simulation.brain import (
+    CRITICAL_ENERGY,
+    CRITICAL_HUNGER,
+    CRITICAL_THIRST,
     ENERGY_TO_START_RESTING,
     ENERGY_TO_STOP_RESTING,
     HUNGER_TO_START_FORAGING,
@@ -9,7 +12,7 @@ from simulation.brain import (
     THIRST_TO_START_DRINKING,
     THIRST_TO_STOP_DRINKING,
 )
-from simulation.models import Player, Critter, DeadCritter, SimulationStats, TileState
+from simulation.models import Player, Critter, DeadCritter, SimulationStats
 from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY
 
 from simulation.world import World
@@ -44,11 +47,11 @@ def stats():
     return render_template(
         "stats.html",
         energy_to_start_resting=ENERGY_TO_START_RESTING,
-        energy_to_stop_resting=ENERGY_TO_STOP_RESTING,
+        critical_energy=CRITICAL_ENERGY,
         hunger_to_start_foraging=HUNGER_TO_START_FORAGING,
-        hunger_to_stop_foraging=HUNGER_TO_STOP_FORAGING,
+        critical_hunger=CRITICAL_HUNGER,
         thirst_to_start_drinking=THIRST_TO_START_DRINKING,
-        thirst_to_stop_drinking=THIRST_TO_STOP_DRINKING,
+        critical_thirst=CRITICAL_THIRST,
     )
 
 

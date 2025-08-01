@@ -406,49 +406,54 @@ def _record_statistics(session: Session):
     """Calculates and saves the current sim stats"""
     critters = session.query(Critter).all()
     population = len(critters)
+
     if population == 0:
         logger.warning("No living critters")
         return
 
-    herbivores = 0
-    carnivores = 0
-    ages = {}
-    health_bins = {"Healthy": 0, "Hurt": 0, "Critical": 0}
-    hunger_bins = {}
-    thirst_bins = {}
-    energies = {}
-    goals = {}
+    herbivore_stats = {
+        "count": 0,
+        "ages": {},
+        "health": {"Healthy": 0, "Hurt": 0, "Critical": 0},
+        "hunger": {},
+        "thirst": {},
+        "energy": {},
+    }
+    carnivore_stats = {
+        "count": 0,
+        "ages": {},
+        "health": {"Healthy": 0, "Hurt": 0, "Critical": 0},
+        "hunger": {},
+        "thirst": {},
+        "energy": {},
+    }
+
+    goal_bins = {}
 
     for c in critters:
-        if c.diet == DietType.HERBIVORE:
-            herbivores += 1
-        elif c.diet == DietType.CARNIVORE:
-            carnivores += 1
-        else:
-            raise RuntimeError(f"unknown diet type: {c.diet}")
+        stats_dict = (
+            herbivore_stats if c.diet == DietType.HERBIVORE else carnivore_stats
+        )
 
-        if not c.age in ages:
-            ages[c.age] = 0
-        ages[c.age] += 1
+        stats_dict["count"] += 1
+
+        stats_dict["ages"][c.age] = stats_dict["ages"].get(c.age, 0) + 1
+        hunger_bin = int(math.floor(c.hunger))
+        stats_dict["hunger"][hunger_bin] = stats_dict["hunger"].get(hunger_bin, 0) + 1
+        thirst_bin = int(math.floor(c.thirst))
+        stats_dict["thirst"][thirst_bin] = stats_dict["thirst"].get(thirst_bin, 0) + 1
+        energy_bin = int(math.floor(c.energy))
+        stats_dict["energy"][energy_bin] = stats_dict["energy"].get(energy_bin, 0) + 1
 
         if c.health > 70:
-            health_bins["Healthy"] += 1
+            stats_dict["health"]["Healthy"] += 1
         elif c.health > 30:
-            health_bins["Hurt"] += 1
+            stats_dict["health"]["Hurt"] += 1
         else:
-            health_bins["Critical"] += 1
-
-        hunger_bin = int(math.floor(c.hunger))
-        hunger_bins[hunger_bin] = hunger_bins.get(hunger_bin, 0) + 1
-
-        thirst_bin = int(math.floor(c.thirst))
-        thirst_bins[thirst_bin] = thirst_bins.get(thirst_bin, 0) + 1
-
-        energy_bin = int(math.floor(c.energy))
-        energies[energy_bin] = energies.get(energy_bin, 0) + 1
+            stats_dict["health"]["Critical"] += 1
 
         goal_bin = c.ai_state.name
-        goals[goal_bin] = goals.get(goal_bin, 0) + 1
+        goal_bins[goal_bin] = goal_bins.get(goal_bin, 0) + 1
 
     last_stat = (
         session.query(SimulationStats).order_by(SimulationStats.tick.desc()).first()
@@ -458,14 +463,19 @@ def _record_statistics(session: Session):
     stats = SimulationStats(
         tick=current_tick,
         population=population,
-        herbivore_population=herbivores,
-        carnivore_population=carnivores,
-        age_distribution=json.dumps(ages),
-        health_distribution=json.dumps(health_bins),
-        hunger_distribution=json.dumps(hunger_bins),
-        thirst_distribution=json.dumps(thirst_bins),
-        energy_distribution=json.dumps(energies),
-        goal_distribution=json.dumps(goals),
+        herbivore_population=herbivore_stats["count"],
+        carnivore_population=carnivore_stats["count"],
+        herbivore_age_distribution=json.dumps(herbivore_stats["ages"]),
+        carnivore_age_distribution=json.dumps(carnivore_stats["ages"]),
+        herbivore_health_distribution=json.dumps(herbivore_stats["health"]),
+        carnivore_health_distribution=json.dumps(carnivore_stats["health"]),
+        herbivore_hunger_distribution=json.dumps(herbivore_stats["hunger"]),
+        carnivore_hunger_distribution=json.dumps(carnivore_stats["hunger"]),
+        herbivore_thirst_distribution=json.dumps(herbivore_stats["thirst"]),
+        carnivore_thirst_distribution=json.dumps(carnivore_stats["thirst"]),
+        herbivore_energy_distribution=json.dumps(herbivore_stats["energy"]),
+        carnivore_energy_distribution=json.dumps(carnivore_stats["energy"]),
+        goal_distribution=json.dumps(goal_bins),
     )
     session.add(stats)
 

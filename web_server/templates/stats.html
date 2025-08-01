@@ -61,9 +61,6 @@
         flex: 1;
         min-width: 250px;
       }
-      .full-width-chart-container {
-        max-width: 900px;
-      }
     </style>
   </head>
   <body>
@@ -88,25 +85,25 @@
       </div>
     </div>
 
-    <div class="chart-container full-width-chart-container">
-      <h2>Energy distribution</h2>
-      <canvas id="energyChart"></canvas>
-    </div>
-    <div class="chart-container full-width-chart-container">
-      <h2>Hunger distribution</h2>
-      <canvas id="hungerChart"></canvas>
-    </div>
-    <div class="chart-container full-width-chart-container">
-      <h2>Thirst distribution</h2>
-      <canvas id="thirstChart"></canvas>
-    </div>
-
-    <div class="chart-container full-width-chart-container">
+    <div class="chart-container">
       <h2>Health</h2>
       <canvas id="healthChart"></canvas>
     </div>
 
-    <div class="chart-container full-width-chart-container">
+    <div class="chart-container">
+      <h2>Energy distribution</h2>
+      <canvas id="energyChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Hunger distribution</h2>
+      <canvas id="hungerChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <h2>Thirst distribution</h2>
+      <canvas id="thirstChart"></canvas>
+    </div>
+
+    <div class="chart-container">
       <h2>Age Distribution</h2>
       <canvas id="ageChart"></canvas>
     </div>
@@ -114,11 +111,11 @@
     <div
       id="stats-data"
       data-energy-to-start-resting="{{ energy_to_start_resting }}"
-      data-energy-to-stop-resting="{{ energy_to_stop_resting }}"
+      data-critical-energy="{{ critical_energy }}"
       data-hunger-to-start-foraging="{{ hunger_to_start_foraging }}"
-      data-hunger-to-stop-foraging="{{ hunger_to_stop_foraging }}"
+      data-critical-hunger="{{ critical_hunger }}"
       data-thirst-to-start-drinking="{{ thirst_to_start_drinking }}"
-      data-thirst-to-stop-drinking="{{ thirst_to_stop_drinking }}"
+      data-critical-thirst="{{ critical_thirst }}"
     ></div>
     <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
   </body>

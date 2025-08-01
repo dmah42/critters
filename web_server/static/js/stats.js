@@ -1,49 +1,85 @@
+// --- Read Constants from HTML data attributes ---
+const dataContainer = document.getElementById("stats-data");
+// These are the exact constants you provided
+const ENERGY_TO_START_RESTING = parseInt(
+  dataContainer.dataset.energyToStartResting
+);
+const CRITICAL_ENERGY = parseInt(dataContainer.dataset.criticalEnergy);
+const HUNGER_TO_START_FORAGING = parseInt(
+  dataContainer.dataset.hungerToStartForaging
+);
+const CRITICAL_HUNGER = parseInt(dataContainer.dataset.criticalHunger);
+const THIRST_TO_START_DRINKING = parseInt(
+  dataContainer.dataset.thirstToStartDrinking
+);
+const CRITICAL_THIRST = parseInt(dataContainer.dataset.criticalThirst);
+
+// --- NEW: A central place for our color palettes ---
+const COLORS = {
+  green: {
+    good: "rgba(75, 192, 75, 0.7)",
+    warn: "rgba(139, 213, 139, 0.7)",
+    crit: "rgba(183, 233, 183, 0.7)",
+  },
+  red: {
+    good: "rgba(255, 99, 132, 0.7)",
+    warn: "rgba(255, 159, 162, 0.7)",
+    crit: "rgba(255, 205, 210, 0.7)",
+  },
+  blue: {
+    good: "rgba(54, 162, 235, 0.7)",
+    warn: "rgba(137, 196, 244, 0.7)",
+    crit: "rgba(187, 222, 251, 0.7)",
+  },
+  orange: {
+    good: "rgba(255, 159, 64, 0.7)",
+    warn: "rgba(255, 204, 128, 0.7)",
+    crit: "rgba(255, 224, 178, 0.7)",
+  },
+};
+
+// --- Chart Objects ---
 let populationChart,
   ageChart,
-  deathChart,
   healthChart,
   hungerChart,
   thirstChart,
   energyChart,
+  deathChart,
   goalChart;
 
-const HEALTH_ORDER = ["Healthy", "Hurt", "Critical"];
-
-const dataContainer = document.getElementById("stats-data");
-const ENERGY_TO_START_RESTING = parseInt(
-  dataContainer.dataset.energyToStartResting
-);
-const ENERGY_TO_STOP_RESTING = parseInt(
-  dataContainer.dataset.energyToStopResting
-);
-const HUNGER_TO_START_FORAGING = parseInt(
-  dataContainer.dataset.hungerToStartForaging
-);
-const HUNGER_TO_STOP_FORAGING = parseInt(
-  dataContainer.dataset.hungerToStopForaging
-);
-const THIRST_TO_START_DRINKING = parseInt(
-  dataContainer.dataset.thirstToStartDrinking
-);
-const THIRST_TO_STOP_DRINKING = parseInt(
-  dataContainer.dataset.thirstToStopDrinking
-);
-
+// --- Color Maps ---
 const GOAL_COLOR_MAP = {
-  IDLE: "#6c757d", // Grey
-  WANDER: "#6c757d", // Grey
-  RESTING: "#007bff", // Blue
-  SEEKING_WATER: "#0792a8", // Dark Teal
-  DRINKING: "#17a2b8", // Teal
-  SEEKING_FOOD: "#fd7e14", // Orange
-  EATING: "#28a745", // Green
-  ATTACK: "#dc3545", // Red
-  FLEEING: "#ffc107", // Yellow
-  SEEKING_MATE: "#e83e8c", // Pink
-  BREEDING: "#e83e8c", // Pink
+  IDLE: "#6c757d",
+  RESTING: "#007bff",
+  SEEKING_WATER: "#078298",
+  DRINKING: "#17a2b8",
+  SEEKING_FOOD: "#fd7e14",
+  EATING: "#28a745",
+  ATTACK: "#dc3545",
+  FLEEING: "#ffc107",
+  SEEKING_MATE: "#d82e7c",
+  BREEDING: "#e83e8c",
 };
 
-function updateBarChart(
+// --- Helper Functions ---
+function updateBarChart(chartInstance, canvasId, labels, datasets) {
+  if (chartInstance) {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets = datasets;
+    chartInstance.update();
+    return chartInstance;
+  } else {
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    return new Chart(ctx, {
+      type: "bar",
+      data: { labels: labels, datasets: datasets },
+      options: { scales: { y: { beginAtZero: true } } },
+    });
+  }
+}
+
+function updatePieChart(
   chartInstance,
   canvasId,
   labels,
@@ -62,43 +98,6 @@ function updateBarChart(
   } else {
     const ctx = document.getElementById(canvasId).getContext("2d");
     return new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: title,
-            data: data,
-            backgroundColor: backgroundColors || "rgba(54, 162, 235, 0.6)",
-          },
-        ],
-      },
-      options: {
-        plugins: { legend: { display: false } },
-      },
-    });
-  }
-}
-
-function updatePieChart(
-  chartInstance,
-  canvasId,
-  labels,
-  data,
-  title,
-  colors = null
-) {
-  if (chartInstance) {
-    chartInstance.data.labels = labels;
-    chartInstance.data.datasets[0].data = data;
-    if (colors) {
-      chartInstance.data.datasets[0].backgroundColor = colors;
-    }
-    chartInstance.update();
-    return chartInstance;
-  } else {
-    const ctx = document.getElementById(canvasId).getContext("2d");
-    return new Chart(ctx, {
       type: "doughnut",
       data: {
         labels: labels,
@@ -106,189 +105,247 @@ function updatePieChart(
           {
             label: title,
             data: data,
-            backgroundColor: colors || [
-              "rgba(255, 99, 132, 0.7)",
-              "rgba(54, 162, 235, 0.7)",
-              "rgba(255, 206, 86, 0.7)",
-              "rgba(75, 192, 192, 0.7)",
-              "rgba(153, 102, 255, 0.7)",
-              "rgba(255, 159, 64, 0.7)",
+            backgroundColor: backgroundColors || [
+              "#ff6384",
+              "#36a2eb",
+              "#ffce56",
+              "#4bc0c0",
+              "#9966ff",
+              "#ff9f40",
             ],
             hoverOffset: 4,
           },
         ],
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: "top",
-          },
-        },
-      },
+      options: { responsive: true, plugins: { legend: { position: "top" } } },
     });
   }
 }
 
-function drawDistributionChart(
-  title,
-  chart,
-  canvasId,
-  distribution,
-  criticalThreshold,
-  warningThreshold,
-  lowIsBad
-) {
-  const labels = Object.keys(distribution).sort(
-    (a, b) => parseInt(a) - parseInt(b)
-  );
-  const data = labels.map((label) => distribution[label] || 0);
-
-  // Define colors for the states
-  const okColor = "rgba(75, 192, 192, 0.6)";
-  const warningColor = "rgba(255, 206, 86, 0.6)";
-  const criticalColor = "rgba(255, 99, 132, 0.6)";
-
-  // Generate a color for each bar based on its level
-  const colors = labels.map((label) => {
-    const lowerBound = parseInt(label.split("-")[0]);
-    if (lowIsBad) {
-      if (lowerBound <= criticalThreshold) {
-        return criticalColor;
-      } else if (lowerBound <= warningThreshold) {
-        return warningColor;
-      } else {
-        return okColor;
-      }
-    } else {
-      if (lowerBound >= criticalThreshold) {
-        return criticalColor;
-      } else if (lowerBound >= warningThreshold) {
-        return warningColor;
-      } else {
-        return okColor;
-      }
-    }
-  });
-
-  return updateBarChart(chart, canvasId, labels, data, title, colors);
-}
-
-// This single function now handles both initial load and updates.
+// --- Main Fetching and Drawing Logic ---
 async function fetchAndDrawHistoryCharts() {
   try {
-    const response = await fetch("/api/stats/history?limit=100");
+    const response = await fetch("/api/stats/history?limit=200");
     if (!response.ok) throw new Error("Failed to fetch stats history");
     const history = await response.json();
-
     if (history.length === 0) return;
 
-    // --- Prepare Data ---
     const latestStat = history[history.length - 1];
-    const labels = history.map((s) => s.tick);
-    const herbivoreData = history.map((s) => s.herbivore_population);
-    const carnivoreData = history.map((s) => s.carnivore_population);
 
-    // --- Update or Create Population Chart ---
+    // --- Population Chart (Stacked Area) ---
     if (populationChart) {
-      // If chart exists, just update its data
-      populationChart.data.labels = labels;
-      populationChart.data.datasets[0].data = herbivoreData;
-      populationChart.data.datasets[1].data = carnivoreData;
+      populationChart.data.labels = history.map((s) => s.tick);
+      populationChart.data.datasets[0].data = history.map(
+        (s) => s.herbivore_population
+      );
+      populationChart.data.datasets[1].data = history.map(
+        (s) => s.carnivore_population
+      );
       populationChart.update();
     } else {
-      // If chart doesn't exist, create it
       const popCtx = document
         .getElementById("populationChart")
         .getContext("2d");
       populationChart = new Chart(popCtx, {
         type: "line",
         data: {
-          labels: labels,
+          labels: history.map((s) => s.tick),
           datasets: [
             {
               label: "Herbivores",
-              data: herbivoreData,
-              borderColor: "rgb(153, 255, 153)",
+              data: history.map((s) => s.herbivore_population),
+              borderColor: "rgb(75, 192, 75)",
               backgroundColor: "rgba(75, 192, 75, 0.5)",
               fill: true,
             },
             {
               label: "Carnivores",
-              data: carnivoreData,
+              data: history.map((s) => s.carnivore_population),
               borderColor: "rgb(255, 99, 132)",
               backgroundColor: "rgba(255, 99, 132, 0.5)",
-
               fill: true,
             },
           ],
         },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              stacked: true,
-            },
-          },
-        },
+        options: { scales: { y: { beginAtZero: true, stacked: true } } },
       });
     }
 
-    const healthData = HEALTH_ORDER.map(
-      (label) => latestStat.health_distribution[label] || 0
-    );
-
-    ageChart = updateBarChart(
-      ageChart,
-      "ageChart",
-      Object.keys(latestStat.age_distribution),
-      Object.values(latestStat.age_distribution),
-      "Age Distribution"
-    );
+    // --- Health Chart (Grouped Bar) ---
+    const healthLabels = ["Healthy", "Hurt", "Critical"];
+    const healthDatasets = [
+      {
+        label: "Herbivores",
+        data: healthLabels.map(
+          (l) => latestStat.herbivore_health_distribution[l] || 0
+        ),
+        backgroundColor: "rgba(75, 192, 75, 0.6)",
+      },
+      {
+        label: "Carnivores",
+        data: healthLabels.map(
+          (l) => latestStat.carnivore_health_distribution[l] || 0
+        ),
+        backgroundColor: "rgba(255, 99, 132, 0.6)",
+      },
+    ];
     healthChart = updateBarChart(
       healthChart,
       "healthChart",
-      HEALTH_ORDER,
-      healthData,
-      "Health Distribution"
+      healthLabels,
+      healthDatasets
     );
 
-    energyChart = drawDistributionChart(
-      "Energy distribution",
+    // --- Energy Chart (Grouped Bar with Threshold Coloring) ---
+    const allEnergyKeys = [
+      ...Object.keys(latestStat.herbivore_energy_distribution),
+      ...Object.keys(latestStat.carnivore_energy_distribution),
+    ];
+    const energyLabels = [...new Set(allEnergyKeys)]
+      .map((k) => parseInt(k))
+      .sort((a, b) => a - b);
+    const energyDatasets = [
+      {
+        label: "Herbivores",
+        data: energyLabels.map(
+          (l) => latestStat.herbivore_energy_distribution[l] || 0
+        ),
+        backgroundColor: energyLabels.map((label) => {
+          if (label <= CRITICAL_ENERGY) return COLORS.green.crit;
+          if (label <= ENERGY_TO_START_RESTING) return COLORS.green.warn;
+          return COLORS.green.good;
+        }),
+      },
+      {
+        label: "Carnivores",
+        data: energyLabels.map(
+          (l) => latestStat.carnivore_energy_distribution[l] || 0
+        ),
+        backgroundColor: energyLabels.map((label) => {
+          if (label <= CRITICAL_ENERGY) return COLORS.red.crit;
+          if (label <= ENERGY_TO_START_RESTING) return COLORS.red.warn;
+          return COLORS.red.good;
+        }),
+      },
+    ];
+    energyChart = updateBarChart(
       energyChart,
       "energyChart",
-      latestStat.energy_distribution,
-      ENERGY_TO_START_RESTING,
-      ENERGY_TO_STOP_RESTING,
-      true
-    );
-    hungerChart = drawDistributionChart(
-      "Hunger distribution",
-      hungerChart,
-      "hungerChart",
-      latestStat.hunger_distribution,
-      HUNGER_TO_START_FORAGING,
-      HUNGER_TO_STOP_FORAGING,
-      false
-    );
-    thirstChart = drawDistributionChart(
-      "Thirst distribution",
-      thirstChart,
-      "thirstChart",
-      latestStat.thirst_distribution,
-      THIRST_TO_START_DRINKING,
-      THIRST_TO_STOP_DRINKING,
-      false
+      energyLabels,
+      energyDatasets
     );
 
-    const goalLabels = Object.keys(latestStat.goal_distribution).sort();
-    const goalData = goalLabels.map(
-      (label) => latestStat.goal_distribution[label]
+    // --- Hunger Chart (Grouped Bar with Threshold Coloring) ---
+    const allHungerKeys = [
+      ...Object.keys(latestStat.herbivore_hunger_distribution),
+      ...Object.keys(latestStat.carnivore_hunger_distribution),
+    ];
+    const hungerLabels = [...new Set(allHungerKeys)]
+      .map((k) => parseInt(k))
+      .sort((a, b) => a - b);
+    const hungerDatasets = [
+      {
+        label: "Herbivores",
+        data: hungerLabels.map(
+          (l) => latestStat.herbivore_hunger_distribution[l] || 0
+        ),
+        backgroundColor: hungerLabels.map((label) => {
+          if (label >= CRITICAL_HUNGER) return COLORS.green.crit;
+          if (label >= HUNGER_TO_START_FORAGING) return COLORS.green.warn;
+          return COLORS.green.good;
+        }),
+      },
+      {
+        label: "Carnivores",
+        data: hungerLabels.map(
+          (l) => latestStat.carnivore_hunger_distribution[l] || 0
+        ),
+        backgroundColor: hungerLabels.map((label) => {
+          if (label >= CRITICAL_HUNGER) return COLORS.red.crit;
+          if (label >= HUNGER_TO_START_FORAGING) return COLORS.red.warn;
+          return COLORS.red.good;
+        }),
+      },
+    ];
+    hungerChart = updateBarChart(
+      hungerChart,
+      "hungerChart",
+      hungerLabels,
+      hungerDatasets
     );
+
+    // --- Thirst Chart (Grouped Bar with Threshold Coloring) ---
+    const allThirstKeys = [
+      ...Object.keys(latestStat.herbivore_thirst_distribution),
+      ...Object.keys(latestStat.carnivore_thirst_distribution),
+    ];
+    const thirstLabels = [...new Set(allThirstKeys)]
+      .map((k) => parseInt(k))
+      .sort((a, b) => a - b);
+    const thirstDatasets = [
+      {
+        label: "Herbivores",
+        data: thirstLabels.map(
+          (l) => latestStat.herbivore_thirst_distribution[l] || 0
+        ),
+        backgroundColor: thirstLabels.map((label) => {
+          if (label >= CRITICAL_THIRST) return COLORS.green.crit;
+          if (label >= THIRST_TO_START_DRINKING) return COLORS.green.warn;
+          return COLORS.green.good;
+        }),
+      },
+      {
+        label: "Carnivores",
+        data: thirstLabels.map(
+          (l) => latestStat.carnivore_thirst_distribution[l] || 0
+        ),
+        backgroundColor: thirstLabels.map((label) => {
+          if (label >= CRITICAL_THIRST) return COLORS.red.crit;
+          if (label >= THIRST_TO_START_DRINKING) return COLORS.red.warn;
+          return COLORS.red.good;
+        }),
+      },
+    ];
+    thirstChart = updateBarChart(
+      thirstChart,
+      "thirstChart",
+      thirstLabels,
+      thirstDatasets
+    );
+
+    // --- Age Chart (Grouped Bar) ---
+    const allAgeKeys = [
+      ...Object.keys(latestStat.herbivore_age_distribution),
+      ...Object.keys(latestStat.carnivore_age_distribution),
+    ];
+    const ageLabels = [...new Set(allAgeKeys)]
+      .map((k) => parseInt(k))
+      .sort((a, b) => a - b);
+    const ageDatasets = [
+      {
+        label: "Herbivores",
+        data: ageLabels.map(
+          (l) => latestStat.herbivore_age_distribution[l] || 0
+        ),
+        backgroundColor: "rgba(75, 192, 75, 0.6)",
+      },
+      {
+        label: "Carnivores",
+        data: ageLabels.map(
+          (l) => latestStat.carnivore_age_distribution[l] || 0
+        ),
+        backgroundColor: "rgba(255, 99, 132, 0.6)",
+      },
+    ];
+    ageChart = updateBarChart(ageChart, "ageChart", ageLabels, ageDatasets);
+
+    // --- Goal Chart (Pie) ---
+    const goalDistributionData = latestStat.goal_distribution;
+    const goalLabels = Object.keys(goalDistributionData).sort();
+    const goalData = goalLabels.map((label) => goalDistributionData[label]);
     const goalColors = goalLabels.map(
       (label) => GOAL_COLOR_MAP[label] || "#343a40"
     );
-
     goalChart = updatePieChart(
       goalChart,
       "goalChart",
@@ -298,7 +355,7 @@ async function fetchAndDrawHistoryCharts() {
       goalColors
     );
   } catch (error) {
-    console.error("Error updating charts:", error);
+    console.error("Error updating history charts:", error);
   }
 }
 
@@ -307,10 +364,8 @@ async function fetchAndDrawDeathChart() {
     const response = await fetch("/api/stats/deaths");
     if (!response.ok) return;
     const deathStats = await response.json();
-
     const labels = Object.keys(deathStats);
     const data = Object.values(deathStats);
-
     deathChart = updatePieChart(
       deathChart,
       "deathChart",
@@ -323,12 +378,12 @@ async function fetchAndDrawDeathChart() {
   }
 }
 
-function fetchAndDrawCharts() {
+// --- Initial Load and Timers ---
+function initialLoad() {
   fetchAndDrawHistoryCharts();
   fetchAndDrawDeathChart();
 }
 
-// --- Initial Load and Live Update ---
-window.addEventListener("load", fetchAndDrawCharts);
-setInterval(fetchAndDrawHistoryCharts, 2000);
-setInterval(fetchAndDrawDeathChart, 60000);
+window.addEventListener("load", initialLoad);
+setInterval(fetchAndDrawHistoryCharts, 5000);
+setInterval(fetchAndDrawDeathChart, 30000);

@@ -197,6 +197,9 @@ function updateStatsPanel() {
             <p><span class="stat-label">Size:</span> ${selectedCritter.size.toFixed(
               1
             )}</p>
+            <p><span class="stat-label">Metabolism:</span> ${selectedCritter.metabolism.toFixed(
+              1
+            )}</p>
         `;
   } else {
     // If no critter is selected, show the default message

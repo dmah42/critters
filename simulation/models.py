@@ -227,35 +227,27 @@ class SimulationStats(db.Model):
     carnivore_population = db.Column(db.Integer)
 
     # Store the age distribution as a JSON string
-    age_distribution = db.Column(db.Text)
-    health_distribution = db.Column(db.Text)
-    hunger_distribution = db.Column(db.Text)
-    thirst_distribution = db.Column(db.Text)
-    energy_distribution = db.Column(db.Text)
+    herbivore_age_distribution = db.Column(db.Text)
+    carnivore_age_distribution = db.Column(db.Text)
+    herbivore_health_distribution = db.Column(db.Text)
+    carnivore_health_distribution = db.Column(db.Text)
+    herbivore_hunger_distribution = db.Column(db.Text)
+    carnivore_hunger_distribution = db.Column(db.Text)
+    herbivore_thirst_distribution = db.Column(db.Text)
+    carnivore_thirst_distribution = db.Column(db.Text)
+    herbivore_energy_distribution = db.Column(db.Text)
+    carnivore_energy_distribution = db.Column(db.Text)
+
     goal_distribution = db.Column(db.Text)
 
     def to_dict(self):
-        return {
-            "tick": self.tick,
-            "population": self.population,
-            "herbivore_population": self.herbivore_population,
-            "carnivore_population": self.carnivore_population,
-            "age_distribution": (
-                json.loads(self.age_distribution) if self.age_distribution else {}
-            ),
-            "health_distribution": (
-                json.loads(self.health_distribution) if self.health_distribution else {}
-            ),
-            "hunger_distribution": (
-                json.loads(self.hunger_distribution) if self.hunger_distribution else {}
-            ),
-            "thirst_distribution": (
-                json.loads(self.thirst_distribution) if self.thirst_distribution else {}
-            ),
-            "energy_distribution": (
-                json.loads(self.energy_distribution) if self.energy_distribution else {}
-            ),
-            "goal_distribution": (
-                json.loads(self.goal_distribution) if self.goal_distribution else {}
-            ),
-        }
+        data = {}
+        for column in self.__table__.columns:
+            value = getattr(self, column.name)
+            if isinstance(value, str) and column.name.endswith("_distribution"):
+                data[column.name] = json.loads(value) if value else {}
+            elif isinstance(value, datetime):
+                data[column.name] = value.isoformat()
+            else:
+                data[column.name] = value
+        return data
