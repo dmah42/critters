@@ -7,7 +7,8 @@ from simulation.mapping import STATE_TO_GOAL_MAP
 from simulation.models import Critter
 from simulation.world import World
 
-ENERGY_TO_START_RESTING = 20.0
+CRITICAL_ENERGY = 5.0
+ENERGY_TO_START_RESTING = 50.0
 ENERGY_TO_STOP_RESTING = 90.0
 MAX_ENERGY = 100.0
 
@@ -27,14 +28,13 @@ CRITICAL_HUNGER = 80.0
 HUNGER_TO_START_FORAGING = 70.0
 HUNGER_TO_STOP_FORAGING = 25.0
 
-CRITICAL_ENERGY = 5.0
 
 SENSE_RADIUS = 5
 
 # A bonus applied to the score of the current goal, making the AI more focused.
 # A higher value means more focused, a lower value means more easily distracted.
 # TODO: think about making this a critter trait.
-COMMITMENT_BONUS = 1.75
+COMMITMENT_BONUS = 2.0
 
 
 class CritterAI:
