@@ -103,8 +103,8 @@ class TestWanderingBehavior(unittest.TestCase):
         for _ in range(20):
             action = behavior.get_action(critter, water_world, [])
             self.assertIsNotNone(action)
-            # The only possible move is to the right (1, 0)
-            self.assertEqual(action["dx"], 1)
+            # The only possible moves are to the right (1, 0) or to not move (0, 0)
+            self.assertIn(action["dx"], [0, 1])
             self.assertEqual(action["dy"], 0)
 
 

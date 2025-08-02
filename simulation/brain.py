@@ -106,8 +106,10 @@ class CritterAI:
                 self.critter, self.world, self.all_critters
             )
 
-        elif goal == GoalType.WANDER:
+        elif goal == GoalType.IDLE:
             # Social wandering
+            # TODO: decide whether to wander or be idle based on
+            # a random choice.
             action = self.moving_module.get_action(
                 self.critter, self.world, self.all_critters
             )
@@ -165,7 +167,7 @@ class CritterAI:
             GoalType.QUENCH_THIRST: 0,
             GoalType.SATE_HUNGER: 0,
             GoalType.SEEK_MATE: 0,
-            GoalType.WANDER: 0.1,  # small base score to be the default
+            GoalType.IDLE: 0.1,  # small base score to be the default
         }
 
         if critter.energy < ENERGY_TO_START_RESTING:

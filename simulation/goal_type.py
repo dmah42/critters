@@ -13,4 +13,4 @@ class GoalType(enum.Enum):
     SATE_HUNGER = "sate_hunger"  # Eating or hunting
     BREED = "breed"  # There's a viable mate nearby, reproduce
     SEEK_MATE = "seek_mate"  # All other needs met, try to find a mate
-    WANDER = "wander"  # Default, idle behavior
+    IDLE = "idle"  # Default, idle behavior

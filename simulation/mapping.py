@@ -9,7 +9,7 @@ GOAL_TO_STATE_MAP = {
     GoalType.SATE_HUNGER: AIState.SEEKING_FOOD,
     GoalType.BREED: AIState.BREEDING,
     GoalType.SEEK_MATE: AIState.SEEKING_MATE,
-    GoalType.WANDER: AIState.IDLE,
+    GoalType.IDLE: AIState.IDLE,
 }
 
 # We programmatically create the inverse map.
