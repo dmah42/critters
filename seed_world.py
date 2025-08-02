@@ -30,6 +30,9 @@ def seed_population(seed: int, world_size: int, num_progenitors: int):
     db.session.add(adam)
     db.session.add(steve)
     db.session.flush()
+    # Delete them from the session.  They never really existed...
+    db.session.delete(adam)
+    db.session.delete(steve)
 
     # Now we can update them to reference their own IDs correctly.
     adam.parent_one_id = adam.id
@@ -46,15 +49,21 @@ def seed_population(seed: int, world_size: int, num_progenitors: int):
             rand_x = random.randint(-world_size // 2, world_size // 2)
             rand_y = random.randint(-world_size // 2, world_size // 2)
 
+            # Don't spawn in the center
+            if abs(rand_x) < world_size // 6 or abs(rand_y) < world_size // 6:
+                continue
+
             tile = world.get_tile(rand_x, rand_y)
 
+            # Don't spawn in water.
             if tile["terrain"] != TerrainType.WATER:
                 break
 
         progenitor = Critter(
             parent_one_id=adam.id,
             parent_two_id=steve.id,
-            diet=random.choice([DietType.HERBIVORE, DietType.CARNIVORE]),
+            # Separate by diet
+            diet=DietType.HERBIVORE if rand_x < 0 else DietType.CARNIVORE,
             # Assign random stats
             speed=random.uniform(3.0, 7.0),
             size=random.uniform(3.0, 7.0),
