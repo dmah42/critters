@@ -6,14 +6,11 @@ from simulation.brain import (
     CRITICAL_HUNGER,
     CRITICAL_THIRST,
     ENERGY_TO_START_RESTING,
-    ENERGY_TO_STOP_RESTING,
     HUNGER_TO_START_FORAGING,
-    HUNGER_TO_STOP_FORAGING,
     THIRST_TO_START_DRINKING,
-    THIRST_TO_STOP_DRINKING,
 )
 from simulation.models import Player, Critter, DeadCritter, SimulationStats
-from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY
+from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, MAX_HUNGER, MAX_THIRST
 
 from simulation.world import World
 from web_server import db
@@ -33,12 +30,11 @@ def index():
         canvas_size=CANVAS_SIZE,
         default_grass_food=DEFAULT_GRASS_FOOD,
         energy_to_start_resting=ENERGY_TO_START_RESTING,
-        energy_to_stop_resting=ENERGY_TO_STOP_RESTING,
         hunger_to_start_foraging=HUNGER_TO_START_FORAGING,
-        hunger_to_stop_foraging=HUNGER_TO_STOP_FORAGING,
         thirst_to_start_drinking=THIRST_TO_START_DRINKING,
-        thirst_to_stop_drinking=THIRST_TO_STOP_DRINKING,
         max_energy=MAX_ENERGY,
+        max_hunger=MAX_HUNGER,
+        max_thirst=MAX_THIRST,
     )
 
 

@@ -11,25 +11,9 @@ const statsContent = document.getElementById("stats-content");
 
 const dataContainer = document.getElementById("simulation-data");
 const DEFAULT_GRASS_FOOD = parseFloat(dataContainer.dataset.defaultGrassFood);
-const ENERGY_TO_START_RESTING = parseInt(
-  dataContainer.dataset.energyToStartResting
-);
-const ENERGY_TO_STOP_RESTING = parseInt(
-  dataContainer.dataset.energyToStopResting
-);
-const HUNGER_TO_START_FORAGING = parseInt(
-  dataContainer.dataset.hungerToStartForaging
-);
-const HUNGER_TO_STOP_FORAGING = parseInt(
-  dataContainer.dataset.hungerToStopForaging
-);
-const THIRST_TO_START_DRINKING = parseInt(
-  dataContainer.dataset.thirstToStartDrinking
-);
-const THIRST_TO_STOP_DRINKING = parseInt(
-  dataContainer.dataset.thirstToStopDrinking
-);
 const MAX_ENERGY = parseInt(dataContainer.dataset.maxEnergy);
+const MAX_HUNGER = parseInt(dataContainer.dataset.maxHunger);
+const MAX_THIRST = parseInt(dataContainer.dataset.maxThirst);
 
 const CRITTER_DRAW_RADIUS = 3;
 
@@ -148,6 +132,8 @@ function updateStatsPanel() {
     const healthPercent =
       (selectedCritter.health / selectedCritter.max_health) * 100;
     const energyPercent = (selectedCritter.energy / MAX_ENERGY) * 100;
+    const hungerPercent = (selectedCritter.hunger / MAX_HUNGER) * 100;
+    const thirstPercent = (selectedCritter.thirst / MAX_THIRST) * 100;
 
     statsContent.innerHTML = `
             <!-- Section 1: Meters -->
@@ -164,12 +150,18 @@ function updateStatsPanel() {
                 )} / ${MAX_ENERGY}</p>
                 <div class="stat-meter"><div class="energy-bar" style="width: ${energyPercent}%;"></div></div>
             </div>
-            <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
-              1
-            )}</p>
-            <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
-              1
-            )}</p>
+            <div class="stat-group">
+                <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
+                  1
+                )} / ${MAX_HUNGER}</p>
+                <div class="stat-meter"><div class="hunger-bar" style="width: ${hungerPercent}%;"></div></div>
+            </div>
+            <div class="stat-group">
+                <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
+                  1
+                )} / ${MAX_THIRST}</p>
+                <div class="stat-meter"><div class="thirst-bar" style="width: ${thirstPercent}%;"></div></div>
+            </div>
 
             <!-- Section 2: Dynamic AI Stuff -->
             <h3>AI State</h3>
