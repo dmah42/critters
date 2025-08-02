@@ -104,9 +104,8 @@ class CritterAI:
             )
 
         elif goal == GoalType.IDLE:
-            # Social wandering
-            # TODO: decide whether to wander or be idle based on
-            # a random choice.
+            # TODO: decide whether to wander or rest based on
+            # a random choice.  think about a "laziness" trait
             action = self.moving_module.get_action(
                 self.critter, self.world, self.all_critters
             )
