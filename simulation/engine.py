@@ -9,9 +9,11 @@ from simulation.terrain_type import TerrainType
 from simulation.brain import (
     CRITICAL_HUNGER,
     CRITICAL_THIRST,
+    HUNGER_TO_STOP_FORAGING,
     MAX_ENERGY,
     MAX_HUNGER,
     MAX_THIRST,
+    THIRST_TO_STOP_DRINKING,
     ActionType,
 )
 from simulation.models import (
@@ -54,7 +56,10 @@ FOOD_TO_ENERGY_RATIO = 2.0
 DRINK_AMOUNT = 40.0
 THIRST_QUENCHED_PER_EAT = 2.0
 
+# The amount of damage a critter in critical condition takes per tick
 HEALTH_DAMAGE_PER_TICK = 0.1
+# The amount of health a well-fed critter regens each tick.
+HEALTH_REGEN_PER_TICK = 0.2
 
 DAMAGE_PER_SIZE_POINT = 5.0
 
@@ -139,6 +144,14 @@ def _run_critter_logic(
     # --- Part 1: Universal State Updates (Health, Hunger, Death, etc.) ---
     # This initial block of code is the same as before.
     logger.info(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
+
+    # A critter can heal if its basic food and water needs are met.
+    if (
+        critter.hunger < HUNGER_TO_STOP_FORAGING
+        and critter.thirst < THIRST_TO_STOP_DRINKING
+    ):
+        critter.health = min(critter.health + HEALTH_REGEN_PER_TICK, critter.max_health)
+        logger.info(f"    healing: health: {critter.health:.2f}")
 
     start_energy: float = critter.energy
 
