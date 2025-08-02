@@ -6,7 +6,7 @@ from simulation.models import AIState, Critter, DietType
 from simulation.world import World
 
 FLOCKING_RADIUS: int = 8
-SEPARATION_DISTANCE: float = 1.4  # How close is "too close"
+SEPARATION_DISTANCE: float = 2.0  # How close is "too close"
 SEPARATION_WEIGHT: float = 1.4  # How strongly to avoid neighbors
 ALIGNMENT_WEIGHT: float = 1.1  # How strongly to match heading
 COHESION_WEIGHT: float = 1.2  # How strongly to move to the center

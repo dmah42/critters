@@ -376,6 +376,6 @@ function animationLoop() {
 canvas.addEventListener("click", handleCanvasClick);
 drawButton.addEventListener("click", handleManualUpdate);
 window.addEventListener("load", handleManualUpdate);
-setInterval(handleLiveUpdate, 5000);
+setInterval(handleLiveUpdate, 3000);
 
 requestAnimationFrame(animationLoop);

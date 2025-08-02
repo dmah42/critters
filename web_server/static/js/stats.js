@@ -225,12 +225,12 @@ async function fetchAndDrawHistoryCharts() {
     const herbivoreEnergyHist = createHistogramData(
       latestStat.herbivore_energy_distribution,
       10,
-      100
+      101
     );
     const carnivoreEnergyHist = createHistogramData(
       latestStat.carnivore_energy_distribution,
       10,
-      100
+      101
     );
     const energyDatasets = [
       {
@@ -263,12 +263,12 @@ async function fetchAndDrawHistoryCharts() {
     const herbivoreHungerHist = createHistogramData(
       latestStat.herbivore_hunger_distribution,
       10,
-      100
+      101
     );
     const carnivoreHungerHist = createHistogramData(
       latestStat.carnivore_hunger_distribution,
       10,
-      100
+      101
     );
     const hungerDatasets = [
       {
@@ -301,12 +301,12 @@ async function fetchAndDrawHistoryCharts() {
     const herbivoreThirstHist = createHistogramData(
       latestStat.herbivore_thirst_distribution,
       10,
-      100
+      101
     );
     const carnivoreThirstHist = createHistogramData(
       latestStat.carnivore_thirst_distribution,
       10,
-      100
+      101
     );
     const thirstDatasets = [
       {
