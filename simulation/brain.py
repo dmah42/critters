@@ -80,10 +80,16 @@ class CritterAI:
             action = {"type": ActionType.REST}
 
         elif goal == GoalType.QUENCH_THIRST:
-            # If we can drink or see water, do it. otherwise walk to find it.
+            # If we can drink or see water, do it.
             action = self.water_seeking_module.get_action(
                 self.critter, self.world, self.all_critters
             )
+
+            # in a pinch, food will also quench thirst, try that.
+            if not action:
+                action = self.foraging_module.get_action(
+                    self.critter, self.world, self.all_critters
+                )
 
         elif goal == GoalType.SATE_HUNGER:
             # If we can eat or see food, do it. otherwise walk to find it.
