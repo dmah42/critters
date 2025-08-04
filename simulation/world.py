@@ -11,27 +11,23 @@ from simulation.terrain_type import TerrainType
 # Zoom level: larger == more zoomed
 HEIGHT_SCALE = 200.0
 # Octaves: larger = more rugged
-HEIGHT_OCTAVES = 5
+HEIGHT_OCTAVES = 4
 # Persistence and lacunarity affect roughness.
-HEIGHT_PERSISTENCE = 0.5
-HEIGHT_LACUNARITY = 2.0
-
-# Terrain noise parameters -- high frequency for patches of grass
-TERRAIN_SCALE = 100.0
-TERRAIN_OCTAVES = 3
-TERRAIN_PERSISTENCE = 0.5
-TERRAIN_LACUNARITY = 2.0
+HEIGHT_PERSISTENCE = 0.4
+HEIGHT_LACUNARITY = 3.0
 
 BASE_ENERGY_COST_PER_MOVE = 0.1
 UPHILL_ENERGY_MULTIPLIER = 1.1
 DOWNHILL_ENERGY_MULTIPLIER = 0.8
 
-WATER_LEVEL = -0.2
+WATER_LEVEL = -0.1
+DIRT_TO_GRASS_LEVEL = 0.0
 MOUNTAIN_LEVEL = 0.6
 
 DEFAULT_GRASS_FOOD = 10.0
-DIRT_TO_GRASS_LEVEL = 0.0
 
+# Values greater than this collapse to 1D noise.
+MAX_SEED_VALUE = 1024
 WORLD_CHUNK_SIZE = 32
 
 logger = logging.getLogger(__name__)
@@ -61,7 +57,7 @@ class World:
 
     def __init__(self, seed: int, session: Session):
         """Initializes the world with a seed for the noise functions."""
-        self.seed = seed
+        self.seed = seed % MAX_SEED_VALUE
         self.session = session
         # Store loaded chunks
         # Format: {(chunk_x, chunk_y): {(tile_x, tile_y): TileState, ...}}
@@ -124,24 +120,12 @@ class World:
         terrain = None
         if height_val < WATER_LEVEL:
             terrain = TerrainType.WATER
+        elif height_val < DIRT_TO_GRASS_LEVEL:
+            terrain = TerrainType.DIRT
         elif height_val >= MOUNTAIN_LEVEL:
             terrain = TerrainType.MOUNTAIN
         else:
-            # If it's land, calculate a second noise value for terrain type ---
-            # We add an offset (e.g., 1000) to the seed to ensure this noise map
-            # is completely different from the height map.
-            terrain_val = noise.pnoise2(
-                x / TERRAIN_SCALE,
-                y / TERRAIN_SCALE,
-                octaves=TERRAIN_OCTAVES,
-                persistence=TERRAIN_PERSISTENCE,
-                lacunarity=TERRAIN_LACUNARITY,
-                base=self.seed + 1000,
-            )
-
-            terrain = TerrainType.DIRT  # Default to dirt
-            if terrain_val > DIRT_TO_GRASS_LEVEL:
-                terrain = TerrainType.GRASS  # Fertile patches of grass
+            terrain = TerrainType.GRASS
 
         tile = {
             "x": x,

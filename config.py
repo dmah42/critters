@@ -11,4 +11,4 @@ class Config:
     # Disable change tracking.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    WORLD_SEED = 123
+    WORLD_SEED = 42
