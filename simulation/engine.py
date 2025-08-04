@@ -145,6 +145,15 @@ def _run_critter_logic(
     # This initial block of code is the same as before.
     logger.info(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
 
+    # Check for death by old age
+    if critter.age > critter.lifespan * 0.8:
+        # Chance of dying increases linearly as the critter gets older
+        # with a 10% chance to die per tick at 100% of its lifespan
+        death_chance = (critter.age / critter.lifespan) * 0.1
+        if random.random() < death_chance:
+            _handle_death(critter, CauseOfDeath.OLD_AGE, session)
+            return
+
     # A critter can heal if its basic food and water needs are met.
     if (
         critter.hunger < HUNGER_TO_START_FORAGING
@@ -433,6 +442,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     child_speed = random.choice([parent1.speed, parent2.speed])
     child_size = random.choice([parent1.size, parent2.size])
     child_metabolism = random.choice([parent1.metabolism, parent2.metabolism])
+    child_lifespan = random.choice([parent1.lifespan, parent2.lifespan])
 
     if random.random() < MUTATION_CHANCE:
         child_speed += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
@@ -443,6 +453,9 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     if random.random() < MUTATION_CHANCE:
         child_metabolism += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
         child_metabolism = max(child_size, 0.5)
+    if random.random() < MUTATION_CHANCE:
+        child_lifespan += random.randint(-50, 50)
+        child_lifespan = max(child_metabolism, 500)
 
     child = Critter(
         parent_one_id=parent1.id,
@@ -453,6 +466,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
         speed=child_speed,
         size=child_size,
         metabolism=child_metabolism,
+        lifespan=child_lifespan,
     )
     session.add(child)
 

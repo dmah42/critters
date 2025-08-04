@@ -68,6 +68,7 @@ def seed_population(seed: int, world_size: int, num_progenitors: int):
             speed=random.uniform(3.0, 7.0),
             size=random.uniform(3.0, 7.0),
             metabolism=random.uniform(0.8, 1.2),
+            lifespan=random.randint(1800, 2200),
             # Place them randomly in the world near the origin
             x=rand_x,
             y=rand_y,

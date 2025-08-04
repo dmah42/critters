@@ -74,6 +74,9 @@ class Critter(db.Model):
     speed = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
     size = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
     metabolism = db.Column(db.Float, nullable=False, default=1.0, server_default="1.0")
+    lifespan = db.Column(
+        db.Integer, nullable=False, default=2000, server_default="2000"
+    )
 
     # Position
     x = db.Column(db.Integer, default=0)
@@ -132,27 +135,14 @@ class Critter(db.Model):
         self.is_ghost = False
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "age": self.age,
-            "diet": self.diet.name,
-            "speed": self.speed,
-            "size": self.size,
-            "metabolism": self.metabolism,
-            "x": self.x,
-            "y": self.y,
-            "vx": self.vx,
-            "vy": self.vy,
-            "health": self.health,
-            "max_health": self.max_health,
-            "energy": self.energy,
-            "hunger": self.hunger,
-            "thirst": self.thirst,
-            "ai_state": self.ai_state.name,
-            "last_action": self.last_action.name if self.last_action else None,
-            "is_ghost": self.is_ghost,
-            "owner_id": self.player_id,
-        }
+        data = {}
+        for column in self.__table__.columns:
+            value = getattr(self, column.name)
+            if isinstance(value, enum.Enum):
+                data[column.name] = value.name if value else None
+            else:
+                data[column.name] = value
+        return data
 
     def __repr__(self):
         return f"<Critter {self.id}>"
