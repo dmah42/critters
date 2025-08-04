@@ -51,10 +51,10 @@ BASE_METABOLIC_RATE = 0.05
 ENERGY_TO_HUNGER_RATIO = 0.2
 
 # The factor that converts food into energy.
-FOOD_TO_ENERGY_RATIO = 2.0
+FOOD_TO_ENERGY_RATIO = 8.0
 
 DRINK_AMOUNT = 40.0
-THIRST_QUENCHED_PER_EAT = 4.0
+THIRST_QUENCHED_PER_EAT = 8.0
 
 # The amount of damage a critter in critical condition takes per tick
 HEALTH_DAMAGE_PER_TICK = 0.1
