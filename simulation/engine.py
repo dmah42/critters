@@ -20,8 +20,10 @@ from simulation.models import (
     AIState,
     CauseOfDeath,
     Critter,
+    CritterEvent,
     DeadCritter,
     DietType,
+    Event,
     SimulationStats,
     TileState,
 )
@@ -254,6 +256,13 @@ def _run_critter_logic(
 
         if random.random() < final_escape_chance:
             logger.info(f"    attack failed: {prey.id} escaped from {critter.id}")
+            _log_event(
+                session,
+                prey.id,
+                prey.age,
+                Event.ATTACK_ESCAPED,
+                f"Survived attack from {critter.id}",
+            )
             # TODO: consider an energy cost for the attack
             # critter.energy -= FAILED_ATTACK_ENERGY_COST
         else:
@@ -281,8 +290,22 @@ def _run_critter_logic(
                     f"thirst: {critter.thirst:.2f}, "
                     f"energy: {critter.energy:.2f}"
                 )
+                _log_event(
+                    session,
+                    critter.id,
+                    critter.age,
+                    Event.ATTACK_KILLED,
+                    f"Killed {prey.id}",
+                )
             else:
                 logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
+                _log_event(
+                    session,
+                    prey.id,
+                    prey.age,
+                    Event.ATTACK_SURVIVED,
+                    f"Survived attack from {critter.id}",
+                )
 
     elif action_type == ActionType.BREED:
         mate = action["partner"]
@@ -420,6 +443,8 @@ def _handle_death(critter: Critter, cause: CauseOfDeath, session: Session):
     critter.is_ghost = True
 
     logger.info(f"    {critter.id} died of {cause.name}")
+    description = f"Died of {cause.name}."
+    _log_event(session, critter.id, critter.age, Event.DEATH, description)
 
     dead_critter = DeadCritter(
         original_id=critter.id,
@@ -469,6 +494,28 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
         lifespan=child_lifespan,
     )
     session.add(child)
+
+    _log_event(
+        session,
+        child.id,
+        child.age,
+        Event.BIRTH,
+        f"Born to parents {parent1.id} and {parent2.id}",
+    )
+    _log_event(
+        session,
+        parent1.id,
+        parent1.age,
+        Event.BREED,
+        f"Bred with {parent2.id} to produce {child.id}",
+    )
+    _log_event(
+        session,
+        parent2.id,
+        parent2.age,
+        Event.BREED,
+        f"Bred with {parent1.id} to produce {child.id}",
+    )
 
     parent1.energy -= BREEDING_ENERGY_COST
     parent2.energy -= BREEDING_ENERGY_COST
@@ -554,3 +601,13 @@ def _record_statistics(session: Session):
     session.add(stats)
 
     logger.info(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
+
+
+def _log_event(
+    session: Session, critter_id: int, tick: int, event: Event, description: str
+):
+    """Creates and saves a new CritterEvent to the session"""
+    event = CritterEvent(
+        critter_id=critter_id, tick=tick, event=event, description=description
+    )
+    session.add(event)

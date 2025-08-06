@@ -34,6 +34,26 @@ class AIState(enum.Enum):
     BREEDING = "breeding"
 
 
+class Event(enum.Enum):
+    BIRTH = "birth"
+    DEATH = "death"
+    BREED = "breed"
+    ATTACK_ESCAPED = "attack_escaped"
+    ATTACK_SURVIVED = "attack_survived"
+    ATTACK_KILLED = "attack_killed"
+
+
+class CritterEvent(db.Model):
+    __tablename__ = "critter_event"
+    id = db.Column(db.Integer, primary_key=True)
+
+    critter_id = db.Column(db.Integer, nullable=False, index=True)
+
+    tick = db.Column(db.Integer, nullable=False)
+    event = db.Column(db.Enum(Event), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+
+
 class Player(db.Model):
     __tablename__ = "player"
 
@@ -174,6 +194,13 @@ class DeadCritter(db.Model):
 
     children = db.relationship(
         "Critter", secondary="dead_critter_children_association", lazy="subquery"
+    )
+
+    events = db.relationship(
+        "CritterEvent",
+        foreign_keys=[CritterEvent.critter_id],
+        primaryjoin="DeadCritter.original_id == CritterEvent.critter_id",
+        lazy="dynamic",
     )
 
     def to_dict(self):
