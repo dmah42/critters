@@ -51,15 +51,18 @@ Before starting the simulation for the first time, you must seed it with an init
 To start a completely fresh simulation, use the `--clear-history` flag. This will wipe all existing critters, historical data, and statistics.
 
 ```bash
-# Example: Create a new world with 100 progenitors, clearing all old data
-python seed_world.py --num-progenitors 100 --clear-history
+# Example: Create a large world with 300 herbivores and 50 carnivores in 5 packs
+python seed_world.py --num-herbivores 300 --num-carnivores 50 --spawn-radius 300 --num-packs 5 --clear-history
 ```
 
 #### Options:
 
-* `--num-progenitors` or `-n`: The number of initial critters to create (Default: 50).
-
-* `--clear-history`: Wipes all simulation tables (`Critter`, `DeadCritter`, `SimulationStats`, `TileState`) before seeding.
+* `--num-herbivores` or `-nh`: The number of initial herbivores to create (Default: 150).
+* `--num-carnivores` or `-nc`: The number of initial carnivores to create (Default: 150).
+* `--spawn-radius` or `-s`: The radius in which to spawn all critters (Default: 200).
+* `--num-packs` or `-p`: The number of carnivore "packs" to create (Default: 4).
+* `--pack-radius` or `-r`: The radius in which to spawn carnivores in a pack (Default: 15).
+* `--wipe-history` or `-w`: Clear all existing critters, dead or alive.
 
 ### 2. Run the Simulation Engine
 In your first terminal, start the continuous simulation loop. This process will run indefinitely, updating the world state.
