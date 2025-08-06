@@ -1,13 +1,16 @@
 import logging
 from typing import Any, Dict, List
 from simulation.behaviours.behavior import Behavior
-from simulation.brain import SENSE_RADIUS, ActionType
+from simulation.brain import ActionType
 from simulation.models import Critter, DietType
 from simulation.pathfinding import find_path
 from simulation.terrain_type import TerrainType
 from simulation.world import World
 
 logger = logging.getLogger(__name__)
+
+# Find a safe space within a short distance to get away from the predator.
+FLEEING_RADIUS = 2
 
 
 class FleeingBehavior(Behavior):
@@ -22,8 +25,8 @@ class FleeingBehavior(Behavior):
             other
             for other in all_critters
             if other.diet == DietType.CARNIVORE
-            and abs(other.x - critter.x) <= SENSE_RADIUS
-            and abs(other.y - critter.y) <= SENSE_RADIUS
+            and abs(other.x - critter.x) <= FLEEING_RADIUS
+            and abs(other.y - critter.y) <= FLEEING_RADIUS
         ]
 
         if nearby_carnivores:
