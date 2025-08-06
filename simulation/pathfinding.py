@@ -1,7 +1,13 @@
+import logging
 from typing import List, Optional, Tuple
 
 from simulation.terrain_type import TerrainType
 from simulation.world import BASE_ENERGY_COST_PER_MOVE, World, get_energy_cost
+
+MAX_ITERATIONS = 500
+
+
+logger = logging.getLogger(__name__)
 
 
 class Node:
@@ -57,7 +63,17 @@ def find_path(
     open_list: List[Node] = [start_node]
     closed_set: set[Tuple[int, int]] = set()
 
+    iteration_count = 0
+
     while len(open_list) > 0:
+        # Check before we exceed our computation budget.
+        if iteration_count > MAX_ITERATIONS:
+            # The path is too complex, give up.
+            logger.warning(f"PAthfinding from {start_pos} to {end_pos} exceeded budget")
+            return None
+
+        iteration_count += 1
+
         current_node = min(open_list, key=lambda node: node.f)
         current_tile = world.get_tile(
             current_node.position[0], current_node.position[1]
