@@ -468,6 +468,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     child_size = random.choice([parent1.size, parent2.size])
     child_metabolism = random.choice([parent1.metabolism, parent2.metabolism])
     child_lifespan = random.choice([parent1.lifespan, parent2.lifespan])
+    child_commitment = random.choice([parent1.commitment, parent2.commitment])
 
     if random.random() < MUTATION_CHANCE:
         child_speed += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
@@ -481,6 +482,9 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     if random.random() < MUTATION_CHANCE:
         child_lifespan += random.randint(-50, 50)
         child_lifespan = max(child_metabolism, 500)
+    if random.random() < MUTATION_CHANCE:
+        child_commitment += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
+        child_commitment = max(child_commitment, 1.0)
 
     child = Critter(
         parent_one_id=parent1.id,
@@ -492,6 +496,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
         size=child_size,
         metabolism=child_metabolism,
         lifespan=child_lifespan,
+        commitment=child_commitment,
     )
     session.add(child)
 

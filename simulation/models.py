@@ -105,6 +105,11 @@ class Critter(db.Model):
     lifespan = db.Column(
         db.Integer, nullable=False, default=2000, server_default="2000"
     )
+    # A bonus applied to the score of the current goal, making the AI more focused.
+    # A higher value means more focused, a lower value means more easily distracted.
+    commitment = db.Column(
+        db.Float, nullable=False, default=1.75, server_default="1.75"
+    )
 
     # Position
     x = db.Column(db.Integer, default=0)

@@ -28,11 +28,6 @@ HUNGER_TO_START_FORAGING = 0.75 * CRITICAL_HUNGER
 
 SENSE_RADIUS = 5
 
-# A bonus applied to the score of the current goal, making the AI more focused.
-# A higher value means more focused, a lower value means more easily distracted.
-# TODO: think about making this a critter trait.
-COMMITMENT_BONUS = 2.0
-
 
 class CritterAI:
     def __init__(
@@ -196,6 +191,6 @@ class CritterAI:
         # Apply the commitment bonus
         committed_goal = STATE_TO_GOAL_MAP.get(critter.ai_state)
         if committed_goal and committed_goal in scores and scores[committed_goal] > 0:
-            scores[committed_goal] *= COMMITMENT_BONUS
+            scores[committed_goal] *= critter.commitment
 
         return max(scores, key=scores.get)

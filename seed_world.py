@@ -110,6 +110,7 @@ def seed_population(
                         size=random.uniform(3.0, 7.0),
                         metabolism=random.uniform(0.8, 1.2),
                         lifespan=random.randint(1800, 2200),
+                        commitment=random.uniform(1.5, 2.5),
                         # Place them randomly in the world near the origin
                         x=rand_x,
                         y=rand_y,
