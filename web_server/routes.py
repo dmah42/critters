@@ -9,7 +9,13 @@ from simulation.brain import (
     HUNGER_TO_START_FORAGING,
     THIRST_TO_START_DRINKING,
 )
-from simulation.models import Player, Critter, DeadCritter, SimulationStats
+from simulation.models import (
+    CritterEvent,
+    Player,
+    Critter,
+    DeadCritter,
+    SimulationStats,
+)
 from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, MAX_HUNGER, MAX_THIRST
 
 from simulation.world import World
@@ -137,6 +143,17 @@ def adopt_critter(critter_id):
         "player_id": player.id,
     }
     return jsonify(response), 200
+
+
+@main.route("/api/critter/<int:critter_id>/events", methods=["GET"])
+def get_critter_events(critter_id: int):
+    """Returns the event log for a single critter, ordered by tick"""
+    events = (
+        CritterEvent.query.filter_by(critter_id=critter_id)
+        .order_by(CritterEvent.tick.desc())
+        .all()
+    )
+    return jsonify([event.to_dict() for event in events])
 
 
 @main.route("/api/dead-critter", methods=["GET"])

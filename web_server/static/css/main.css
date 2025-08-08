@@ -1,0 +1,145 @@
+body {
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f0f0f0;
+}
+
+.header-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px; /* Adds space between the title and the button */
+  width: 100%;
+}
+
+.stats-button {
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  color: #333;
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap; /* Prevents the text from wrapping */
+}
+.stats-button:hover {
+  background-color: #e9ecef;
+}
+
+.controls {
+  margin: 20px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+input {
+  width: 60px;
+  margin-right: 10px;
+}
+button {
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: none;
+  background-color: #4287f5;
+  color: white;
+  cursor: pointer;
+}
+canvas {
+  border: 2px solid #333;
+}
+
+.main-content {
+  display: flex;
+  flex-wrap: wrap; /* Allows panel to stack on small screens */
+  gap: 20px;
+  width: 90%;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#stats-panel {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 250px;
+  min-height: 300px;
+  color: #333;
+}
+#stats-panel h2 {
+  margin-top: 0;
+  text-align: center;
+}
+#stats-panel p {
+  margin: 10px 0;
+  font-size: 14px;
+}
+#stats-panel .stat-label {
+  font-weight: bold;
+}
+#stats-panel h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+#stats-panel .stat-group {
+  margin-bottom: 15px;
+}
+
+.stat-meter {
+  background-color: #e9ecef;
+  border-radius: 5px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+}
+.stat-meter > div {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.2s ease-in-out; /* Smooth animation for changes */
+}
+.health-bar {
+  background-color: #28a745;
+} /* Green */
+.energy-bar {
+  background-color: #007bff;
+} /* Blue */
+.hunger-bar {
+  background-color: #fd7e14;
+} /* Orange */
+.thirst-bar {
+  background-color: #17a2b8;
+} /* Teal */
+
+#event-log-container {
+  margin-top: 15px;
+  max-height: 200px; /* Give it a max height and scrollbar */
+  overflow-y: auto;
+  font-size: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+#event-log-container ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+#event-log-container li {
+  display: flex;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid #f7f7f7;
+}
+#event-log-container .tick {
+  font-weight: bold;
+  color: #6c757d;
+  display: inline-block;
+  width: 80px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}

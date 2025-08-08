@@ -53,6 +53,14 @@ class CritterEvent(db.Model):
     event = db.Column(db.Enum(Event), nullable=False)
     description = db.Column(db.String(255), nullable=False)
 
+    def to_dict(self):
+        return {
+            "critter_id": self.critter_id,
+            "tick": self.tick,
+            "event": self.event.name,
+            "description": self.description,
+        }
+
 
 class Player(db.Model):
     __tablename__ = "player"
@@ -162,6 +170,9 @@ class Critter(db.Model):
                 data[column.name] = value.name if value else None
             else:
                 data[column.name] = value
+
+        # Add any non-column properties
+        data["max_health"] = self.max_health
         return data
 
     def __repr__(self):

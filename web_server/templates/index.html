@@ -3,125 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>Critter World</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background-color: #f0f0f0;
-      }
-
-      .header-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 20px; /* Adds space between the title and the button */
-        width: 100%;
-      }
-
-      .stats-button {
-        padding: 8px 15px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        background-color: #f8f9fa;
-        color: #333;
-        text-decoration: none;
-        font-size: 14px;
-        white-space: nowrap; /* Prevents the text from wrapping */
-      }
-      .stats-button:hover {
-        background-color: #e9ecef;
-      }
-
-      .controls {
-        margin: 20px;
-        padding: 15px;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      input {
-        width: 60px;
-        margin-right: 10px;
-      }
-      button {
-        padding: 8px 15px;
-        border-radius: 5px;
-        border: none;
-        background-color: #4287f5;
-        color: white;
-        cursor: pointer;
-      }
-      canvas {
-        border: 2px solid #333;
-      }
-
-      .main-content {
-        display: flex;
-        flex-wrap: wrap; /* Allows panel to stack on small screens */
-        gap: 20px;
-        width: 90%;
-        justify-content: center;
-        align-items: flex-start;
-      }
-
-      #stats-panel {
-        background-color: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        width: 250px;
-        min-height: 300px;
-        color: #333;
-      }
-      #stats-panel h2 {
-        margin-top: 0;
-        text-align: center;
-      }
-      #stats-panel p {
-        margin: 10px 0;
-        font-size: 14px;
-      }
-      #stats-panel .stat-label {
-        font-weight: bold;
-      }
-      #stats-panel h3 {
-        margin-top: 20px;
-        margin-bottom: 10px;
-        font-size: 16px;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 5px;
-      }
-      #stats-panel .stat-group {
-        margin-bottom: 15px;
-      }
-
-      .stat-meter {
-        background-color: #e9ecef;
-        border-radius: 5px;
-        height: 20px;
-        margin-top: 4px;
-        border: 1px solid #ccc;
-      }
-      .stat-meter > div {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.2s ease-in-out; /* Smooth animation for changes */
-      }
-      .health-bar {
-        background-color: #28a745;
-      } /* Green */
-      .energy-bar {
-        background-color: #007bff;
-      } /* Blue */
-      .hunger-bar {
-        background-color: #fd7e14;
-      } /* Orange */
-      .thirst-bar {
-        background-color: #17a2b8;
-      } /* Teal */
-    </style>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/main.css') }}"
+    />
   </head>
   <body>
     <div class="header-container">
@@ -144,11 +29,13 @@
         width="{{ canvas_size }}"
         height="{{ canvas_size }}"
       ></canvas>
+
       <div id="stats-panel">
         <h2>Critter stats</h2>
         <div id="stats-content">
           <p>Click on a critter to view its details.</p>
         </div>
+        <div id="event-log-container"></div>
       </div>
     </div>
 

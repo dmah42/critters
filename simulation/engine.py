@@ -495,6 +495,9 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     )
     session.add(child)
 
+    # Flush the session to ensure we get IDs set so we can log events.
+    session.flush()
+
     _log_event(
         session,
         child.id,

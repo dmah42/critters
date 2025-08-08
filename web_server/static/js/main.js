@@ -8,6 +8,7 @@ const heightInput = document.getElementById("height");
 const drawButton = document.getElementById("draw-btn");
 const statsPanel = document.getElementById("stats-panel");
 const statsContent = document.getElementById("stats-content");
+const eventLogContainer = document.getElementById("event-log-container");
 
 const dataContainer = document.getElementById("simulation-data");
 const DEFAULT_GRASS_FOOD = parseFloat(dataContainer.dataset.defaultGrassFood);
@@ -127,7 +128,43 @@ function drawTerrain(view) {
   }
 }
 
+async function fetchAndDisplayEvents() {
+  if (!selectedCritter) {
+    eventLogContainer.innerHTML = "";
+    return;
+  }
+  critterId = selectedCritter.id;
+
+  try {
+    const response = await fetch(`/api/critter/${critterId}/events`);
+    if (!response.ok) {
+      eventLogContainer.innerHTML = "<p>Failed to load event log.</p>";
+      return;
+    }
+    const events = await response.json();
+
+    if (events.length === 0) {
+      eventLogContainer.innerHTML = "<p>No significant events yet.</p>";
+      return;
+    }
+
+    // Build the HTML for the event list
+    let eventHtml = "<h3>Event Log</h3><ul>";
+    for (const event of events) {
+      eventHtml += `<li><span class="tick">[Tick ${event.tick}]</span> <b>${event.event}: </b>${event.description}</li>`;
+    }
+    eventHtml += "</ul>";
+
+    eventLogContainer.innerHTML = eventHtml;
+  } catch (error) {
+    console.error("Failed to fetch event log:", error);
+    eventLogContainer.innerHTML = "<p>Error loading events.</p>";
+  }
+}
+
 function updateStatsPanel() {
+  console.log("Updating stats panel for:", selectedCritter);
+
   if (selectedCritter) {
     const healthPercent =
       (selectedCritter.health / selectedCritter.max_health) * 100;
@@ -251,6 +288,7 @@ function handleCanvasClick(event) {
   }
 
   updateStatsPanel();
+  fetchAndDisplayEvents();
 }
 
 async function handleManualUpdate() {
@@ -365,6 +403,7 @@ function animationLoop() {
     if (latestData) {
       selectedCritter = latestData.critter;
       updateStatsPanel();
+      fetchAndDisplayEvents();
     }
   }
 

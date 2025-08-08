@@ -2,10 +2,17 @@ import argparse
 import random
 from typing import List
 from config import Config
-from simulation.engine import TerrainType
+from simulation.engine import TerrainType, _log_event
 from simulation.world import World
 from web_server import create_app, db
-from simulation.models import Critter, DeadCritter, DietType, SimulationStats, TileState
+from simulation.models import (
+    Critter,
+    DeadCritter,
+    DietType,
+    Event,
+    SimulationStats,
+    TileState,
+)
 
 
 def seed_population(
@@ -111,6 +118,19 @@ def seed_population(
                 break
     db.session.add_all(carnivores)
     print(f"Created {len(carnivores)} carnivores")
+
+    # Assign IDs to everyone.
+    db.session.flush()
+
+    all_progenitors = herbivores + carnivores
+    for critter in all_progenitors:
+        _log_event(
+            session=db.session,
+            critter_id=critter.id,
+            tick=0,
+            event=Event.BIRTH,
+            description=f"Created as a progenitor of the world",
+        )
 
     # 3. Commit the entire transaction to the database.
     db.session.commit()
