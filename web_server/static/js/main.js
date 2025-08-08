@@ -302,6 +302,9 @@ async function handleManualUpdate() {
   currentView.w = widthInput.value;
   currentView.h = heightInput.value;
 
+  const newUrl = `${window.location.pathname}?x=${currentView.x}&y=${currentView.y}&w=${currentView.w}&h=${currentView.h}`;
+  history.pushState({ path: newUrl }, "", newUrl);
+
   try {
     await fetchTerrain(currentView);
     drawTerrain(currentView);
@@ -418,7 +421,20 @@ function animationLoop() {
 // --- Event Listeners ---
 canvas.addEventListener("click", handleCanvasClick);
 drawButton.addEventListener("click", handleManualUpdate);
-window.addEventListener("load", handleManualUpdate);
+window.addEventListener("load", () => {
+  // Create a URLSearchParams object to easily read the query string.
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // Check for each parameter and update the input fields if they exist.
+  if (urlParams.has("x")) xInput.value = urlParams.get("x");
+  if (urlParams.has("y")) yInput.value = urlParams.get("y");
+  if (urlParams.has("w")) widthInput.value = urlParams.get("w");
+  if (urlParams.has("h")) heightInput.value = urlParams.get("h");
+
+  // Trigger the initial map draw. handleManualUpdate will now read
+  // the values we just set from the URL.
+  handleManualUpdate();
+});
 setInterval(handleLiveUpdate, 3000);
 
 requestAnimationFrame(animationLoop);
