@@ -61,6 +61,7 @@ canvas {
 }
 
 #stats-panel {
+  position: relative; /* This is the key */
   background-color: white;
   padding: 20px;
   border-radius: 8px;
@@ -70,6 +71,8 @@ canvas {
   color: #333;
 }
 #stats-panel h2 {
+  position: relative;
+  z-index: 2;
   margin-top: 0;
   text-align: center;
 }
@@ -89,6 +92,10 @@ canvas {
 }
 #stats-panel .stat-group {
   margin-bottom: 15px;
+}
+#stats-content {
+  position: relative;
+  z-index: 2;
 }
 
 .stat-meter {
@@ -115,6 +122,13 @@ canvas {
 .thirst-bar {
   background-color: #17a2b8;
 } /* Teal */
+
+#image-container {
+  position: absolute;
+  top: 15px; /* Distance from the top of the panel */
+  right: 15px; /* Distance from the right of the panel */
+  z-index: 1;
+}
 
 #event-log-container {
   margin-top: 15px;
