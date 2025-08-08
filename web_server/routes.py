@@ -1,4 +1,4 @@
-from flask import request, jsonify, Blueprint, render_template
+from flask import Response, request, jsonify, Blueprint, render_template
 from sqlalchemy import func
 from config import Config
 from simulation.brain import (
@@ -18,6 +18,7 @@ from simulation.models import (
 )
 from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, MAX_HUNGER, MAX_THIRST
 
+from simulation.renderer import generate_svg
 from simulation.world import World
 from web_server import db
 from flask import current_app as app
@@ -154,6 +155,15 @@ def get_critter_events(critter_id: int):
         .all()
     )
     return jsonify([event.to_dict() for event in events])
+
+
+@main.route("/api/critter/<int:critter_id>/image.svg")
+def get_critter_image(critter_id: int):
+    """
+    Return a generated SVG for a Critter
+    """
+    critter = Critter.query.get_or_404(critter_id)
+    return Response(generate_svg(critter), mimetype="image/svg+xml")
 
 
 @main.route("/api/dead-critter", methods=["GET"])

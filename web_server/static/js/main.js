@@ -9,6 +9,7 @@ const drawButton = document.getElementById("draw-btn");
 const statsPanel = document.getElementById("stats-panel");
 const statsContent = document.getElementById("stats-content");
 const eventLogContainer = document.getElementById("event-log-container");
+const imageContainer = document.getElementById("image-container");
 
 const dataContainer = document.getElementById("simulation-data");
 const DEFAULT_GRASS_FOOD = parseFloat(dataContainer.dataset.defaultGrassFood);
@@ -166,6 +167,8 @@ function updateStatsPanel() {
   console.log("Updating stats panel for:", selectedCritter);
 
   if (selectedCritter) {
+    imageContainer.innerHTML = `
+    <img src="/api/critter/${selectedCritter.id}/image.svg" alt="Critter Image" />`;
     const healthPercent =
       (selectedCritter.health / selectedCritter.max_health) * 100;
     const energyPercent = (selectedCritter.energy / MAX_ENERGY) * 100;
@@ -235,6 +238,7 @@ function updateStatsPanel() {
     statsContent.innerHTML = `
           <p>Click on a critter to view its details.</p>
     `;
+    imageContainer = "";
   }
 }
 
