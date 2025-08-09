@@ -6,6 +6,8 @@ import sys
 from typing import List, Tuple
 import os
 
+from simulation.world import TileData
+
 # Add the project root to the Python path to allow imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -36,10 +38,14 @@ class MockWorld:
     def __init__(self, water_locations: List[Tuple[int, int]]):
         self.water_locations = water_locations
 
-    def get_tile(self, x, y):
+    def get_tile(self, x, y) -> TileData:
         if (x, y) in self.water_locations:
-            return {"x": x, "y": y, "terrain": TerrainType.WATER, "height": 0.0}
-        return {"x": x, "y": y, "terrain": TerrainType.GRASS, "height": 0.0}
+            return TileData(
+                x=x, y=y, terrain=TerrainType.WATER, height=0.0, food_available=0.0
+            )
+        return TileData(
+            x=x, y=y, terrain=TerrainType.GRASS, height=0.0, food_available=1.0
+        )
 
 
 class TestFleeing(unittest.TestCase):

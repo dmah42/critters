@@ -48,14 +48,14 @@ def find_path(
     """
     start_node = Node(None, start_pos)
     start_tile = world.get_tile(start_pos[0], start_pos[1])
-    if start_tile["terrain"] == TerrainType.WATER:
+    if start_tile.terrain == TerrainType.WATER:
         raise ValueError(
             f"Pathfinding error: Start position {start_pos} is on unwalkable terrain"
         )
 
     end_node = Node(None, end_pos)
     end_tile = world.get_tile(end_pos[0], end_pos[1])
-    if end_tile["terrain"] == TerrainType.WATER:
+    if end_tile.terrain == TerrainType.WATER:
         raise ValueError(
             f"Pathfinding error: End position {end_pos} is on unwalkable terrain"
         )
@@ -108,7 +108,7 @@ def find_path(
 
             # Do not pathfind into water
             neighbor_tile = world.get_tile(node_position[0], node_position[1])
-            if neighbor_tile["terrain"] == TerrainType.WATER:
+            if neighbor_tile.terrain == TerrainType.WATER:
                 continue
 
             child = Node(current_node, node_position)

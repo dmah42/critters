@@ -4,6 +4,7 @@ import os
 import random
 
 from simulation.terrain_type import TerrainType
+from simulation.world import TileData
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -43,9 +44,11 @@ class MockCritter:
 class MockWorld:
     """A mock world that provides height and energy cost for pathfinding."""
 
-    def get_tile(self, x, y):
+    def get_tile(self, x, y) -> TileData:
         # For these tests, we can assume all tiles are flat land
-        return {"x": x, "y": y, "terrain": TerrainType.GRASS, "height": 0.0}
+        return TileData(
+            x=x, y=y, terrain=TerrainType.GRASS, height=0.0, food_available=1.0
+        )
 
 
 class TestBreeding(unittest.TestCase):

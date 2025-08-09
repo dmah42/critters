@@ -31,7 +31,7 @@ class WanderingBehavior(MovingBehavior):
         valid_directions = []
         for dx, dy in POSSIBLE_DIRECTIONS:
             tile = world.get_tile(critter.x + dx, critter.y + dy)
-            if tile["terrain"] != TerrainType.WATER:
+            if tile.terrain != TerrainType.WATER:
                 valid_directions.append((dx, dy))
 
         if not valid_directions:

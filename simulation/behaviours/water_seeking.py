@@ -22,9 +22,7 @@ class WaterSeekingBehavior(Behavior):
             for dx in [-1, 0, 1]
             if not (dx == 0 and dy == 0)
         ]
-        is_near_water = any(
-            tile["terrain"] == TerrainType.WATER for tile in surroundings
-        )
+        is_near_water = any(tile.terrain == TerrainType.WATER for tile in surroundings)
 
         if is_near_water:
             # If we are, the correct action is to DRINK.
@@ -40,7 +38,7 @@ class WaterSeekingBehavior(Behavior):
         ]
 
         water_tiles = [
-            tile for tile in wide_surroundings if tile["terrain"] == TerrainType.WATER
+            tile for tile in wide_surroundings if tile.terrain == TerrainType.WATER
         ]
 
         if not water_tiles:
@@ -56,7 +54,7 @@ class WaterSeekingBehavior(Behavior):
 
         # Path find to it
         start_pos = (critter.x, critter.y)
-        end_pos = (best_target_tile["x"], best_target_tile["y"])
+        end_pos = (best_target_tile.x, best_target_tile.y)
 
         path = find_path(world, start_pos, end_pos)
 
@@ -76,7 +74,7 @@ class WaterSeekingBehavior(Behavior):
         """Helper function to find the best land tile adjacent to water."""
         closest_water_tile = min(
             water_tiles,
-            key=lambda tile: abs(tile["x"] - critter.x) + abs(tile["y"] - critter.y),
+            key=lambda tile: abs(tile.x - critter.x) + abs(tile.y - critter.y),
         )
 
         shore_tiles = []
@@ -86,9 +84,9 @@ class WaterSeekingBehavior(Behavior):
                     continue
 
                 potential_shore_tile = world.get_tile(
-                    closest_water_tile["x"] + dx, closest_water_tile["y"] + dy
+                    closest_water_tile.x + dx, closest_water_tile.y + dy
                 )
-                if potential_shore_tile["terrain"] != TerrainType.WATER:
+                if potential_shore_tile.terrain != TerrainType.WATER:
                     shore_tiles.append(potential_shore_tile)
 
         if not shore_tiles:
@@ -96,5 +94,5 @@ class WaterSeekingBehavior(Behavior):
 
         return min(
             shore_tiles,
-            key=lambda tile: abs(tile["x"] - critter.x) + abs(tile["y"] - critter.y),
+            key=lambda tile: abs(tile.x - critter.x) + abs(tile.y - critter.y),
         )

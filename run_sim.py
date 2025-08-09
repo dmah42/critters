@@ -41,9 +41,12 @@ def main():
     print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
     while True:
+        start_time = time.time()
+
+        session = Session()
+        world = World(seed=Config.WORLD_SEED, session=session)
+
         try:
-            session = Session()
-            world = World(seed=Config.WORLD_SEED, session=session)
             run_simulation_tick(world, session)
             session.commit()
         except Exception as e:
@@ -55,7 +58,18 @@ def main():
         finally:
             session.close()
 
-        time.sleep(args.tick_timer)
+        end_time = time.time()
+
+        time_taken = end_time - start_time
+        sleep_time = args.tick_timer - time_taken
+
+        if sleep_time > 0:
+            time.sleep(args.tick_timer)
+        else:
+            logging.warning(
+                f"Tick processing ({time_taken:.2f}s) exceeded the "
+                f"tick timer duration ({args.tick_timer}s)"
+            )
 
 
 if __name__ == "__main__":

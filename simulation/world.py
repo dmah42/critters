@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import logging
 from typing import Any, Dict
 import noise
@@ -33,12 +34,21 @@ WORLD_CHUNK_SIZE = 32
 logger = logging.getLogger(__name__)
 
 
-def get_energy_cost(start_tile: Dict[str, Any], end_tile: Dict[str, Any]) -> float:
+@dataclass
+class TileData:
+    x: int
+    y: int
+    terrain: TerrainType
+    height: float
+    food_available: float
+
+
+def get_energy_cost(start_tile: TileData, end_tile: TileData) -> float:
     """
     Calculates the energy cost to move from one tile to another
     based on their height difference
     """
-    height_diff = end_tile["height"] - start_tile["height"]
+    height_diff = end_tile.height - start_tile.height
     energy_cost = BASE_ENERGY_COST_PER_MOVE
 
     if height_diff > 0:
@@ -63,7 +73,7 @@ class World:
         # Format: {(chunk_x, chunk_y): {(tile_x, tile_y): TileState, ...}}
         self._chunk_cache = {}
 
-    def get_tile(self, x: int, y: int) -> Dict[str, Any]:
+    def get_tile(self, x: int, y: int) -> TileData:
         # Determine which chunk this tile belongs to
         chunk_x = x // WORLD_CHUNK_SIZE
         chunk_y = y // WORLD_CHUNK_SIZE
@@ -75,7 +85,7 @@ class World:
 
         saved_state = self._chunk_cache[(chunk_x, chunk_y)].get((x, y))
         if saved_state:
-            base_tile["food_available"] = saved_state.food_available
+            base_tile.food_available = saved_state.food_available
 
         return base_tile
 
@@ -103,7 +113,7 @@ class World:
 
         logger.debug(f"Loaded chunk ({chunk_x}, {chunk_y})")
 
-    def _generate_procedural_tile(self, x: int, y: int) -> Dict[str, Any]:
+    def _generate_procedural_tile(self, x: int, y: int) -> TileData:
         """The core generation logic."""
         height_val = (
             noise.pnoise2(
@@ -127,11 +137,10 @@ class World:
         else:
             terrain = TerrainType.GRASS
 
-        tile = {
-            "x": x,
-            "y": y,
-            "height": height_val,
-            "terrain": terrain,
-            "food_available": DEFAULT_GRASS_FOOD if terrain == TerrainType.GRASS else 0,
-        }
-        return tile
+        return TileData(
+            x=x,
+            y=y,
+            height=height_val,
+            terrain=terrain,
+            food_available=DEFAULT_GRASS_FOOD if terrain == TerrainType.GRASS else 0,
+        )

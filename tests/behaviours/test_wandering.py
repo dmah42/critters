@@ -6,6 +6,7 @@ import os
 import random
 
 from simulation.terrain_type import TerrainType
+from simulation.world import TileData
 
 # Add the project root to the Python path to allow imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -38,7 +39,7 @@ class MockWorld:
         terrain = TerrainType.GRASS
         if (x, y) in self.water_locations:
             terrain = TerrainType.WATER
-        return {"x": x, "y": y, "terrain": terrain}
+        return TileData(x=x, y=y, terrain=terrain, height=y, food_available=1.0)
 
 
 class TestWanderingBehavior(unittest.TestCase):

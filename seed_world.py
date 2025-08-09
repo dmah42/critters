@@ -61,7 +61,7 @@ def seed_population(
             rand_y = random.randint(-spawn_radius, spawn_radius)
 
             # Don't spawn in water.
-            if world.get_tile(rand_x, rand_y)["terrain"] != TerrainType.WATER:
+            if world.get_tile(rand_x, rand_y).terrain != TerrainType.WATER:
                 herbivores.append(
                     Critter(
                         parent_one_id=adam.id,
@@ -89,7 +89,7 @@ def seed_population(
         while True:
             rand_x = random.randint(-spawn_radius, spawn_radius)
             rand_y = random.randint(-spawn_radius, spawn_radius)
-            if world.get_tile(rand_x, rand_y)["terrain"] != TerrainType.WATER:
+            if world.get_tile(rand_x, rand_y).terrain != TerrainType.WATER:
                 pack_centers.append((rand_x, rand_y))
                 break
     print(f"Created {len(pack_centers)} carnivore pack centres")
@@ -101,7 +101,7 @@ def seed_population(
         while True:
             rand_x = random.randint(center_x - pack_radius, center_x + pack_radius)
             rand_y = random.randint(center_y - pack_radius, center_y + pack_radius)
-            if world.get_tile(rand_x, rand_y)["terrain"] != TerrainType.WATER:
+            if world.get_tile(rand_x, rand_y).terrain != TerrainType.WATER:
                 carnivores.append(
                     Critter(
                         parent_one_id=adam.id,

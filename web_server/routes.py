@@ -214,7 +214,7 @@ def get_world_terrain_data():
 
             tile = world.get_tile(current_x, current_y)
 
-            tile["terrain"] = tile["terrain"].name
+            tile.terrain = tile.terrain.name
             tile_data.append(tile)
 
     return jsonify({"tiles": tile_data})

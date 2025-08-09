@@ -24,7 +24,6 @@ from simulation.models import (
     DeadCritter,
     DietType,
     Event,
-    SimulationStats,
     TileState,
 )
 from simulation.factory import create_ai_for_critter
@@ -222,8 +221,8 @@ def _run_critter_logic(
 
     elif action_type == ActionType.EAT:
         current_tile = world.get_tile(critter.x, critter.y)
-        amount_to_eat = min(current_tile["food_available"], GRASS_EAT_AMOUNT)
-        new_tile_food = current_tile["food_available"] - amount_to_eat
+        amount_to_eat = min(current_tile.food_available, GRASS_EAT_AMOUNT)
+        new_tile_food = current_tile.food_available - amount_to_eat
         _update_tile_food(session, critter.x, critter.y, new_tile_food)
 
         critter.hunger -= (
@@ -397,7 +396,7 @@ def _execute_move(
 
         # Don't let critters get in the same space or step on water.
         if (
-            destination_tile["terrain"] == TerrainType.WATER
+            destination_tile.terrain == TerrainType.WATER
             or (new_x, new_y) in occupied_positions
         ):
             logger.info("    unable to move. obstacle.")

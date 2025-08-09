@@ -6,6 +6,7 @@ import sys
 import os
 
 from simulation.terrain_type import TerrainType
+from simulation.world import TileData
 
 # Add the project root to the Python path to allow imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -35,15 +36,15 @@ class MockWorld:
         # food_locations should be a dict like {(x, y): amount}
         self.food_locations = food_locations
 
-    def get_tile(self, x, y):
+    def get_tile(self, x, y) -> TileData:
         food_amount = self.food_locations.get((x, y), 0.0)
-        return {
-            "x": x,
-            "y": y,
-            "terrain": TerrainType.GRASS,
-            "food_available": food_amount,
-            "height": y,
-        }
+        return TileData(
+            x=x,
+            y=y,
+            terrain=TerrainType.GRASS,
+            food_available=food_amount,
+            height=y,
+        )
 
 
 class TestBehaviors(unittest.TestCase):

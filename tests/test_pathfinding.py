@@ -5,11 +5,7 @@ import sys
 import os
 
 from simulation.terrain_type import TerrainType
-from simulation.world import (
-    BASE_ENERGY_COST_PER_MOVE,
-    DOWNHILL_ENERGY_MULTIPLIER,
-    UPHILL_ENERGY_MULTIPLIER,
-)
+from simulation.world import TileData
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -23,10 +19,10 @@ class MockWorld:
         self.obstacles = obstacles if obstacles is not None else set()
         self.heights = heights if heights is not None else {}
 
-    def get_tile(self, x, y):
+    def get_tile(self, x, y) -> TileData:
         terrain = TerrainType.WATER if (x, y) in self.obstacles else TerrainType.GRASS
         height = self.heights.get((x, y), 0.0)  # Default to flat ground
-        return {"x": x, "y": y, "terrain": terrain, "height": height}
+        return TileData(x=x, y=y, terrain=terrain, height=height, food_available=1.0)
 
 
 class TestPathfinding(unittest.TestCase):

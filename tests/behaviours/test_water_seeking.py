@@ -8,6 +8,7 @@ from simulation.brain import THIRST_TO_START_DRINKING
 from simulation.factory import create_ai_for_critter
 from simulation.models import DietType
 from simulation.terrain_type import TerrainType
+from simulation.world import TileData
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -36,7 +37,7 @@ class MockWorld:
             TerrainType.WATER if (x, y) in self.water_locations else TerrainType.GRASS
         )
         # Pathfinding requires height, so we'll add a default
-        return {"x": x, "y": y, "terrain": terrain, "height": 0.0}
+        return TileData(x=x, y=y, terrain=terrain, height=0.0, food_available=1.0)
 
 
 # --- The Tests ---

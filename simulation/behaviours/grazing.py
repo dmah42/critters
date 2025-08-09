@@ -26,8 +26,8 @@ class GrazingBehavior(ForagingBehavior):
         current_tile = world.get_tile(critter.x, critter.y)
 
         if (
-            current_tile["terrain"] == TerrainType.GRASS
-            and current_tile["food_available"] > MINIMUM_GRAZE_AMOUNT
+            current_tile.terrain == TerrainType.GRASS
+            and current_tile.food_available > MINIMUM_GRAZE_AMOUNT
         ):
             # If so, the correct action is to EAT.
             return {"type": ActionType.EAT}
@@ -42,26 +42,23 @@ class GrazingBehavior(ForagingBehavior):
         ]
 
         food_tiles = [
-            tile
-            for tile in surroundings
-            if tile["food_available"] > MINIMUM_GRAZE_AMOUNT
+            tile for tile in surroundings if tile.food_available > MINIMUM_GRAZE_AMOUNT
         ]
 
         if food_tiles:
             # Choose a foraging strategy (unchanged)
             if random.random() < STRATEGIST_PROBABILITY:
                 # Strategist: go for the most food
-                best_tile = max(food_tiles, key=lambda tile: tile["food_available"])
+                best_tile = max(food_tiles, key=lambda tile: tile.food_available)
             else:
                 # Opportunist: go for the closest food
                 best_tile = min(
                     food_tiles,
-                    key=lambda tile: abs(tile["x"] - critter.x)
-                    + abs(tile["y"] - critter.y),
+                    key=lambda tile: abs(tile.x - critter.x) + abs(tile.y - critter.y),
                 )
 
             # Find a path to the tile
-            end_pos = (best_tile["x"], best_tile["y"])
+            end_pos = (best_tile.x, best_tile.y)
             path = find_path(world, (critter.x, critter.y), end_pos)
 
             if path and len(path) > 1:

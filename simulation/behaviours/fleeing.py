@@ -48,7 +48,7 @@ class FleeingBehavior(Behavior):
             possible_escape_land_tiles = [
                 tile
                 for tile in possible_escape_tiles
-                if tile["terrain"] != TerrainType.WATER
+                if tile.terrain != TerrainType.WATER
             ]
 
             if len(possible_escape_land_tiles) == 0:
@@ -59,13 +59,13 @@ class FleeingBehavior(Behavior):
 
             best_target_tile = max(
                 possible_escape_land_tiles,
-                key=lambda tile: abs(tile["x"] - closest_predator.x)
-                + abs(tile["y"] - closest_predator.y),
+                key=lambda tile: abs(tile.x - closest_predator.x)
+                + abs(tile.y - closest_predator.y),
             )
 
             # Path find to it
             start_pos = (critter.x, critter.y)
-            end_pos = (best_target_tile["x"], best_target_tile["y"])
+            end_pos = (best_target_tile.x, best_target_tile.y)
 
             path = find_path(world, start_pos, end_pos)
 

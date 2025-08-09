@@ -5,6 +5,7 @@ import random
 from unittest.mock import patch
 
 from simulation.terrain_type import TerrainType
+from simulation.world import TileData
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -88,7 +89,7 @@ class MockWorld:
             tile_state_overrides if tile_state_overrides is not None else {}
         )
 
-    def get_tile(self, x, y):
+    def get_tile(self, x, y) -> TileData:
         food_amount = DEFAULT_GRASS_FOOD
         if (x, y) in self.tile_state_overrides:
             food_amount = self.tile_state_overrides.get((x, y), 0.0)
@@ -97,13 +98,13 @@ class MockWorld:
         if y > 5:  # Let's add some water for testing
             terrain = TerrainType.WATER
 
-        return {
-            "x": x,
-            "y": y,
-            "terrain": terrain,
-            "food_available": food_amount,
-            "height": y,
-        }
+        return TileData(
+            x=x,
+            y=y,
+            terrain=terrain,
+            food_available=food_amount,
+            height=y,
+        )
 
 
 class MockQuery:
