@@ -1,10 +1,10 @@
-import json
 import logging
-import math
 import random
 from typing import List
+
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
+from simulation.statistics import record_statistics
 from simulation.terrain_type import TerrainType
 from simulation.brain import (
     CRITICAL_HUNGER,
@@ -84,7 +84,7 @@ def run_simulation_tick(world: World, session: Session):
     logger.info("+++ Starting tick +++")
     _process_tile_regrowth(session)
     _process_critter_ai(world, session)
-    _record_statistics(session)
+    record_statistics(session)
     logger.info("+++ Ending tick +++")
     print("|", end="", flush=True)
 
@@ -533,86 +533,6 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
     parent2.energy -= BREEDING_ENERGY_COST
     parent1.breeding_cooldown = BREEDING_COOLDOWN_TICKS
     parent2.breeding_cooldown = BREEDING_COOLDOWN_TICKS
-
-
-def _record_statistics(session: Session):
-    """Calculates and saves the current sim stats"""
-    critters = session.query(Critter).all()
-    population = len(critters)
-
-    if population == 0:
-        logger.warning("No living critters")
-        return
-
-    herbivore_stats = {
-        "count": 0,
-        "ages": {},
-        "health": {"Healthy": 0, "Hurt": 0, "Critical": 0},
-        "hunger": {},
-        "thirst": {},
-        "energy": {},
-    }
-    carnivore_stats = {
-        "count": 0,
-        "ages": {},
-        "health": {"Healthy": 0, "Hurt": 0, "Critical": 0},
-        "hunger": {},
-        "thirst": {},
-        "energy": {},
-    }
-
-    goal_bins = {}
-
-    for c in critters:
-        stats_dict = (
-            herbivore_stats if c.diet == DietType.HERBIVORE else carnivore_stats
-        )
-
-        stats_dict["count"] += 1
-
-        stats_dict["ages"][c.age] = stats_dict["ages"].get(c.age, 0) + 1
-        hunger_bin = int(math.floor(c.hunger))
-        stats_dict["hunger"][hunger_bin] = stats_dict["hunger"].get(hunger_bin, 0) + 1
-        thirst_bin = int(math.floor(c.thirst))
-        stats_dict["thirst"][thirst_bin] = stats_dict["thirst"].get(thirst_bin, 0) + 1
-        energy_bin = int(math.floor(c.energy))
-        stats_dict["energy"][energy_bin] = stats_dict["energy"].get(energy_bin, 0) + 1
-
-        if c.health > 70:
-            stats_dict["health"]["Healthy"] += 1
-        elif c.health > 30:
-            stats_dict["health"]["Hurt"] += 1
-        else:
-            stats_dict["health"]["Critical"] += 1
-
-        goal_bin = c.ai_state.name
-        goal_bins[goal_bin] = goal_bins.get(goal_bin, 0) + 1
-
-    last_stat = (
-        session.query(SimulationStats).order_by(SimulationStats.tick.desc()).first()
-    )
-    current_tick = (last_stat.tick + 1) if last_stat else 1
-
-    stats = SimulationStats(
-        tick=current_tick,
-        population=population,
-        herbivore_population=herbivore_stats["count"],
-        carnivore_population=carnivore_stats["count"],
-        herbivore_age_distribution=json.dumps(herbivore_stats["ages"]),
-        carnivore_age_distribution=json.dumps(carnivore_stats["ages"]),
-        herbivore_health_distribution=json.dumps(herbivore_stats["health"]),
-        carnivore_health_distribution=json.dumps(carnivore_stats["health"]),
-        herbivore_hunger_distribution=json.dumps(herbivore_stats["hunger"]),
-        carnivore_hunger_distribution=json.dumps(carnivore_stats["hunger"]),
-        herbivore_thirst_distribution=json.dumps(herbivore_stats["thirst"]),
-        carnivore_thirst_distribution=json.dumps(carnivore_stats["thirst"]),
-        herbivore_energy_distribution=json.dumps(herbivore_stats["energy"]),
-        carnivore_energy_distribution=json.dumps(carnivore_stats["energy"]),
-        goal_distribution=json.dumps(goal_bins),
-    )
-    session.add(stats)
-
-    logger.info(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
 
 
 def _log_event(

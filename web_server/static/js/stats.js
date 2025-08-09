@@ -47,6 +47,7 @@ let populationChart,
   energyChart,
   deathChart,
   goalChart;
+let speedChart, sizeChart, metabolismChart, perceptionChart, commitmentChart;
 
 // --- Color Maps ---
 const GOAL_COLOR_MAP = {
@@ -122,6 +123,89 @@ function updatePieChart(
   }
 }
 
+function updateRibbonChart(
+  chartInstance,
+  canvasId,
+  labels,
+  herbivoreData,
+  carnivoreData
+) {
+  // herbivoreData and carnivoreData should be {q1: [...], median: [...], q3: [...]}
+  const datasets = [
+    {
+      label: "Herbivore Median",
+      data: herbivoreData.median,
+      borderColor: "rgba(75, 192, 75, 1)", // Solid Green
+      tension: 0.1,
+      fill: false,
+    },
+    {
+      label: "Herbivore IQR",
+      data: herbivoreData.q3, // The top of the ribbon
+      borderColor: "transparent",
+      backgroundColor: "rgba(75, 192, 75, 0.2)", // Light Green
+      fill: 0, // Fill to the dataset at index 0 (the median)
+      pointRadius: 0,
+    },
+    {
+      label: "Herbivore IQR Lower", // Not shown in legend
+      data: herbivoreData.q1, // The bottom of the ribbon
+      borderColor: "transparent",
+      backgroundColor: "rgba(75, 192, 75, 0.2)",
+      fill: 0,
+      pointRadius: 0,
+      showInLegend: false,
+    },
+    {
+      label: "Carnivore Median",
+      data: carnivoreData.median,
+      borderColor: "rgba(255, 99, 132, 1)", // Solid Red
+      tension: 0.1,
+      fill: false,
+    },
+    {
+      label: "Carnivore IQR",
+      data: carnivoreData.q3,
+      borderColor: "transparent",
+      backgroundColor: "rgba(255, 99, 132, 0.2)", // Light Red
+      fill: 3, // Fill to the dataset at index 3 (the carnivore median)
+      pointRadius: 0,
+    },
+    {
+      label: "Carnivore IQR Lower",
+      data: carnivoreData.q1,
+      borderColor: "transparent",
+      backgroundColor: "rgba(255, 99, 132, 0.2)",
+      fill: 3,
+      pointRadius: 0,
+      showInLegend: false,
+    },
+  ];
+
+  if (chartInstance) {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets = datasets;
+    chartInstance.update();
+    return chartInstance;
+  } else {
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    return new Chart(ctx, {
+      type: "line",
+      data: { labels: labels, datasets: datasets },
+      options: {
+        scales: { y: { beginAtZero: true } },
+        plugins: {
+          legend: {
+            labels: {
+              filter: (item) => item.text && !item.text.includes("Lower"),
+            },
+          },
+        },
+      },
+    });
+  }
+}
+
 function createHistogramData(rawData, binSize, maxVal) {
   const labels = [];
   const data = [];
@@ -153,7 +237,13 @@ async function fetchAndDrawHistoryCharts() {
     const response = await fetch("/api/stats/history?limit=200");
     if (!response.ok) throw new Error("Failed to fetch stats history");
     const history = await response.json();
-    if (history.length === 0) return;
+
+    if (!Array.isArray(history) || history.length === 0) {
+      console.warn(
+        "History data is not a valid array or is empty. Skipping chart update."
+      );
+      return;
+    }
 
     const latestStat = history[history.length - 1];
 
@@ -390,6 +480,104 @@ async function fetchAndDrawHistoryCharts() {
       goalData,
       "Goal Distribution",
       goalColors
+    );
+
+    // -- Genetic distribution charts
+    const ticks = history.map((s) => s.tick);
+
+    // Prepare Speed Data
+    const herbSpeed = {
+      q1: history.map((s) => s.herbivore_speed_q1),
+      median: history.map((s) => s.herbivore_speed_median),
+      q3: history.map((s) => s.herbivore_speed_q3),
+    };
+    const carnSpeed = {
+      q1: history.map((s) => s.carnivore_speed_q1),
+      median: history.map((s) => s.carnivore_speed_median),
+      q3: history.map((s) => s.carnivore_speed_q3),
+    };
+    speedChart = updateRibbonChart(
+      speedChart,
+      "speedChart",
+      ticks,
+      herbSpeed,
+      carnSpeed
+    );
+
+    // Prepare Size Data
+    const herbSize = {
+      q1: history.map((s) => s.herbivore_size_q1),
+      median: history.map((s) => s.herbivore_size_median),
+      q3: history.map((s) => s.herbivore_size_q3),
+    };
+    const carnSize = {
+      q1: history.map((s) => s.carnivore_size_q1),
+      median: history.map((s) => s.carnivore_size_median),
+      q3: history.map((s) => s.carnivore_size_q3),
+    };
+    sizeChart = updateRibbonChart(
+      sizeChart,
+      "sizeChart",
+      ticks,
+      herbSize,
+      carnSize
+    );
+
+    // Prepare Metabolism Data
+    const herbMetabolism = {
+      q1: history.map((s) => s.herbivore_metabolism_q1),
+      median: history.map((s) => s.herbivore_metabolism_median),
+      q3: history.map((s) => s.herbivore_metabolism_q3),
+    };
+    const carnMetabolism = {
+      q1: history.map((s) => s.carnivore_metabolism_q1),
+      median: history.map((s) => s.carnivore_metabolism_median),
+      q3: history.map((s) => s.carnivore_metabolism_q3),
+    };
+    metabolismChart = updateRibbonChart(
+      metabolismChart,
+      "metabolismChart",
+      ticks,
+      herbMetabolism,
+      carnMetabolism
+    );
+
+    // Prepare perception data
+    const herbPerception = {
+      q1: history.map((s) => s.herbivore_perception_q1),
+      median: history.map((s) => s.herbivore_perception_median),
+      q3: history.map((s) => s.herbivore_perception_q3),
+    };
+    const carnPerception = {
+      q1: history.map((s) => s.carnivore_perception_q1),
+      median: history.map((s) => s.carnivore_perception_median),
+      q3: history.map((s) => s.carnivore_perception_q3),
+    };
+    perceptionChart = updateRibbonChart(
+      perceptionChart,
+      "perceptionChart",
+      ticks,
+      herbPerception,
+      carnPerception
+    );
+
+    // Prepare commitment data
+    const herbCommitment = {
+      q1: history.map((s) => s.herbivore_commitment_q1),
+      median: history.map((s) => s.herbivore_commitment_median),
+      q3: history.map((s) => s.herbivore_commitment_q3),
+    };
+    const carnCommitment = {
+      q1: history.map((s) => s.carnivore_commitment_q1),
+      median: history.map((s) => s.carnivore_commitment_median),
+      q3: history.map((s) => s.carnivore_commitment_q3),
+    };
+    commitmentChart = updateRibbonChart(
+      commitmentChart,
+      "commitmentChart",
+      ticks,
+      herbCommitment,
+      carnCommitment
     );
   } catch (error) {
     console.error("Error updating history charts:", error);

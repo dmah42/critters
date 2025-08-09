@@ -2,6 +2,7 @@ import unittest
 import sys
 import os
 import random
+from unittest.mock import patch
 
 from simulation.terrain_type import TerrainType
 
@@ -9,7 +10,14 @@ from simulation.terrain_type import TerrainType
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from simulation.brain import ENERGY_TO_START_RESTING, HUNGER_TO_START_FORAGING
-from simulation.models import DietType, AIState, CauseOfDeath
+from simulation.models import (
+    Critter,
+    CritterEvent,
+    DeadCritter,
+    DietType,
+    AIState,
+    CauseOfDeath,
+)
 from simulation.engine import (
     DEFAULT_GRASS_FOOD,
     _run_critter_logic,
@@ -51,6 +59,7 @@ class MockCritter:
         self.vy = vy
         self.diet = diet
         self.health = health
+        self.max_health = health
         self.energy = energy
         self.hunger = hunger
         self.thirst = thirst
@@ -59,6 +68,9 @@ class MockCritter:
         self.speed = speed
         self.size = size
         self.metabolism = 1.0
+        self.lifespan = 100.0
+        self.perception = 5.0
+        self.commitment = 1.25
         self.ai_state = ai_state
         self.breeding_cooldown = breeding_cooldown
         self.parent_one_id = parent_one_id
@@ -109,22 +121,24 @@ class MockQuery:
 
 
 class MockSession:
-    """A fake database session that can simulate a simple query."""
+    """A simple spy that records calls made to it."""
 
-    def __init__(self, initial_objects=None):
-        self.new = []
-        self.deleted = set()
-        self._initial_objects = initial_objects if initial_objects is not None else []
+    def __init__(self):
+        self.added = []
+        self.deleted = []
+        self.flushed = False
 
-    def query(self, model_class):
-        # This method now returns our fake query object
-        return MockQuery(self._initial_objects)
+    def query(self, _):
+        pass
 
     def add(self, obj):
-        self.new.append(obj)
+        self.added.append(obj)
 
     def delete(self, obj):
-        self.deleted.add(obj)
+        self.deleted.append(obj)
+
+    def flush(self):
+        self.flushed = True
 
 
 class TestEngine(unittest.TestCase):
@@ -148,7 +162,8 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(tired_critter.energy, ENERGY_TO_START_RESTING - 1)
         self.assertEqual(tired_critter.ai_state, AIState.RESTING)
 
-    def test_critter_eats_when_hungry_on_food(self):
+    @patch("simulation.engine._update_tile_food")
+    def test_critter_eats_when_hungry_on_food(self, mock_update_food):
         """Tests that a hungry critter on a food tile will eat."""
         hungry_critter = MockCritter(hunger=HUNGER_TO_START_FORAGING + 1)
         world_with_food = MockWorld(tile_state_overrides={(0, 0): 10.0})
@@ -163,35 +178,48 @@ class TestEngine(unittest.TestCase):
         self.assertLess(hungry_critter.hunger, HUNGER_TO_START_FORAGING + 1)
         self.assertEqual(hungry_critter.ai_state, AIState.EATING)
 
-    def test_handle_death_creates_dead_critter(self):
-        """Tests that the death handler correctly archives a critter."""
-        critter_to_die = MockCritter(id=123, age=100)
+    def test_handle_death_adds_and_deletes(self):
+        """
+        Tests that _handle_death adds a DeadCritter and deletes a Critter,
+        without flushing.
+        """
+        session = MockSession()
+        critter_to_die = MockCritter(id=123)
 
-        _handle_death(critter_to_die, CauseOfDeath.STARVATION, self.session)
+        # Act
+        _handle_death(critter_to_die, CauseOfDeath.STARVATION, session)
 
-        self.assertEqual(len(self.session.new), 1)
-        self.assertEqual(self.session.new[0].original_id, 123)
-        self.assertIn(critter_to_die, self.session.deleted)
+        # Assert
+        self.assertEqual(len(session.added), 2)
+        added_types = [type(obj) for obj in session.added]
+        self.assertIn(DeadCritter, added_types)
+        self.assertIn(CritterEvent, added_types)
+
+        self.assertEqual(len(session.deleted), 1)
+        self.assertIs(session.deleted[0], critter_to_die)
+
+        self.assertFalse(session.flushed)  # Crucially, it should NOT flush
+
+    def test_reproduce_adds_and_flushes(self):
+        """
+        Tests that _reproduce adds a new Critter and then flushes the session.
+        """
+        session = MockSession()
+        parent1 = MockCritter(id=1)
+        parent2 = MockCritter(id=2)
+
+        # Act
+        _reproduce(parent1, parent2, session)
+
+        # Assert
+        self.assertEqual(len(session.added), 4)
+        added_types = [type(obj) for obj in session.added]
+        self.assertIn(Critter, added_types)
+        self.assertIn(CritterEvent, added_types)
+
+        self.assertTrue(session.flushed)  # Crucially, it SHOULD flush
 
     def test_handle_death_fails_for_ghost(self):
         with self.assertRaises(RuntimeError):
             critter_to_die = MockCritter(id=123, age=100, is_ghost=True)
             _handle_death(critter_to_die, CauseOfDeath.STARVATION, self.session)
-
-    def test_reproduce_creates_child(self):
-        """Tests that reproduction creates a new critter."""
-        parent1 = MockCritter(id=1, speed=5.0, size=5.0, diet=DietType.HERBIVORE)
-        parent2 = MockCritter(id=2, speed=4.0, size=6.0, diet=DietType.HERBIVORE)
-
-        _reproduce(parent1, parent2, self.session)
-
-        self.assertEqual(len(self.session.new), 1)
-        # We need to import the real Critter model to check the type
-        from simulation.models import Critter
-
-        self.assertIsInstance(self.session.new[0], Critter)
-        self.assertEqual(self.session.new[0].parent_one_id, 1)
-        self.assertGreaterEqual(self.session.new[0].speed, 3.8)
-        self.assertLessEqual(self.session.new[0].speed, 5.2)
-        self.assertGreaterEqual(self.session.new[0].size, 4.8)
-        self.assertLessEqual(self.session.new[0].size, 6.2)

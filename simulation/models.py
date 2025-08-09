@@ -260,7 +260,7 @@ class SimulationStats(db.Model):
     herbivore_population = db.Column(db.Integer)
     carnivore_population = db.Column(db.Integer)
 
-    # Store the age distribution as a JSON string
+    # Store the distributions as JSON strings
     herbivore_age_distribution = db.Column(db.Text)
     carnivore_age_distribution = db.Column(db.Text)
     herbivore_health_distribution = db.Column(db.Text)
@@ -271,6 +271,48 @@ class SimulationStats(db.Model):
     carnivore_thirst_distribution = db.Column(db.Text)
     herbivore_energy_distribution = db.Column(db.Text)
     carnivore_energy_distribution = db.Column(db.Text)
+
+    # We will store the 25th, 50th (median), and 75th percentiles for each trait.
+
+    # -- Speed --
+    herbivore_speed_q1 = db.Column(db.Float)
+    herbivore_speed_median = db.Column(db.Float)
+    herbivore_speed_q3 = db.Column(db.Float)
+    carnivore_speed_q1 = db.Column(db.Float)
+    carnivore_speed_median = db.Column(db.Float)
+    carnivore_speed_q3 = db.Column(db.Float)
+
+    # -- Size --
+    herbivore_size_q1 = db.Column(db.Float)
+    herbivore_size_median = db.Column(db.Float)
+    herbivore_size_q3 = db.Column(db.Float)
+    carnivore_size_q1 = db.Column(db.Float)
+    carnivore_size_median = db.Column(db.Float)
+    carnivore_size_q3 = db.Column(db.Float)
+
+    # -- Metabolism --
+    herbivore_metabolism_q1 = db.Column(db.Float)
+    herbivore_metabolism_median = db.Column(db.Float)
+    herbivore_metabolism_q3 = db.Column(db.Float)
+    carnivore_metabolism_q1 = db.Column(db.Float)
+    carnivore_metabolism_median = db.Column(db.Float)
+    carnivore_metabolism_q3 = db.Column(db.Float)
+
+    # -- Perception --
+    herbivore_perception_q1 = db.Column(db.Float)
+    herbivore_perception_median = db.Column(db.Float)
+    herbivore_perception_q3 = db.Column(db.Float)
+    carnivore_perception_q1 = db.Column(db.Float)
+    carnivore_perception_median = db.Column(db.Float)
+    carnivore_perception_q3 = db.Column(db.Float)
+
+    # -- Commitment --
+    herbivore_commitment_q1 = db.Column(db.Float)
+    herbivore_commitment_median = db.Column(db.Float)
+    herbivore_commitment_q3 = db.Column(db.Float)
+    carnivore_commitment_q1 = db.Column(db.Float)
+    carnivore_commitment_median = db.Column(db.Float)
+    carnivore_commitment_q3 = db.Column(db.Float)
 
     goal_distribution = db.Column(db.Text)
 

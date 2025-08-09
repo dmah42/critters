@@ -85,22 +85,51 @@
       </div>
     </div>
 
-    <div class="chart-container">
-      <h2>Health</h2>
-      <canvas id="healthChart"></canvas>
+    <div class="chart-container chart-row">
+      <h2>Basic needs distributions</h2>
+      <div>
+        <h3>Health</h3>
+        <canvas id="healthChart"></canvas>
+      </div>
+      <div>
+        <h3>Energy</h3>
+        <canvas id="energyChart"></canvas>
+      </div>
+      <div>
+        <h3>Hunger</h3>
+        <canvas id="hungerChart"></canvas>
+      </div>
+      <div>
+        <h3>Thirst</h3>
+        <canvas id="thirstChart"></canvas>
+      </div>
     </div>
 
     <div class="chart-container">
-      <h2>Energy distribution</h2>
-      <canvas id="energyChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <h2>Hunger distribution</h2>
-      <canvas id="hungerChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <h2>Thirst distribution</h2>
-      <canvas id="thirstChart"></canvas>
+      <h2>Genetic Trait Distributions Over Time</h2>
+      <!-- We'll use a flex row to hold the smaller charts -->
+      <div class="chart-row">
+        <div>
+          <h3>Speed</h3>
+          <canvas id="speedChart"></canvas>
+        </div>
+        <div>
+          <h3>Size</h3>
+          <canvas id="sizeChart"></canvas>
+        </div>
+        <div>
+          <h3>Metabolism</h3>
+          <canvas id="metabolismChart"></canvas>
+        </div>
+        <div>
+          <h3>Perception</h3>
+          <canvas id="perceptionChart"></canvas>
+        </div>
+        <div>
+          <h3>Commitment</h3>
+          <canvas id="commitmentChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <div class="chart-container">

@@ -20,6 +20,7 @@ class MockCritter:
         self.diet = diet
         self.health = health
         self.is_ghost = is_ghost
+        self.perception = 8.0
 
 
 class MockWorld:

@@ -27,6 +27,7 @@ class MockCritter:
         self.y = y
         self.diet = diet
         self.speed = 3.0
+        self.perception = 5.0
 
 
 class MockWorld:
