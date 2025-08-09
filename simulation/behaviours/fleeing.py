@@ -25,8 +25,8 @@ class FleeingBehavior(Behavior):
             other
             for other in all_critters
             if other.diet == DietType.CARNIVORE
-            and abs(other.x - critter.x) <= FLEEING_RADIUS
-            and abs(other.y - critter.y) <= FLEEING_RADIUS
+            and abs(other.x - critter.x) <= critter.perception
+            and abs(other.y - critter.y) <= critter.perception
         ]
 
         if nearby_carnivores:
@@ -37,7 +37,7 @@ class FleeingBehavior(Behavior):
 
             # find a tile that is land and furthest away from the predator
             # within speed range.
-            max_range = int(critter.speed)
+            max_range = FLEEING_RADIUS
             possible_escape_tiles = [
                 world.get_tile(critter.x + sx, critter.y + sy)
                 for sx in range(-max_range, max_range + 1)

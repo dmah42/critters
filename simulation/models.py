@@ -102,6 +102,7 @@ class Critter(db.Model):
     speed = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
     size = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
     metabolism = db.Column(db.Float, nullable=False, default=1.0, server_default="1.0")
+    perception = db.Column(db.Float, nullable=False, default=8.0, server_default="8.0")
     lifespan = db.Column(
         db.Integer, nullable=False, default=2000, server_default="2000"
     )

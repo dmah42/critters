@@ -232,6 +232,12 @@ function updateStatsPanel() {
             <p><span class="stat-label">Metabolism:</span> ${selectedCritter.metabolism.toFixed(
               1
             )}</p>
+            <p><span class="stat-label">Commitment:</span> ${selectedCritter.commitment.toFixed(
+              1
+            )}</p>
+            <p><span class="stat-label">Perception:</span> ${selectedCritter.perception.toFixed(
+              1
+            )}</p>
         `;
   } else {
     // If no critter is selected, show the default message

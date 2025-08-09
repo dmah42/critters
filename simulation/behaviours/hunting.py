@@ -5,10 +5,6 @@ from simulation.models import Critter, DietType
 from simulation.pathfinding import find_path
 from simulation.world import World
 
-# Make this the same as flocking... if they can flock together,
-# they can smell each other
-HUNTING_RADIUS = 8
-
 
 class HuntingBehavior(ForagingBehavior):
     def get_action(
@@ -40,8 +36,8 @@ class HuntingBehavior(ForagingBehavior):
         nearby_herbivores = [
             prey
             for prey in potential_prey
-            if abs(prey.x - critter.x) <= HUNTING_RADIUS
-            and abs(prey.y - critter.y) <= HUNTING_RADIUS
+            if abs(prey.x - critter.x) <= critter.perception
+            and abs(prey.y - critter.y) <= critter.perception
         ]
 
         if nearby_herbivores:
