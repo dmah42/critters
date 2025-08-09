@@ -152,12 +152,39 @@ class Critter(db.Model):
     def max_health(self) -> float:
         return self.size * HEALTH_PER_SIZE_POINT
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if "health" not in kwargs:
-            self.health = self.size * HEALTH_PER_SIZE_POINT
+    def __init__(
+        self,
+        *,
+        parent_one_id,
+        parent_two_id,
+        diet,
+        x,
+        y,
+        speed,
+        size,
+        metabolism,
+        perception,
+        commitment,
+        lifespan,
+        **kwargs,
+    ):
+        super().__init__(
+            parent_one_id=parent_one_id,
+            parent_two_id=parent_two_id,
+            diet=diet,
+            x=x,
+            y=y,
+            speed=speed,
+            size=size,
+            metabolism=metabolism,
+            perception=perception,
+            commitment=commitment,
+            lifespan=lifespan,
+            **kwargs,
+        )
 
-        # A transient, in-memory flag to mark if a critter has died this tick.
+        if "health" not in kwargs:
+            self.health: float = self.size * HEALTH_PER_SIZE_POINT
         self.is_ghost: bool = False
 
     @orm.reconstructor

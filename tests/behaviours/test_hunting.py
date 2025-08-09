@@ -5,6 +5,7 @@ import sys
 import os
 import random
 
+from simulation.brain import HUNGER_TO_START_AMBUISHING, HUNGER_TO_START_HUNTING
 from simulation.world import TileData
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -15,7 +16,15 @@ from simulation.models import DietType
 
 
 class MockCritter:
-    def __init__(self, x, y, diet, health=100.0, is_ghost=False):
+    def __init__(
+        self,
+        x,
+        y,
+        diet,
+        health=100.0,
+        is_ghost=False,
+        hunger=HUNGER_TO_START_HUNTING + 1,
+    ):
         self.id = random.randint(1, 1000)
         self.x = x
         self.y = y
@@ -23,6 +32,7 @@ class MockCritter:
         self.health = health
         self.is_ghost = is_ghost
         self.perception = 8.0
+        self.hunger = hunger
 
 
 class MockWorld:
@@ -109,3 +119,57 @@ class TestHuntingBehavior(unittest.TestCase):
         behavior = HuntingBehavior()
         action = behavior.get_action(self.carnivore, self.world, all_critters)
         self.assertIsNone(action)
+
+    def test_ambushes_when_moderately_hungry_and_no_prey_near(self):
+        """
+        Tests that a moderately hungry carnivore will AMBUSH if no prey is in its kill zone.
+        """
+        # Set hunger to be in the "ambush" range
+        self.carnivore.hunger = HUNGER_TO_START_AMBUISHING + 1
+        # Place prey far away, outside the ambush radius
+        prey = MockCritter(x=10, y=10, diet=DietType.HERBIVORE)
+        all_critters = [self.carnivore, prey]
+
+        behavior = HuntingBehavior()
+        action = behavior.get_action(self.carnivore, self.world, all_critters)
+
+        # Assert: The action should be to wait and ambush
+        self.assertIsNotNone(action)
+        self.assertEqual(action.type, ActionType.AMBUSH)
+
+    def test_intercepts_prey_during_ambush(self):
+        """
+        Tests that a moderately hungry carnivore will MOVE to intercept prey
+        that enters its ambush "kill zone".
+        """
+        self.carnivore.hunger = HUNGER_TO_START_AMBUISHING + 1
+        # Place prey close by, inside the ambush radius but not adjacent
+        prey = MockCritter(x=2, y=2, diet=DietType.HERBIVORE)
+        all_critters = [self.carnivore, prey]
+
+        behavior = HuntingBehavior()
+        action = behavior.get_action(self.carnivore, self.world, all_critters)
+
+        # Assert: The action should be to MOVE towards the nearby prey
+        self.assertIsNotNone(action)
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (prey.x, prey.y))
+
+    def test_hunts_when_very_hungry(self):
+        """
+        Tests that a very hungry carnivore will ignore the ambush tactic and
+        perform a long-range hunt.
+        """
+        # Set hunger to be in the "active hunt" range
+        self.carnivore.hunger = HUNGER_TO_START_HUNTING + 1
+        # Place prey far away, outside the ambush radius but inside the main sense radius
+        prey = MockCritter(x=8, y=8, diet=DietType.HERBIVORE)
+        all_critters = [self.carnivore, prey]
+
+        behavior = HuntingBehavior()
+        action = behavior.get_action(self.carnivore, self.world, all_critters)
+
+        # Assert: The action should be to MOVE towards the distant prey
+        self.assertIsNotNone(action)
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (prey.x, prey.y))

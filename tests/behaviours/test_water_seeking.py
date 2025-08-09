@@ -56,7 +56,7 @@ class TestWaterSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(critter, world, [])
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.DRINK)
+        self.assertEqual(action.type, ActionType.DRINK)
 
     def test_moves_towards_reachable_water(self):
         """

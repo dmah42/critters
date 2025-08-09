@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.models import Critter

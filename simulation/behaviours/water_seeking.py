@@ -26,7 +26,7 @@ class WaterSeekingBehavior(Behavior):
 
         if is_near_water:
             # If we are, the correct action is to DRINK.
-            return {"type": ActionType.DRINK}
+            return AIAction(type=ActionType.DRINK)
 
         # 2. If not adjacent, scan the wider area for water to move towards.
         scan_range = range(-SENSE_RADIUS, SENSE_RADIUS + 1)

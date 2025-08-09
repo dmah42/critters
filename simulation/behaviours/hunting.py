@@ -1,7 +1,11 @@
 from typing import Any, Dict, List, Optional
 from simulation.behaviours.behavior import AIAction
 from simulation.behaviours.foraging import ForagingBehavior
-from simulation.brain import ActionType
+from simulation.brain import (
+    HUNGER_TO_START_AMBUISHING,
+    HUNGER_TO_START_HUNTING,
+    ActionType,
+)
 from simulation.models import Critter, DietType
 from simulation.pathfinding import find_path
 from simulation.world import World
@@ -33,37 +37,75 @@ class HuntingBehavior(ForagingBehavior):
             # If prey is adjacent, the action is to ATTACK.
             return AIAction(type=ActionType.ATTACK, target_critter=adjacent_prey[0])
 
-        # 2. If no adjacent prey, scan the wider area to find a target to hunt.
-        nearby_herbivores = [
-            prey
-            for prey in potential_prey
-            if abs(prey.x - critter.x) <= critter.perception
-            and abs(prey.y - critter.y) <= critter.perception
-        ]
+        if critter.hunger >= HUNGER_TO_START_HUNTING:
+            # 2. If no adjacent prey, scan the wider area to find a target to hunt.
+            nearby_herbivores = [
+                prey
+                for prey in potential_prey
+                if abs(prey.x - critter.x) <= critter.perception
+                and abs(prey.y - critter.y) <= critter.perception
+            ]
 
-        if nearby_herbivores:
-            # Sort by weakest first then closest to break ties
-            nearby_herbivores.sort(
-                key=lambda prey: (
-                    prey.health,
-                    abs(prey.x - critter.x) + abs(prey.y + critter.y),
+            if nearby_herbivores:
+                # Sort by weakest first then closest to break ties
+                nearby_herbivores.sort(
+                    key=lambda prey: (
+                        prey.health,
+                        abs(prey.x - critter.x) + abs(prey.y + critter.y),
+                    )
                 )
-            )
-            best_target = nearby_herbivores[0]
+                best_target = nearby_herbivores[0]
 
-            # If prey is found, and we can find a path to it, MOVE to it.
-            end_pos = (best_target.x, best_target.y)
-            path = find_path(world, (critter.x, critter.y), end_pos)
+                # If prey is found, and we can find a path to it, MOVE to it.
+                end_pos = (best_target.x, best_target.y)
+                path = find_path(world, (critter.x, critter.y), end_pos)
 
-            if path and len(path) > 1:
-                next_step = path[1]
+                if path and len(path) > 1:
+                    next_step = path[1]
 
-                return AIAction(
-                    type=ActionType.MOVE,
-                    dx=next_step[0] - critter.x,
-                    dy=next_step[1] - critter.y,
-                    target=end_pos,
+                    return AIAction(
+                        type=ActionType.MOVE,
+                        dx=next_step[0] - critter.x,
+                        dy=next_step[1] - critter.y,
+                        target=end_pos,
+                    )
+
+        elif critter.hunger >= HUNGER_TO_START_AMBUISHING:
+            # 3. If no adjacent prey, and only moderately hungry, see if there's
+            # an opportunity.
+            nearby_herbivores = [
+                prey
+                for prey in potential_prey
+                if abs(prey.x - critter.x) <= critter.perception / 2
+                and abs(prey.y - critter.y) <= critter.perception / 2
+            ]
+
+            if nearby_herbivores:
+                # Sort by weakest first then closest to break ties
+                nearby_herbivores.sort(
+                    key=lambda prey: (
+                        prey.health,
+                        abs(prey.x - critter.x) + abs(prey.y + critter.y),
+                    )
                 )
+                best_target = nearby_herbivores[0]
+
+                # If prey is found, and we can find a path to it, MOVE to it.
+                end_pos = (best_target.x, best_target.y)
+                path = find_path(world, (critter.x, critter.y), end_pos)
+
+                if path and len(path) > 1:
+                    next_step = path[1]
+
+                    return AIAction(
+                        type=ActionType.MOVE,
+                        dx=next_step[0] - critter.x,
+                        dy=next_step[1] - critter.y,
+                        target=end_pos,
+                    )
+            else:
+                # No prey in the ambush zone.  Time to wait...
+                return AIAction(type=ActionType.AMBUSH)
 
         # 3. If no action can be taken, return None.
         return None

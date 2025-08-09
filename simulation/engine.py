@@ -311,6 +311,12 @@ def _run_critter_logic(
         logger.info(f"    breeding: {mate.id}")
         _reproduce(critter, mate, session)
 
+    elif action_type == ActionType.AMBUSH:
+        # Do nothing this tick.  Spend minimum energy possible
+        # while waiting for prey.
+        logger.info(f"    ambushing")
+        pass
+
     elif action_type == ActionType.MOVE:
         if goal == GoalType.SURVIVE_DANGER:
             predator = action.target_critter
@@ -477,10 +483,10 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
         child_size = max(child_size, 1.0)
     if random.random() < MUTATION_CHANCE:
         child_metabolism += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
-        child_metabolism = max(child_size, 0.5)
+        child_metabolism = max(child_metabolism, 0.5)
     if random.random() < MUTATION_CHANCE:
         child_lifespan += random.randint(-50, 50)
-        child_lifespan = max(child_metabolism, 500)
+        child_lifespan = max(child_lifespan, 500)
     if random.random() < MUTATION_CHANCE:
         child_commitment += random.uniform(-MUTATION_AMOUNT, MUTATION_AMOUNT)
         child_commitment = max(child_commitment, 1.0)
@@ -499,6 +505,7 @@ def _reproduce(parent1: Critter, parent2: Critter, session: Session):
         metabolism=child_metabolism,
         lifespan=child_lifespan,
         commitment=child_commitment,
+        perception=child_perception,
     )
     session.add(child)
 
