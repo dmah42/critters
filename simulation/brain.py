@@ -4,7 +4,7 @@ from simulation.behaviours.wandering import WanderingBehavior
 from simulation.goal_type import GoalType
 from simulation.action_type import ActionType
 from simulation.mapping import STATE_TO_GOAL_MAP
-from simulation.models import Critter
+from simulation.models import Critter, DietType
 from simulation.world import World
 
 CRITICAL_ENERGY = 5.0
@@ -24,7 +24,7 @@ THIRST_TO_START_DRINKING = 0.75 * CRITICAL_THIRST
 MAX_HUNGER = 100.0
 CRITICAL_HUNGER = 80.0
 HUNGER_TO_START_FORAGING = 0.75 * CRITICAL_HUNGER
-
+HUNGER_TO_START_HUNTING = 0.3 * CRITICAL_HUNGER
 
 SENSE_RADIUS = 5
 
@@ -175,8 +175,14 @@ class CritterAI:
         if critter.thirst >= THIRST_TO_START_DRINKING:
             scores[GoalType.QUENCH_THIRST] = critter.thirst / THIRST_TO_START_DRINKING
 
-        if critter.hunger >= HUNGER_TO_START_FORAGING:
-            scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
+        if critter.diet == DietType.HERBIVORE:
+            if critter.hunger >= HUNGER_TO_START_FORAGING:
+                scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
+        elif critter.diet == DietType.CARNIVORE:
+            if critter.hunger >= HUNGER_TO_START_HUNTING:
+                scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_HUNTING
+        else:
+            raise NotImplementedError(f"Unknown diet type {critter.diet.name}")
 
         is_horny = (
             critter.energy >= MIN_ENERGY_TO_BREED
