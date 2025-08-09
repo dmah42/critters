@@ -57,8 +57,8 @@ class TestHuntingBehavior(unittest.TestCase):
 
         # Assert: The carnivore should ignore the ghost and target the living prey
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertEqual(action["target"], (living_prey.x, living_prey.y))
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (living_prey.x, living_prey.y))
 
     def test_attacks_adjacent_prey_immediately(self):
         """A carnivore should always attack adjacent prey, regardless of other options."""
@@ -72,8 +72,8 @@ class TestHuntingBehavior(unittest.TestCase):
         action = behavior.get_action(self.carnivore, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.ATTACK)
-        self.assertEqual(action["target"], adjacent_prey)
+        self.assertEqual(action.type, ActionType.ATTACK)
+        self.assertEqual(action.target_critter, adjacent_prey)
 
     def test_hunts_weakest_prey_when_none_are_adjacent(self):
         """If no prey is adjacent, the carnivore should target the weakest one."""
@@ -87,8 +87,8 @@ class TestHuntingBehavior(unittest.TestCase):
         action = behavior.get_action(self.carnivore, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertEqual(action["target"], (weak_far_prey.x, weak_far_prey.y))
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (weak_far_prey.x, weak_far_prey.y))
 
     def test_hunts_closest_prey_when_health_is_equal(self):
         """If multiple prey have the same health, it should target the closest one."""
@@ -100,8 +100,8 @@ class TestHuntingBehavior(unittest.TestCase):
         action = behavior.get_action(self.carnivore, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertEqual(action["target"], (close_prey.x, close_prey.y))
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (close_prey.x, close_prey.y))
 
     def test_returns_none_if_no_prey_in_range(self):
         """If there are no herbivores in sensing range, it should return None."""

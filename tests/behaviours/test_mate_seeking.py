@@ -57,8 +57,8 @@ class TestMateSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(self.critter, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.BREED)
-        self.assertEqual(action["partner"], mate)
+        self.assertEqual(action.type, ActionType.BREED)
+        self.assertEqual(action.target_critter, mate)
 
     def test_seeks_closest_ready_mate(self):
         """Should return a SEEK_MATE action for the closest suitable mate."""
@@ -70,8 +70,8 @@ class TestMateSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(self.critter, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertEqual(action["target"], (close_mate.x, close_mate.y))
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (close_mate.x, close_mate.y))
 
     def test_ignores_mate_on_cooldown(self):
         """Should ignore potential mates that are on breeding cooldown."""

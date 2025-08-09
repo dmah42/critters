@@ -1,5 +1,6 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from simulation.action_type import ActionType
+from simulation.behaviours.behavior import AIAction
 from simulation.behaviours.moving import MovingBehavior
 from simulation.behaviours.wandering import WanderingBehavior
 from simulation.models import AIState, Critter, DietType
@@ -15,7 +16,7 @@ COHESION_WEIGHT: float = 1.2  # How strongly to move to the center
 class FlockingBehavior(MovingBehavior):
     def get_action(
         self, critter: Critter, world: World, all_critters: List[Critter]
-    ) -> Dict[str, Any]:
+    ) -> Optional[AIAction]:
         """
         Calculates a movement vector based on the Boids algorithm
         Returns a WANDER action with a specific direction, or None.
@@ -78,4 +79,4 @@ class FlockingBehavior(MovingBehavior):
             + (cohesion_dy * COHESION_WEIGHT)
         )
 
-        return {"type": ActionType.MOVE, "dx": final_dx, "dy": final_dy}
+        return AIAction(type=ActionType.MOVE, dx=final_dx, dy=final_dy)

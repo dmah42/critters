@@ -1,6 +1,8 @@
 import random
+from typing import Optional
 from simulation import logger
 from simulation.action_type import ActionType
+from simulation.behaviours.behavior import AIAction
 from simulation.behaviours.moving import MovingBehavior
 from simulation.models import Critter
 from simulation.terrain_type import TerrainType
@@ -23,7 +25,7 @@ POSSIBLE_DIRECTIONS = [
 
 
 class WanderingBehavior(MovingBehavior):
-    def get_action(self, critter: Critter, world: World, _):
+    def get_action(self, critter: Critter, world: World, _) -> Optional[AIAction]:
         """
         Determines a direction in which to wander, biasing towards
         the critter's last known velocity.
@@ -36,7 +38,7 @@ class WanderingBehavior(MovingBehavior):
 
         if not valid_directions:
             logger.warning(f"{critter.id} is trapped unable to move")
-            return {"type": ActionType.MOVE, "dx": 0, "dy": 0}
+            return AIAction(type=ActionType.MOVE, dx=0, dy=0)
 
         has_momentum = critter.vx != 0 or critter.vy != 0
 
@@ -59,4 +61,4 @@ class WanderingBehavior(MovingBehavior):
             chosen_direction = random.choice(valid_directions)
             dx, dy = chosen_direction
 
-        return {"type": ActionType.MOVE, "dx": dx, "dy": dy}
+        return AIAction(type=ActionType.MOVE, dx=dx, dy=dy)

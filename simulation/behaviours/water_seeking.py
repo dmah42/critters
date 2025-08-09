@@ -1,5 +1,5 @@
-from typing import Any, Dict
-from simulation.behaviours.behavior import Behavior
+from typing import Any, Dict, Optional
+from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.models import Critter
 from simulation.pathfinding import find_path
@@ -8,7 +8,7 @@ from simulation.world import World
 
 
 class WaterSeekingBehavior(Behavior):
-    def get_action(self, critter: Critter, world: World, _) -> Dict[str, Any]:
+    def get_action(self, critter: Critter, world: World, _) -> Optional[AIAction]:
         """
         Determines the complete water-related action for a critter.
         Checks for adjacent water first (DRINK), then scans for distant
@@ -60,12 +60,12 @@ class WaterSeekingBehavior(Behavior):
 
         if path and len(path) > 1:
             next_step = path[1]
-            return {
-                "type": ActionType.MOVE,
-                "dx": next_step[0] - critter.x,
-                "dy": next_step[1] - critter.y,
-                "target": end_pos,
-            }
+            return AIAction(
+                type=ActionType.MOVE,
+                dx=next_step[0] - critter.x,
+                dy=next_step[1] - critter.y,
+                target=end_pos,
+            )
 
         # If no path was found return None.
         return None

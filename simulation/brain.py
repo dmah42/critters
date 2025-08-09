@@ -1,5 +1,5 @@
-from typing import Any, Dict, List
-from simulation.behaviours.behavior import Behavior
+from typing import Any, Dict, List, Tuple
+from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.behaviours.wandering import WanderingBehavior
 from simulation.goal_type import GoalType
 from simulation.action_type import ActionType
@@ -54,7 +54,7 @@ class CritterAI:
         self.breeding_module = modules.get("breeding")
         self.wandering_module = WanderingBehavior()
 
-    def determine_action(self) -> Dict[str, Any]:
+    def determine_action(self) -> Tuple[GoalType, AIAction]:
         """
         Determines the primary goal and single best action to achieve it.
         1. determine the primary GOAL
@@ -63,7 +63,6 @@ class CritterAI:
         """
 
         goal: GoalType = self._get_primary_goal()
-
         action: ActionType = None
 
         if goal == GoalType.SURVIVE_DANGER:
@@ -72,7 +71,7 @@ class CritterAI:
             )
 
         elif goal == GoalType.RECOVER_ENERGY:
-            action = {"type": ActionType.REST}
+            action = AIAction(type=ActionType.REST)
 
         elif goal == GoalType.QUENCH_THIRST:
             # If we can drink or see water, do it.
@@ -117,7 +116,7 @@ class CritterAI:
             action = self.wandering_module.get_action(
                 self.critter, self.world, self.all_critters
             )
-        return {"goal": goal, "action": action}
+        return (goal, action)
 
     def _get_primary_goal(self) -> GoalType:
         """

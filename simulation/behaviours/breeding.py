@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 from simulation.action_type import ActionType
-from simulation.behaviours.behavior import Behavior
+from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.brain import (
     MAX_HUNGER_TO_BREED,
     MAX_THIRST_TO_BREED,
@@ -15,7 +15,9 @@ COURTSHIP_RADIUS = 2
 
 
 class BreedingBehavior(Behavior):
-    def get_action(self, critter: Critter, world: World, all_critters: List[Critter]):
+    def get_action(
+        self, critter: Critter, world: World, all_critters: List[Critter]
+    ) -> Optional[AIAction]:
         """
         Checks for a high-priority, short-range breeding opportunity.
         Returns a BREED or MOVE action if an opportunity exists, otherwise None.
@@ -48,7 +50,7 @@ class BreedingBehavior(Behavior):
             abs(closest_mate.x - critter.x) <= 1
             and abs(closest_mate.y - critter.y) <= 1
         ):
-            return {"type": ActionType.BREED, "partner": closest_mate}
+            return AIAction(type=ActionType.BREED, target_critter=closest_mate)
         else:
             # If the mate is close but not adjacent, the action is to MOVE to them
             start_pos = (critter.x, critter.y)
@@ -59,9 +61,9 @@ class BreedingBehavior(Behavior):
             if path and len(path) > 1:
                 next_step = path[1]
 
-                return {
-                    "type": ActionType.MOVE,
-                    "dx": next_step[0] - critter.x,
-                    "dy": next_step[1] - critter.y,
-                    "target": end_pos,
-                }
+                return AIAction(
+                    type=ActionType.MOVE,
+                    dx=next_step[0] - critter.x,
+                    dy=next_step[1] - critter.y,
+                    target=end_pos,
+                )

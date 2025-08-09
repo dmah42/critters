@@ -68,10 +68,10 @@ class TestFleeing(unittest.TestCase):
 
         # Assert: Check that the action is correct
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
+        self.assertEqual(action.type, ActionType.MOVE)
         # The direction should be away from (3, 2), so (-1, -1)
-        self.assertEqual(action["dx"], -1)
-        self.assertEqual(action["dy"], -1)
+        self.assertEqual(action.dx, -1)
+        self.assertEqual(action.dy, -1)
 
     def test_no_fleeing_when_predator_is_far(self):
         """
@@ -103,12 +103,12 @@ class TestFleeing(unittest.TestCase):
 
         # Assert: Check that the action is correct
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
+        self.assertEqual(action.type, ActionType.MOVE)
         # The direction should be away from (3, 2) but it can't go to -1,-1 so -1,0 or 0,-1
-        self.assertIn(action["dx"], [0, -1])
-        self.assertIn(action["dy"], [0, -1])
-        self.assertFalse(action["dx"] == -1 and action["dy"] == -1)
-        self.assertFalse(action["dx"] == 0 and action["dy"] == 0)
+        self.assertIn(action.dx, [0, -1])
+        self.assertIn(action.dy, [0, -1])
+        self.assertFalse(action.dx == -1 and action.dy == -1)
+        self.assertFalse(action.dx == 0 and action.dy == 0)
 
 
 # This allows you to run the tests directly with 'python tests/test_behaviors.py'

@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+from simulation.behaviours.behavior import AIAction
 from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import ActionType
 from simulation.models import Critter, DietType
@@ -9,7 +10,7 @@ from simulation.world import World
 class HuntingBehavior(ForagingBehavior):
     def get_action(
         self, critter: Critter, world: World, all_critters: List[Critter]
-    ) -> Dict[str, Any]:
+    ) -> Optional[AIAction]:
         """
         Determines the complete foraging action for a carnivore.
         Checks for adjacent prey first (ATTACK), then scans for distant
@@ -30,7 +31,7 @@ class HuntingBehavior(ForagingBehavior):
         ]
         if adjacent_prey:
             # If prey is adjacent, the action is to ATTACK.
-            return {"type": ActionType.ATTACK, "target": adjacent_prey[0]}
+            return AIAction(type=ActionType.ATTACK, target_critter=adjacent_prey[0])
 
         # 2. If no adjacent prey, scan the wider area to find a target to hunt.
         nearby_herbivores = [
@@ -57,12 +58,12 @@ class HuntingBehavior(ForagingBehavior):
             if path and len(path) > 1:
                 next_step = path[1]
 
-                return {
-                    "type": ActionType.MOVE,
-                    "dx": next_step[0] - critter.x,
-                    "dy": next_step[1] - critter.y,
-                    "target": end_pos,
-                }
+                return AIAction(
+                    type=ActionType.MOVE,
+                    dx=next_step[0] - critter.x,
+                    dy=next_step[1] - critter.y,
+                    target=end_pos,
+                )
 
         # 3. If no action can be taken, return None.
         return None

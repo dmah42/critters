@@ -57,9 +57,9 @@ class TestWanderingBehavior(unittest.TestCase):
 
         # Assert: Check that the action is a valid wander
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertIn(action["dx"], [-1, 0, 1])
-        self.assertIn(action["dy"], [-1, 0, 1])
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertIn(action.dx, [-1, 0, 1])
+        self.assertIn(action.dy, [-1, 0, 1])
 
     def test_random_wandering_continues_with_momentum(self):
         """
@@ -76,7 +76,7 @@ class TestWanderingBehavior(unittest.TestCase):
         right_moves = 0
         for _ in range(100):
             action = behavior.get_action(critter, world, [])
-            if action["dx"] > 0:
+            if action.dx > 0:
                 right_moves += 1
 
         # Assert that the critter continued its momentum most of the time
@@ -105,8 +105,8 @@ class TestWanderingBehavior(unittest.TestCase):
             action = behavior.get_action(critter, water_world, [])
             self.assertIsNotNone(action)
             # The only possible moves are to the right (1, 0) or to not move (0, 0)
-            self.assertIn(action["dx"], [0, 1])
-            self.assertEqual(action["dy"], 0)
+            self.assertIn(action.dx, [0, 1])
+            self.assertEqual(action.dy, 0)
 
 
 # This allows you to run the tests directly

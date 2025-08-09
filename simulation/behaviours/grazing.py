@@ -1,5 +1,6 @@
 import random
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+from simulation.behaviours.behavior import AIAction
 from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import SENSE_RADIUS, ActionType
 from simulation.models import Critter
@@ -15,7 +16,7 @@ MINIMUM_GRAZE_AMOUNT = 1.0
 
 
 class GrazingBehavior(ForagingBehavior):
-    def get_action(self, critter: Critter, world: World, _) -> Dict[str, Any]:
+    def get_action(self, critter: Critter, world: World, _) -> Optional[AIAction]:
         """
         Determines the complete foraging action for a herbivore.
         Checks for food on the current tile first (EAT), then scans for
@@ -30,7 +31,7 @@ class GrazingBehavior(ForagingBehavior):
             and current_tile.food_available > MINIMUM_GRAZE_AMOUNT
         ):
             # If so, the correct action is to EAT.
-            return {"type": ActionType.EAT}
+            return AIAction(type=ActionType.EAT)
 
         # 2. If not on a food tile, scan the wider area to move towards.
         scan_range = range(-SENSE_RADIUS, SENSE_RADIUS + 1)
@@ -65,12 +66,12 @@ class GrazingBehavior(ForagingBehavior):
                 # The next step is the second element
                 next_step = path[1]
 
-                return {
-                    "type": ActionType.MOVE,
-                    "dx": next_step[0] - critter.x,
-                    "dy": next_step[1] - critter.y,
-                    "target": end_pos,
-                }
+                return AIAction(
+                    type=ActionType.MOVE,
+                    dx=next_step[0] - critter.x,
+                    dy=next_step[1] - critter.y,
+                    target=end_pos,
+                )
 
         # 3. If no action can be taken, return None.
         return None

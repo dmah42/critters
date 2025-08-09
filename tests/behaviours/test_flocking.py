@@ -55,7 +55,7 @@ class TestFlockingBehavior(unittest.TestCase):
 
         # Assert: The action should now be a valid MOVE action, not None.
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
+        self.assertEqual(action.type, ActionType.MOVE)
 
     def test_flocking_cohesion_moves_towards_center(self):
         """
@@ -75,9 +75,9 @@ class TestFlockingBehavior(unittest.TestCase):
 
         # Assert: The direction should be positive on both axes, towards the flock
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertGreater(action["dx"], 0)
-        self.assertGreater(action["dy"], 0)
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertGreater(action.dx, 0)
+        self.assertGreater(action.dy, 0)
 
     def test_flocking_separation_moves_away_from_crowd(self):
         """
@@ -94,8 +94,8 @@ class TestFlockingBehavior(unittest.TestCase):
 
         # Assert: The direction should be negative on the x-axis, away from the neighbor
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertLess(action["dx"], 0)
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertLess(action.dx, 0)
 
     def test_flocking_separation_is_ignored_for_suitor(self):
         """
@@ -120,7 +120,7 @@ class TestFlockingBehavior(unittest.TestCase):
         # Assert: The target critter should be moving TOWARDS the suitor.
         # It is ignoring the separation rule and still applying cohesion.
         self.assertIsNotNone(action)
-        self.assertGreater(action["dx"], 0)
+        self.assertGreater(action.dx, 0)
 
 
 # This allows you to run the tests directly

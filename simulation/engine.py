@@ -186,8 +186,8 @@ def _run_critter_logic(
     # All complex decision-making is now handled by these two lines.
     brain = create_ai_for_critter(critter, world, all_critters)
     result = brain.determine_action()
-    goal = result["goal"]
-    action = result["action"]
+    goal = result[0]
+    action = result[1]
 
     if not action:
         raise RuntimeError(
@@ -195,7 +195,7 @@ def _run_critter_logic(
             f"  Critter: {critter.to_dict()}"
         )
 
-    action_type = action["type"]
+    action_type = action.type
 
     critter.last_action = action_type
     # Map to an AI state for commitments to goals.
@@ -244,7 +244,7 @@ def _run_critter_logic(
         )
 
     elif action_type == ActionType.ATTACK:
-        prey = action["target"]
+        prey = action.target_critter
 
         # Base escape chance on the speed difference.
         escape_chance_modifier = prey.speed / critter.speed
@@ -307,24 +307,23 @@ def _run_critter_logic(
                 )
 
     elif action_type == ActionType.BREED:
-        mate = action["partner"]
+        mate = action.target_critter
         logger.info(f"    breeding: {mate.id}")
         _reproduce(critter, mate, session)
 
     elif action_type == ActionType.MOVE:
         if goal == GoalType.SURVIVE_DANGER:
-            predator = action["predator"]
+            predator = action.target_critter
             logger.info(f"    fleeing from {predator.id}")
 
-        target = action.get("target")  # Get the specific target tile if it exists
         _execute_move(
             critter,
             world,
             all_critters,
-            action["dx"],
-            action["dy"],
+            action.dx,
+            action.dy,
             goal,
-            target=target,
+            target=action.target,
         )
 
     else:

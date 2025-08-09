@@ -1,6 +1,6 @@
 import logging
-from typing import Any, Dict, List
-from simulation.behaviours.behavior import Behavior
+from typing import Any, Dict, List, Optional
+from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.brain import ActionType
 from simulation.models import Critter, DietType
 from simulation.pathfinding import find_path
@@ -16,7 +16,7 @@ FLEEING_RADIUS = 2
 class FleeingBehavior(Behavior):
     def get_action(
         self, critter: Critter, world: World, all_critters: List[Critter]
-    ) -> Dict[str, Any]:
+    ) -> Optional[AIAction]:
         """
         Scans for nearby predators. If one is found, returns a FLEE action.
         Otherwise, returns None.
@@ -71,21 +71,21 @@ class FleeingBehavior(Behavior):
 
             if path and len(path) > 1:
                 next_step = path[1]
-                return {
-                    "type": ActionType.MOVE,
-                    "dx": next_step[0] - critter.x,
-                    "dy": next_step[1] - critter.y,
-                    "target": end_pos,
-                    "predator": closest_predator,
-                }
+                return AIAction(
+                    type=ActionType.MOVE,
+                    dx=next_step[0] - critter.x,
+                    dy=next_step[1] - critter.y,
+                    target=end_pos,
+                    target_critter=closest_predator,
+                )
 
             # If no path was found just run away.
-            return {
-                "type": ActionType.MOVE,
-                "dx": critter.x - closest_predator.x,
-                "dy": critter.y - closest_predator.y,
-                "predator": closest_predator,
-            }
+            return AIAction(
+                type=ActionType.MOVE,
+                dx=critter.x - closest_predator.x,
+                dy=critter.y - closest_predator.y,
+                target_critter=closest_predator,
+            )
 
         # If no predators are nearby, return None.
         return None

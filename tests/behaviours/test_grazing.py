@@ -62,11 +62,9 @@ class TestBehaviors(unittest.TestCase):
         # Act: Get the action
         action = behavior.get_action(critter, world, [])
 
-        print(f"{action}")
-
         # Assert: The action should be EAT
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.EAT)
+        self.assertEqual(action.type, ActionType.EAT)
 
     def test_moves_towards_best_food_source(self):
         """
@@ -81,8 +79,8 @@ class TestBehaviors(unittest.TestCase):
 
         # Assert: The action should be MOVE with the correct target
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertEqual(action["target"], (3, 3))
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (3, 3))
 
     def test_ignores_insufficient_food(self):
         """

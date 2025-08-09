@@ -70,11 +70,11 @@ class TestWaterSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(critter, world, [])
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
+        self.assertEqual(action.type, ActionType.MOVE)
         # The target should be the nearest shore tile
-        self.assertEqual(action["target"], (0, 0))
+        self.assertEqual(action.target, (0, 0))
         # The first step of the path should be a valid move, e.g., (0, 1) to start going around
-        self.assertEqual((action["dx"], action["dy"]), (1, 0))
+        self.assertEqual((action.dx, action.dy), (1, 0))
 
     def test_finds_path_to_island_shore(self):
         """
@@ -102,8 +102,8 @@ class TestWaterSeekingBehavior(unittest.TestCase):
         action = behavior.get_action(critter, world, [])
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
+        self.assertEqual(action.type, ActionType.MOVE)
         # The target should be the nearest shore tile
-        self.assertEqual(action["target"], (1, 1))
+        self.assertEqual(action.target, (1, 1))
         # The first step of the path should be a valid move, e.g., (0, 1) to start going around
-        self.assertEqual((action["dx"], action["dy"]), (1, 1))
+        self.assertEqual((action.dx, action.dy), (1, 1))

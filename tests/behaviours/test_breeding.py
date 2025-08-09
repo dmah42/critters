@@ -70,8 +70,8 @@ class TestBreeding(unittest.TestCase):
         action = behavior.get_action(critter, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.BREED)
-        self.assertEqual(action["partner"], ready_mate)
+        self.assertEqual(action.type, ActionType.BREED)
+        self.assertEqual(action.target_critter, ready_mate)
 
     def test_returns_move_action_for_nearby_ready_mate(self):
         """
@@ -86,8 +86,8 @@ class TestBreeding(unittest.TestCase):
         action = behavior.get_action(critter, self.world, all_critters)
 
         self.assertIsNotNone(action)
-        self.assertEqual(action["type"], ActionType.MOVE)
-        self.assertEqual(action["target"], (nearby_mate.x, nearby_mate.y))
+        self.assertEqual(action.type, ActionType.MOVE)
+        self.assertEqual(action.target, (nearby_mate.x, nearby_mate.y))
 
     def test_returns_none_if_mate_is_not_ready(self):
         """
