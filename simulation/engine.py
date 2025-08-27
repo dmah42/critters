@@ -454,6 +454,7 @@ def _handle_death(critter: Critter, cause: CauseOfDeath, session: Session):
         original_id=critter.id,
         age=critter.age,
         cause=cause,
+        diet=critter.diet,
         speed=critter.speed,
         size=critter.size,
         player_id=critter.player_id,

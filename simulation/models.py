@@ -224,6 +224,7 @@ class DeadCritter(db.Model):
     cause = db.Column(db.Enum(CauseOfDeath))
 
     # genes snapshot
+    diet = db.Column(db.Enum(DietType), nullable=False, server_default=DietType.HERBIVORE.value)
     speed = db.Column(db.Float)
     size = db.Column(db.Float)
 
