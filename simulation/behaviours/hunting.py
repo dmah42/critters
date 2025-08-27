@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 from simulation.behaviours.behavior import AIAction
 from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import (
-    HUNGER_TO_START_AMBUISHING,
+    HUNGER_TO_START_AMBUSHING,
     HUNGER_TO_START_HUNTING,
     MAX_ENERGY,
     ActionType,
@@ -82,9 +82,12 @@ class HuntingBehavior(ForagingBehavior):
                             target=end_pos,
                         )
 
-        if critter.hunger >= HUNGER_TO_START_AMBUISHING:
+        if critter.hunger >= HUNGER_TO_START_AMBUSHING:
             # 3. If no adjacent prey, and only moderately hungry, see if there's
-            # an opportunity.
+            # an opportunity. Ensure we don't lie in wait if we're thirsty.
+            if critter.thirst >= THIRST_TO_START_DRINKING:
+                return None
+
             nearby_herbivores = [
                 prey
                 for prey in potential_prey
