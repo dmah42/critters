@@ -7,6 +7,7 @@ from simulation.world import World
 from web_server import create_app, db
 from simulation.models import (
     Critter,
+    CritterEvent,
     DeadCritter,
     DietType,
     Event,
@@ -132,12 +133,12 @@ def seed_population(
                         parent_two_id=steve.id,
                         diet=DietType.CARNIVORE,
                         # Assign random genetics
-                        speed=random.uniform(3.0, 7.0),
-                        size=random.uniform(3.0, 7.0),
-                        metabolism=random.uniform(0.8, 1.2),
+                        speed=random.uniform(2.5, 7.5),
+                        size=random.uniform(2.5, 7.5),
+                        metabolism=random.uniform(0.7, 1.3),
                         lifespan=random.randint(1800, 2200),
-                        commitment=random.uniform(1.5, 2.5),
-                        perception=random.uniform(8.0, 15.0),
+                        commitment=random.uniform(1.3, 2.8),
+                        perception=random.uniform(7.0, 16.0),
                         # Place them randomly in the world near the origin
                         x=rand_x,
                         y=rand_y,
@@ -218,6 +219,7 @@ if __name__ == "__main__":
             db.session.query(DeadCritter).delete()
             db.session.query(TileState).delete()
             db.session.query(SimulationStats).delete()
+            db.session.query(CritterEvent).delete()
             db.session.commit()
             print("All data cleared")
 
