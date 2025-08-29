@@ -11,7 +11,8 @@ CRITICAL_ENERGY = 5.0
 ENERGY_TO_START_RESTING = 50.0
 MAX_ENERGY = 100.0
 
-MIN_ENERGY_TO_BREED = 50.0
+HERBIVORE_MIN_ENERGY_TO_BREED = 50.0
+CARNIVORE_MIN_ENERGY_TO_BREED = 20.0
 
 MIN_HEALTH_TO_BREED = 90.0
 MAX_HUNGER_TO_BREED = 30.0
@@ -149,7 +150,7 @@ class CritterAI:
                 critter.health >= MIN_HEALTH_TO_BREED
                 and critter.hunger < MAX_HUNGER_TO_BREED
                 and critter.thirst < MAX_THIRST_TO_BREED
-                and critter.energy >= MIN_ENERGY_TO_BREED
+                and critter.energy >= (CARNIVORE_MIN_ENERGY_TO_BREED if critter.diet == DietType.CARNIVORE else HERBIVORE_MIN_ENERGY_TO_BREED)
                 and critter.breeding_cooldown == 0
             ):
 
@@ -185,7 +186,7 @@ class CritterAI:
             raise NotImplementedError(f"Unknown diet type {critter.diet.name}")
 
         is_horny = (
-            critter.energy >= MIN_ENERGY_TO_BREED
+            critter.energy >= (CARNIVORE_MIN_ENERGY_TO_BREED if critter.diet == DietType.CARNIVORE else HERBIVORE_MIN_ENERGY_TO_BREED)
             and critter.health >= MIN_HEALTH_TO_BREED
             and critter.hunger < MAX_HUNGER_TO_BREED
             and critter.thirst < MAX_THIRST_TO_BREED

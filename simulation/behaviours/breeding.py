@@ -1,13 +1,15 @@
 from typing import List, Optional
+
 from simulation.action_type import ActionType
 from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.brain import (
+    CARNIVORE_MIN_ENERGY_TO_BREED,
+    HERBIVORE_MIN_ENERGY_TO_BREED,
     MAX_HUNGER_TO_BREED,
     MAX_THIRST_TO_BREED,
-    MIN_ENERGY_TO_BREED,
     MIN_HEALTH_TO_BREED,
 )
-from simulation.models import Critter
+from simulation.models import Critter, DietType
 from simulation.pathfinding import find_path
 from simulation.world import World
 
@@ -29,7 +31,7 @@ class BreedingBehavior(Behavior):
             and other.diet == critter.diet
             and abs(other.x - critter.x) <= COURTSHIP_RADIUS
             and abs(other.y - critter.y) <= COURTSHIP_RADIUS
-            and other.energy >= MIN_ENERGY_TO_BREED
+            and other.energy >= (CARNIVORE_MIN_ENERGY_TO_BREED if other.diet == DietType.CARNIVORE else HERBIVORE_MIN_ENERGY_TO_BREED)
             and other.health >= MIN_HEALTH_TO_BREED
             and other.hunger < MAX_HUNGER_TO_BREED
             and other.thirst < MAX_THIRST_TO_BREED

@@ -1,56 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Critter World</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/main.css') }}"
-    />
-  </head>
-  <body>
-    <div class="header-container">
-      <h1>Critter World Viewer</h1>
 
-      <a href="/stats" class="stats-button">View Statistics </a>
-    </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>Critter World</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+</head>
 
-    <div class="controls">
-      <label>X: <input type="number" id="x-coord" value="0" /></label>
-      <label>Y: <input type="number" id="y-coord" value="0" /></label>
-      <label>W: <input type="number" id="width" value="400" /></label>
-      <label>H: <input type="number" id="height" value="400" /></label>
-      <button id="draw-btn">Draw Map</button>
-    </div>
+<body>
+  <div class="header-container">
+    <h1>Critter World Viewer</h1>
 
-    <div class="main-content">
-      <canvas
-        id="world-canvas"
-        width="{{ canvas_size }}"
-        height="{{ canvas_size }}"
-      ></canvas>
+    <a href="/stats" class="stats-button">View Statistics </a>
+  </div>
 
-      <div id="stats-panel">
-        <h2>Critter stats</h2>
-        <div id="image-container"></div>
-        <div id="stats-content">
-          <p>Click on a critter to view its details.</p>
-        </div>
-        <div id="event-log-container"></div>
+  <div class="controls">
+    <label>X: <input type="number" id="x-coord" value="0" /></label>
+    <label>Y: <input type="number" id="y-coord" value="0" /></label>
+    <label>W: <input type="number" id="width" value="400" /></label>
+    <label>H: <input type="number" id="height" value="400" /></label>
+    <button id="draw-btn">Draw Map</button>
+  </div>
+
+  <div class="main-content">
+    <canvas id="world-canvas" width="{{ canvas_size }}" height="{{ canvas_size }}"></canvas>
+
+    <div id="stats-panel">
+      <h2>Critter stats</h2>
+      <div id="image-container"></div>
+      <div id="stats-content">
+        <p>Click on a critter to view its details.</p>
       </div>
+      <div id="event-log-container"></div>
     </div>
+  </div>
 
-    <div
-      id="simulation-data"
-      data-default-grass-food="{{ default_grass_food }}"
-      data-energy-to-start-resting="{{ energy_to_start_resting }}"
-      data-hunger-to-start-foraging="{{ hunger_to_start_foraging }}"
-      data-thirst-to-start-drinking="{{ thirst_to_start_drinking }}"
-      data-max-energy="{{ max_energy }}"
-      data-max-hunger="{{ max_hunger }}"
-      data-max-thirst="{{ max_thirst }}"
-    ></div>
+  <div id="simulation-data" data-default-grass-food="{{ default_grass_food }}"
+    data-energy-to-start-resting="{{ energy_to_start_resting }}"
+    data-hunger-to-start-foraging="{{ hunger_to_start_foraging }}"
+    data-thirst-to-start-drinking="{{ thirst_to_start_drinking }}" data-max-energy="{{ max_energy }}"
+    data-max-hunger="{{ max_hunger }}" data-max-thirst="{{ max_thirst }}"></div>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-  </body>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
 </html>

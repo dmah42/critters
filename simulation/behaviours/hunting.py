@@ -4,6 +4,7 @@ from simulation.behaviours.foraging import ForagingBehavior
 from simulation.brain import (
     HUNGER_TO_START_AMBUSHING,
     HUNGER_TO_START_HUNTING,
+    THIRST_TO_START_DRINKING,
     MAX_ENERGY,
     ActionType,
 )

@@ -180,43 +180,39 @@ function updateStatsPanel() {
             <h3>Metrics</h3>
             <div class="stat-group">
                 <p><span class="stat-label">Health:</span> ${selectedCritter.health.toFixed(
-                  1
-                )} / ${selectedCritter.max_health.toFixed(1)}</p>
+      1
+    )} / ${selectedCritter.max_health.toFixed(1)}</p>
                 <div class="stat-meter"><div class="health-bar" style="width: ${healthPercent}%;"></div></div>
             </div>
             <div class="stat-group">
                 <p><span class="stat-label">Energy:</span> ${selectedCritter.energy.toFixed(
-                  1
-                )} / ${MAX_ENERGY}</p>
+      1
+    )} / ${MAX_ENERGY}</p>
                 <div class="stat-meter"><div class="energy-bar" style="width: ${energyPercent}%;"></div></div>
             </div>
             <div class="stat-group">
                 <p><span class="stat-label">Hunger:</span> ${selectedCritter.hunger.toFixed(
-                  1
-                )} / ${MAX_HUNGER}</p>
+      1
+    )} / ${MAX_HUNGER}</p>
                 <div class="stat-meter"><div class="hunger-bar" style="width: ${hungerPercent}%;"></div></div>
             </div>
             <div class="stat-group">
                 <p><span class="stat-label">Thirst:</span> ${selectedCritter.thirst.toFixed(
-                  1
-                )} / ${MAX_THIRST}</p>
+      1
+    )} / ${MAX_THIRST}</p>
                 <div class="stat-meter"><div class="thirst-bar" style="width: ${thirstPercent}%;"></div></div>
             </div>
 
             <!-- Section 2: Dynamic AI Stuff -->
             <h3>AI State</h3>
-            <p><span class="stat-label">Goal:</span> ${
-              selectedCritter.ai_state
-            }</p>
-            <p><span class="stat-label">Last Action:</span> ${
-              selectedCritter.last_action || "N/A"
-            }</p>
-            <p><span class="stat-label">Position:</span> (${
-              selectedCritter.x
-            }, ${selectedCritter.y})</p>
-            <p><span class="stat-label">Velocity:</span> (${
-              selectedCritter.vx
-            }, ${selectedCritter.vy})</p>
+            <p><span class="stat-label">Goal:</span> ${selectedCritter.ai_state
+      }</p>
+            <p><span class="stat-label">Last Action:</span> ${selectedCritter.last_action || "N/A"
+      }</p>
+            <p><span class="stat-label">Position:</span> (${selectedCritter.x
+      }, ${selectedCritter.y})</p>
+            <p><span class="stat-label">Velocity:</span> (${selectedCritter.vx
+      }, ${selectedCritter.vy})</p>
             
             <!-- Section 3: Basic Info (Genetics) -->
             <h3>Genetics</h3>
@@ -224,27 +220,28 @@ function updateStatsPanel() {
             <p><span class="stat-label">Diet:</span> ${selectedCritter.diet}</p>
             <p><span class="stat-label">Age:</span> ${selectedCritter.age}</p>
             <p><span class="stat-label">Speed:</span> ${selectedCritter.speed.toFixed(
-              1
-            )}</p>
+        1
+      )}</p>
             <p><span class="stat-label">Size:</span> ${selectedCritter.size.toFixed(
-              1
-            )}</p>
+        1
+      )}</p>
             <p><span class="stat-label">Metabolism:</span> ${selectedCritter.metabolism.toFixed(
-              1
-            )}</p>
+        1
+      )}</p>
             <p><span class="stat-label">Commitment:</span> ${selectedCritter.commitment.toFixed(
-              1
-            )}</p>
+        1
+      )}</p>
             <p><span class="stat-label">Perception:</span> ${selectedCritter.perception.toFixed(
-              1
-            )}</p>
+        1
+      )}</p>
         `;
   } else {
     // If no critter is selected, show the default message
     statsContent.innerHTML = `
           <p>Click on a critter to view its details.</p>
     `;
-    imageContainer = "";
+    imageContainer.innerHTML = "";
+    eventLogContainer.innerHTML = "";
   }
 }
 
@@ -277,7 +274,7 @@ function handleCanvasClick(event) {
 
     const distance = Math.sqrt(
       Math.pow(critterCanvasX - mouseX, 2) +
-        Math.pow(critterCanvasY - mouseY, 2)
+      Math.pow(critterCanvasY - mouseY, 2)
     );
 
     if (
