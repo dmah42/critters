@@ -367,4 +367,3 @@ class TrainingStats(db.Model):
 
     avg_reward_herbivore = db.Column(db.Float)
     avg_reward_carnivore = db.Column(db.Float)
-
