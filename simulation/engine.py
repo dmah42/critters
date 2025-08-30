@@ -68,7 +68,7 @@ DAMAGE_PER_SIZE_POINT = 5.0
 # the attacker has an 80% chance to escape
 ESCAPE_CHANCE_MULTIPLIER = 0.8
 
-## Breeding constants
+# Breeding constants
 BREEDING_ENERGY_COST = 40.0
 BREEDING_COOLDOWN_TICKS = 500
 MUTATION_CHANCE = 0.15
@@ -160,13 +160,21 @@ def _run_critter_logic(
         critter.hunger < HUNGER_TO_START_FORAGING
         and critter.thirst < THIRST_TO_START_DRINKING
     ):
-        critter.health = min(critter.health + HEALTH_REGEN_PER_TICK, critter.max_health)
+        critter.health = min(
+            critter.health + HEALTH_REGEN_PER_TICK, critter.max_health)
         logger.info(f"    healing: health: {critter.health:.2f}")
+
+    metabolic_modifier = 1.0
+    if critter.ai_state == AIState.RESTING:
+        metabolic_modifier = 0.25
+    elif critter.ai_state == AIState.IDLE:
+        metabolic_modifier = 0.5
 
     start_energy: float = critter.energy
 
     critter.age += 1
-    critter.thirst = min(critter.thirst + THIRST_PER_TICK, MAX_THIRST)
+    critter.thirst = min(
+        critter.thirst + (THIRST_PER_TICK * metabolic_modifier), MAX_THIRST)
     if critter.breeding_cooldown > 0:
         critter.breeding_cooldown -= 1
 
@@ -211,7 +219,8 @@ def _run_critter_logic(
 
     # This is a simple "switch" statement that executes the brain's decision.
     if action_type == ActionType.REST:
-        critter.energy = min(critter.energy + ENERGY_REGEN_PER_TICK, MAX_ENERGY)
+        critter.energy = min(
+            critter.energy + ENERGY_REGEN_PER_TICK, MAX_ENERGY)
         logger.info(f"    rested: energy: {critter.energy:.2f}")
 
     elif action_type == ActionType.DRINK:
@@ -254,7 +263,8 @@ def _run_critter_logic(
         )
 
         if random.random() < final_escape_chance:
-            logger.info(f"    attack failed: {prey.id} escaped from {critter.id}")
+            logger.info(
+                f"    attack failed: {prey.id} escaped from {critter.id}")
             _log_event(
                 session,
                 prey.id,
@@ -278,7 +288,8 @@ def _run_critter_logic(
                 critter.hunger = max(critter.hunger - hunger_restored, 0)
 
                 energy_gained = prey.size * FOOD_TO_ENERGY_RATIO
-                critter.energy = min(critter.energy + energy_gained, MAX_ENERGY)
+                critter.energy = min(
+                    critter.energy + energy_gained, MAX_ENERGY)
 
                 thirst_quenched = prey.size * THIRST_QUENCHED_PER_EAT
                 critter.thirst = max(critter.thirst - thirst_quenched, 0)
@@ -297,7 +308,8 @@ def _run_critter_logic(
                     f"Killed {prey.id}",
                 )
             else:
-                logger.info(f"      {prey.id} survived with {prey.health:.2f} health")
+                logger.info(
+                    f"      {prey.id} survived with {prey.health:.2f} health")
                 _log_event(
                     session,
                     prey.id,
@@ -340,7 +352,8 @@ def _run_critter_logic(
     energy_spent: float = max(start_energy - critter.energy, 0)
 
     hunger_increase = (
-        BASE_METABOLIC_RATE + (energy_spent * ENERGY_TO_HUNGER_RATIO)
+        (BASE_METABOLIC_RATE * metabolic_modifier) +
+        (energy_spent * ENERGY_TO_HUNGER_RATIO)
     ) * critter.metabolism
     critter.hunger = min(critter.hunger + hunger_increase, MAX_HUNGER)
 
@@ -393,7 +406,8 @@ def _execute_move(
 
     hit_obstacle = False
 
-    occupied_positions = {(c.x, c.y) for c in all_critters if c.id != critter.id}
+    occupied_positions = {(c.x, c.y)
+                          for c in all_critters if c.id != critter.id}
 
     for _ in range(steps_to_take):
         new_x, new_y = critter.x + move_dx, critter.y + move_dy

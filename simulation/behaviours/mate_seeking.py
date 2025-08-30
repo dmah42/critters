@@ -4,12 +4,14 @@ from simulation.brain import (
     MIN_HEALTH_TO_BREED,
     MAX_HUNGER_TO_BREED,
     MAX_THIRST_TO_BREED,
-    SENSE_RADIUS,
     ActionType,
 )
 from simulation.models import Critter
 from simulation.pathfinding import find_path
 from simulation.world import World
+
+
+MATE_SENSE_RADIUS = 30
 
 
 class MateSeekingBehavior(Behavior):
@@ -28,8 +30,8 @@ class MateSeekingBehavior(Behavior):
             for other in all_critters
             if other.id != critter.id
             and other.diet == critter.diet
-            and abs(other.x - critter.x) <= SENSE_RADIUS
-            and abs(other.y - critter.y) <= SENSE_RADIUS
+            and abs(other.x - critter.x) <= MATE_SENSE_RADIUS
+            and abs(other.y - critter.y) <= MATE_SENSE_RADIUS
             and other.health >= MIN_HEALTH_TO_BREED
             and other.hunger < MAX_HUNGER_TO_BREED
             and other.thirst < MAX_THIRST_TO_BREED
