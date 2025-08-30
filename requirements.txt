@@ -3,3 +3,4 @@ Flask-SQLAlchemy
 Flask-Migrate
 noise
 numpy
+tensorflow
