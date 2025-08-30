@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from simulation.behaviours.behavior import AIAction, Behavior
 from simulation.behaviours.wandering import WanderingBehavior
 from simulation.goal_type import GoalType
@@ -61,64 +61,46 @@ class CritterAI:
         Determines the primary goal and single best action to achieve it.
         1. determine the primary GOAL
         2. plan the best ACTION
-        Returns a dictionary containing both.
+        Returns a tuple containing both.
         """
-
         goal: GoalType = self._get_primary_goal()
-        action: ActionType = None
+        action: AIAction = self.get_action_for_goal(goal)
+        return (goal, action)
+
+    def get_action_for_goal(self, goal: GoalType) -> AIAction:
+        """
+        Takes a pre-determined goal and finds the best action to achieve it
+        using the available behavior modules.
+        """
+        # Default behaviour will be to wander.
+        action: AIAction = self.wandering_module.get_action(
+            self.critter, self.world, self.all_critters)
 
         if goal == GoalType.SURVIVE_DANGER:
             action = self.fleeing_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
-
+                self.critter, self.world, self.all_critters)
         elif goal == GoalType.RECOVER_ENERGY:
             action = AIAction(type=ActionType.REST)
-
         elif goal == GoalType.QUENCH_THIRST:
-            # If we can drink or see water, do it.
             action = self.water_seeking_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
-
-            # in a pinch, food will also quench thirst, try that.
+                self.critter, self.world, self.all_critters)
             if not action:
                 action = self.foraging_module.get_action(
-                    self.critter, self.world, self.all_critters
-                )
-
+                    self.critter, self.world, self.all_critters)
         elif goal == GoalType.SATE_HUNGER:
-            # If we can eat or see food, do it. otherwise walk to find it.
             action = self.foraging_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
-
+                self.critter, self.world, self.all_critters)
         elif goal == GoalType.BREED:
-            # There must be a viable mate nearby.  Do something about it.
             action = self.breeding_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
-
+                self.critter, self.world, self.all_critters)
         elif goal == GoalType.SEEK_MATE:
-            # If we can breed or see a mate, do it. otherwise just wander.
             action = self.mate_seeking_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
-
+                self.critter, self.world, self.all_critters)
         elif goal == GoalType.IDLE:
-            # TODO: decide whether to wander or rest based on
-            # a random choice.  think about a "laziness" trait
             action = self.moving_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
+                self.critter, self.world, self.all_critters)
 
-        # If a goal was chosen but the behaviour module found no specific action,
-        # wander determinedly in hope.
-        if action is None:
-            action = self.wandering_module.get_action(
-                self.critter, self.world, self.all_critters
-            )
-        return (goal, action)
+        return action
 
     def _get_primary_goal(self) -> GoalType:
         """
@@ -174,19 +156,23 @@ class CritterAI:
             )
 
         if critter.thirst >= THIRST_TO_START_DRINKING:
-            scores[GoalType.QUENCH_THIRST] = critter.thirst / THIRST_TO_START_DRINKING
+            scores[GoalType.QUENCH_THIRST] = critter.thirst / \
+                THIRST_TO_START_DRINKING
 
         if critter.diet == DietType.HERBIVORE:
             if critter.hunger >= HUNGER_TO_START_FORAGING:
-                scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_FORAGING
+                scores[GoalType.SATE_HUNGER] = critter.hunger / \
+                    HUNGER_TO_START_FORAGING
         elif critter.diet == DietType.CARNIVORE:
             if critter.hunger >= HUNGER_TO_START_HUNTING:
-                scores[GoalType.SATE_HUNGER] = critter.hunger / HUNGER_TO_START_HUNTING
+                scores[GoalType.SATE_HUNGER] = critter.hunger / \
+                    HUNGER_TO_START_HUNTING
         else:
             raise NotImplementedError(f"Unknown diet type {critter.diet.name}")
 
         is_horny = (
-            critter.energy >= (CARNIVORE_MIN_ENERGY_TO_BREED if critter.diet == DietType.CARNIVORE else HERBIVORE_MIN_ENERGY_TO_BREED)
+            critter.energy >= (CARNIVORE_MIN_ENERGY_TO_BREED if critter.diet ==
+                               DietType.CARNIVORE else HERBIVORE_MIN_ENERGY_TO_BREED)
             and critter.health >= MIN_HEALTH_TO_BREED
             and critter.hunger < MAX_HUNGER_TO_BREED
             and critter.thirst < MAX_THIRST_TO_BREED

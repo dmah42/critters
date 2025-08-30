@@ -1,19 +1,26 @@
 import logging
 import random
-from typing import List
+import copy
+import numpy as np
+from typing import Dict, List
 
+from simulation.agent import DQNAgent
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
+from simulation.reward_function import get_reward_for_goal
+from simulation.state_space import get_state_for_critter
 from simulation.statistics import record_statistics
 from simulation.terrain_type import TerrainType
 from simulation.brain import (
     CRITICAL_HUNGER,
     CRITICAL_THIRST,
     HUNGER_TO_START_FORAGING,
+    HUNGER_TO_START_HUNTING,
     MAX_ENERGY,
     MAX_HUNGER,
     MAX_THIRST,
     THIRST_TO_START_DRINKING,
+    ENERGY_TO_START_RESTING,
     ActionType,
 )
 from simulation.models import (
@@ -76,13 +83,15 @@ MUTATION_AMOUNT = 0.3
 
 logger = logging.getLogger(__name__)
 
+BATCH_SIZE = 64
 
-def run_simulation_tick(world: World, session: Session):
+
+def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, DQNAgent]):
     """Process one tick of the world simulation. Called periodically."""
     print(".", end="")
     logger.info("+++ Starting tick +++")
     _process_tile_regrowth(session)
-    _process_critter_ai(world, session)
+    _process_critter_ai(world, session, agents)
     record_statistics(session)
     logger.info("+++ Ending tick +++")
     print("|", end="", flush=True)
@@ -115,7 +124,7 @@ def _process_tile_regrowth(session: Session):
     )
 
 
-def _process_critter_ai(world: World, session: Session):
+def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, DQNAgent]):
     """Handles the state changes and actions for living critters"""
     all_critters = session.query(Critter).all()
 
@@ -129,7 +138,32 @@ def _process_critter_ai(world: World, session: Session):
             continue
         _run_critter_logic(critter, world, session, all_critters)
 
+    global agents
+    if agents:
+        if len(agents[DietType.HERBIVORE].memory) > BATCH_SIZE:
+            agents[DietType.HERBIVORE].replay(BATCH_SIZE)
+        if len(agents[DietType.CARNIVORE].memory) > BATCH_SIZE:
+            agents[DietType.CARNIVORE].replay(BATCH_SIZE)
+
     logger.info(f"Processed AI for {len(all_critters)} critters.")
+
+
+def _is_goal_satisfied(goal: GoalType, before: Critter, after: Critter) -> bool:
+    """
+    Determine if a goal's satisfaction threshold was crossed.
+    """
+    if goal == GoalType.QUENCH_THIRST:
+        return before.thirst >= THIRST_TO_START_DRINKING and after.thirst < THIRST_TO_START_DRINKING
+    if goal == GoalType.SATE_HUNGER:
+        if before.diet == DietType.HERBIVORE:
+            return before.hunger >= HUNGER_TO_START_FORAGING and after.hunger < HUNGER_TO_START_FORAGING
+        else:
+            return before.hunger >= HUNGER_TO_START_HUNTING and after.hunger < HUNGER_TO_START_HUNTING
+    if goal == GoalType.RECOVER_ENERGY:
+        return before.energy < ENERGY_TO_START_RESTING and after.energy >= ENERGY_TO_START_RESTING
+    if goal == GoalType.BREED:
+        return after.breeding_cooldown > 0 and before.breeding_cooldown == 0
+    return False
 
 
 def _run_critter_logic(
@@ -142,8 +176,9 @@ def _run_critter_logic(
     The main AI dispatcher for a single critter's turn.
     It creates the appropriate AI brain, gets an action, and executes it.
     """
+    critter_before = copy.deepcopy(critter)
+
     # --- Part 1: Universal State Updates (Health, Hunger, Death, etc.) ---
-    # This initial block of code is the same as before.
     logger.info(f"  Processing critter {critter.id} [{critter.ai_state.name}]")
 
     # Check for death by old age
@@ -191,11 +226,16 @@ def _run_critter_logic(
         return
 
     # --- Part 2: Get Action from the AI Brain ---
-    # All complex decision-making is now handled by these two lines.
+
+    global agents
+    agent = agents[critter.diet]
+
+    state = np.reshape(get_state_for_critter(
+        critter, world, all_critters), [1, -1])
+    goal = agent.act(state)
+
     brain = create_ai_for_critter(critter, world, all_critters)
-    result = brain.determine_action()
-    goal = result[0]
-    action = result[1]
+    action = brain.get_action_for_goal(goal)
 
     if not action:
         raise RuntimeError(
@@ -356,6 +396,19 @@ def _run_critter_logic(
         (energy_spent * ENERGY_TO_HUNGER_RATIO)
     ) * critter.metabolism
     critter.hunger = min(critter.hunger + hunger_increase, MAX_HUNGER)
+
+    # Remember what happened
+    critter_after = critter
+    next_state = np.reshape(get_state_for_critter(
+        critter_after, world, all_critters), [1, -1])
+    died = critter.is_ghost
+
+    successful = _is_goal_satisfied(goal, critter_before, critter_after)
+    reward = get_reward_for_goal(
+        critter_before, critter_after, goal, successful, died)
+
+    action_index = agent.actions.index(goal)
+    agent.remember(state, action_index, reward, next_state, died)
 
 
 def _update_tile_food(session, x: int, y: int, new_food_value: float):

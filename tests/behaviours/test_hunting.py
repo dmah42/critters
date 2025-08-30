@@ -5,7 +5,7 @@ import sys
 import os
 import random
 
-from simulation.brain import HUNGER_TO_START_AMBUISHING, HUNGER_TO_START_HUNTING
+from simulation.brain import HUNGER_TO_START_AMBUSHING, HUNGER_TO_START_HUNTING
 from simulation.world import TileData
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -30,6 +30,9 @@ class MockCritter:
         self.y = y
         self.diet = diet
         self.health = health
+        self.max_health = 100.0
+        self.energy = 100.0
+        self.thirst = 50.0
         self.is_ghost = is_ghost
         self.perception = 8.0
         self.hunger = hunger
@@ -125,7 +128,7 @@ class TestHuntingBehavior(unittest.TestCase):
         Tests that a moderately hungry carnivore will AMBUSH if no prey is in its kill zone.
         """
         # Set hunger to be in the "ambush" range
-        self.carnivore.hunger = HUNGER_TO_START_AMBUISHING + 1
+        self.carnivore.hunger = HUNGER_TO_START_AMBUSHING + 1
         # Place prey far away, outside the ambush radius
         prey = MockCritter(x=10, y=10, diet=DietType.HERBIVORE)
         all_critters = [self.carnivore, prey]
@@ -142,7 +145,7 @@ class TestHuntingBehavior(unittest.TestCase):
         Tests that a moderately hungry carnivore will MOVE to intercept prey
         that enters its ambush "kill zone".
         """
-        self.carnivore.hunger = HUNGER_TO_START_AMBUISHING + 1
+        self.carnivore.hunger = HUNGER_TO_START_AMBUSHING + 1
         # Place prey close by, inside the ambush radius but not adjacent
         prey = MockCritter(x=2, y=2, diet=DietType.HERBIVORE)
         all_critters = [self.carnivore, prey]

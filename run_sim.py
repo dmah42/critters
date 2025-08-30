@@ -2,13 +2,43 @@ import argparse
 import logging
 import time
 import traceback
+from typing import Dict
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from config import Config
+from simulation.agent import DQNAgent
 from simulation.engine import run_simulation_tick
 from simulation.logger import setup_logging
+from simulation.models import Critter, DietType
+from simulation.state_space import get_state_for_critter
 from simulation.world import World
+
+
+logger = logging.getLogger(__name__)
+
+
+def _create_agents(session_maker: sessionmaker) -> Dict[DietType, DQNAgent]:
+    """Create an agent for each diet type"""
+    session = session_maker()
+    world = World(seed=Config.WORLD_SEED, session=session)
+
+    all_critters = session.query(Critter).all()
+    if not all_critters:
+        logger.warning(
+            "No living critters with which to initialize RL agents.")
+        return {}
+
+    sample_state = get_state_for_critter(all_critters[0], world, all_critters)
+    state_size = len(sample_state)
+
+    agents = {
+        DietType.HERBIVORE: DQNAgent(state_size, verbose=True),
+        DietType.CARNIVORE: DQNAgent(state_size, verbose=True),
+    }
+    logger.info("RL Agents Initialized.")
+
+    return agents
 
 
 def main():
@@ -34,20 +64,32 @@ def main():
     args = parser.parse_args()
 
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
-    Session = sessionmaker(bind=engine)
+    session_maker = sessionmaker(bind=engine)
 
     setup_logging(console_log_enabled=args.console_log, log_filename=args.log_file)
 
+    agents = _create_agents(session_maker)
+
     print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
+
+    tick: int = 0
     while True:
         start_time = time.time()
 
-        session = Session()
+        tick += 1
+        if tick % 100 == 0:
+            print(f"\n--- Tick {tick} ---")
+            print(
+                f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")
+            print(
+                f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
+
+        session = session_maker()
         world = World(seed=Config.WORLD_SEED, session=session)
 
         try:
-            run_simulation_tick(world, session)
+            run_simulation_tick(world, session, agents)
             session.commit()
         except Exception as e:
             logging.error(f"An error occurred: {e}")
