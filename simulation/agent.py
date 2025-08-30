@@ -10,7 +10,7 @@ from tensorflow import keras
 class DQNAgent:
     """A Deep Q-Network agent that learns to choose goals for a critter."""
 
-    def __init__(self, state_size: int, verbose: bool):
+    def __init__(self, weights_file: str, state_size: int, training: bool, verbose: bool):
         self.state_size = state_size
         self.actions = list(GoalType)
         self.action_size = len(GoalType)
@@ -21,12 +21,15 @@ class DQNAgent:
         # Hyperparameters
         self.gamma: float = 0.95            # Discount rate for future rewards
         # Initial exploration rate (starts random)
-        self.epsilon: float = 1.0
         self.epsilon_min: float = 0.01      # Minimum exploration rate
+        # Start from random if we're training.
+        self.epsilon: float = 1.0 if training else self.epsilon_min
         self.epsilon_decay: float = 0.999   # Rate at which to reduce exploration
         self.learning_rate: float = 0.001
 
         self.model = self._build_model()
+
+        _load(weights_file)
 
     def _build_model(self) -> keras.Model:
         """Builds the neural network for the Q-learning model."""
@@ -85,3 +88,17 @@ class DQNAgent:
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+
+    def save(self, file_path: str):
+      """Saves the current weights to a file."""
+      print(f"Saving weights to {file_path}")
+      self.model.save_weights(file_path)
+
+    def _load(self, file_path: str):
+      """Loads the model weights from a file."""
+      import os
+      if os.path.exists(file_path):
+        print(f"Loading weights from {file_path}")
+        self.model.load_weights(file_path)
+      else:
+        print(f"Weights file not found at {file_path}. Training from scratch.")

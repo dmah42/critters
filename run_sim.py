@@ -15,10 +15,15 @@ from simulation.state_space import get_state_for_critter
 from simulation.world import World
 
 
+HERBIVORE_WEIGHTS_FILE: str = "herbivore_weights.h5"
+CARNIVORE_WEIGHTS_FILE: str = "carnivore_weights.h5"
+NUM_TRAINING_TICKS: int = 100000
+
+
 logger = logging.getLogger(__name__)
 
 
-def _create_agents(session_maker: sessionmaker) -> Dict[DietType, DQNAgent]:
+def _create_agents(session_maker: sessionmaker, training: bool) -> Dict[DietType, DQNAgent]:
     """Create an agent for each diet type"""
     session = session_maker()
     world = World(seed=Config.WORLD_SEED, session=session)
@@ -33,10 +38,12 @@ def _create_agents(session_maker: sessionmaker) -> Dict[DietType, DQNAgent]:
     state_size = len(sample_state)
 
     agents = {
-        DietType.HERBIVORE: DQNAgent(state_size, verbose=True),
-        DietType.CARNIVORE: DQNAgent(state_size, verbose=True),
+        DietType.HERBIVORE: DQNAgent(HERBIVORE_WEIGHTS_FILE, state_size, training=training, verbose=not training),
+        DietType.CARNIVORE: DQNAgent(CARNIVORE_WEIGHTS_FILE, state_size, training=training, verbose=not training),
     }
     logger.info("RL Agents Initialized.")
+
+    session.close()
 
     return agents
 
@@ -61,57 +68,78 @@ def main():
         default="simulation.log",
         help="The name of the file to save logs to.",
     )
+    parser.add_argument(
+        "--train",
+        action="store_true",
+        help="Enable to run in high-speed training mode and save the weights.",
+    )
     args = parser.parse_args()
 
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     session_maker = sessionmaker(bind=engine)
 
-    setup_logging(console_log_enabled=args.console_log, log_filename=args.log_file)
+    setup_logging(console_log_enabled=args.console_log,
+                  log_filename=args.log_file)
 
-    agents = _create_agents(session_maker)
+    agents = _create_agents(session_maker, args.train)
 
-    print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
+    if args.train:
+        print(f"  Running simulatino for {NUM_TRAINING_TICKS} ticks... ")
+    else:
+        print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
 
     tick: int = 0
-    while True:
-        start_time = time.time()
+    try:
+        while True:
+            start_time = time.time()
 
-        tick += 1
-        if tick % 100 == 0:
-            print(f"\n--- Tick {tick} ---")
-            print(
-                f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")
-            print(
-                f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
+            tick += 1
+            if tick % 100 == 0:
+                print(f"\n--- Tick {tick} ---")
+                print(
+                    f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")
+                print(
+                    f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
 
-        session = session_maker()
-        world = World(seed=Config.WORLD_SEED, session=session)
+            if args.train and tick > NUM_TRAINING_TICKS:
+                break
 
-        try:
-            run_simulation_tick(world, session, agents)
-            session.commit()
-        except Exception as e:
-            logging.error(f"An error occurred: {e}")
-            logging.error(traceback.format_exc())
-            traceback.print_exc()
-            session.rollback()
-            raise
-        finally:
-            session.close()
+            session = session_maker()
+            world = World(seed=Config.WORLD_SEED, session=session)
 
-        end_time = time.time()
+            try:
+                run_simulation_tick(world, session, agents)
+                session.commit()
+            except Exception as e:
+                logging.error(f"An error occurred: {e}")
+                logging.error(traceback.format_exc())
+                traceback.print_exc()
+                session.rollback()
+                raise
+            finally:
+                session.close()
 
-        time_taken = end_time - start_time
-        sleep_time = args.tick_timer - time_taken
+            end_time = time.time()
 
-        if sleep_time > 0:
-            time.sleep(args.tick_timer)
-        else:
-            logging.warning(
-                f"Tick processing ({time_taken:.2f}s) exceeded the "
-                f"tick timer duration ({args.tick_timer}s)"
-            )
+            # Skip the delay if we're training.
+            if not args.train:
+              time_taken = end_time - start_time
+              sleep_time = args.tick_timer - time_taken
+
+              if sleep_time > 0:
+                  time.sleep(args.tick_timer)
+              else:
+                  logging.warning(
+                      f"Tick processing ({time_taken:.2f}s) exceeded the "
+                      f"tick timer duration ({args.tick_timer}s)"
+                  )
+    except KeyboardInterrupt:
+        print("\nSimulation interrupted by user.")
+    finally:
+        if args.train:
+            agents[DietType.HERBIVORE].save(HERBIVORE_WEIGHTS_FILE)
+            agents[DietType.CARNIVORE].save(CARNIVORE_WEIGHTS_FILE)
 
 
 if __name__ == "__main__":
