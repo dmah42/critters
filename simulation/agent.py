@@ -29,13 +29,13 @@ class DQNAgent:
 
         self.model = self._build_model()
 
-        _load(weights_file)
+        self._load(weights_file)
 
     def _build_model(self) -> keras.Model:
         """Builds the neural network for the Q-learning model."""
         model = keras.Sequential([
-            keras.layers.Dense(
-                128, input_dim=self.state_size, activation='relu'),
+            keras.Input(shape=(self.state_size,)),
+            keras.layers.Dense(128, activation='relu'),
             keras.layers.Dense(128, activation='relu'),
             keras.layers.Dense(self.action_size, activation='linear')
         ])

@@ -73,10 +73,9 @@ class CritterAI:
         using the available behavior modules.
         """
         # Default behaviour will be to wander.
-        action: AIAction = self.wandering_module.get_action(
-            self.critter, self.world, self.all_critters)
+        action = None
 
-        if goal == GoalType.SURVIVE_DANGER:
+        if goal == GoalType.SURVIVE_DANGER and self.fleeing_module:
             action = self.fleeing_module.get_action(
                 self.critter, self.world, self.all_critters)
         elif goal == GoalType.RECOVER_ENERGY:
@@ -98,6 +97,10 @@ class CritterAI:
                 self.critter, self.world, self.all_critters)
         elif goal == GoalType.IDLE:
             action = self.moving_module.get_action(
+                self.critter, self.world, self.all_critters)
+
+        if not action:
+            action: AIAction = self.wandering_module.get_action(
                 self.critter, self.world, self.all_critters)
 
         return action

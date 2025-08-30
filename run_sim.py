@@ -15,8 +15,8 @@ from simulation.state_space import get_state_for_critter
 from simulation.world import World
 
 
-HERBIVORE_WEIGHTS_FILE: str = "herbivore_weights.h5"
-CARNIVORE_WEIGHTS_FILE: str = "carnivore_weights.h5"
+HERBIVORE_WEIGHTS_FILE: str = "herbivore.weights.h5"
+CARNIVORE_WEIGHTS_FILE: str = "carnivore.weights.h5"
 NUM_TRAINING_TICKS: int = 100000
 
 
@@ -71,20 +71,23 @@ def main():
     parser.add_argument(
         "--train",
         action="store_true",
-        help="Enable to run in high-speed training mode and save the weights.",
+        help="Run in high-speed training mode and save the weights.",
     )
     args = parser.parse_args()
 
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     session_maker = sessionmaker(bind=engine)
 
-    setup_logging(console_log_enabled=args.console_log,
-                  log_filename=args.log_file)
+    if args.train:
+      setup_logging(console_log_enabled=False, log_filename="")
+    else:
+      setup_logging(console_log_enabled=args.console_log,
+                    log_filename=args.log_file)
 
     agents = _create_agents(session_maker, args.train)
 
     if args.train:
-        print(f"  Running simulatino for {NUM_TRAINING_TICKS} ticks... ")
+        print(f"  Running simulation for {NUM_TRAINING_TICKS} ticks... ")
     else:
         print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
@@ -95,7 +98,7 @@ def main():
             start_time = time.time()
 
             tick += 1
-            if tick % 100 == 0:
+            if tick % 10 == 0:
                 print(f"\n--- Tick {tick} ---")
                 print(
                     f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")

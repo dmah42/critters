@@ -1,11 +1,13 @@
+import math
 from typing import List
+
 import numpy as np
 
-from simulation.brain import MAX_ENERGY
-from simulation.models import Critter, DietType, TerrainType
+from simulation.brain import MAX_ENERGY, SENSE_RADIUS
+from simulation.models import Critter, DietType
+from simulation.terrain_type import TerrainType
 from simulation.world import World
 
-critter.perception = 5
 
 def get_state_for_critter(critter: Critter, world: World, all_critters: List[Critter]) -> np.ndarray:
     """
@@ -22,17 +24,18 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
         critter.thirst / 100.0,
         critter.age / (critter.lifespan + 1),
         critter.breeding_cooldown / 500.0,
+        critter.perception / 10.0,
     ], dtype=np.float32)
 
     # --- 2. External State (What the critter sees) ---
-    local_dim = (critter.perception * 2) + 1
+    local_dim = int((SENSE_RADIUS * 2) + 1)
     height_map = np.zeros((local_dim, local_dim), dtype=np.float32)
     grass_map = np.zeros((local_dim, local_dim), dtype=np.float32)
     water_map = np.zeros((local_dim, local_dim), dtype=np.float32)
 
-    for y_offset in range(-critter.perception, critter.perception + 1):
-        for x_offset in range(-critter.perception, critter.perception + 1):
-            array_y, array_x = y_offset + critter.perception, x_offset + critter.perception
+    for y_offset in range(-SENSE_RADIUS, SENSE_RADIUS + 1):
+        for x_offset in range(-SENSE_RADIUS, SENSE_RADIUS + 1):
+            array_y, array_x = y_offset + SENSE_RADIUS, x_offset + SENSE_RADIUS
             wx, wy = critter.x + x_offset, critter.y + y_offset
             tile = world.get_tile(wx, wy)
             height_map[array_y, array_x] = tile.height
@@ -41,12 +44,13 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
             elif tile.terrain == TerrainType.WATER:
                 water_map[array_y, array_x] = 1.0
 
+    perception = math.ceil(critter.perception)
     # --- Information about other critters ---
     visible_critters = [
         other for other in all_critters
         if other.id != critter.id and
-        abs(other.x - critter.x) <= critter.perception and
-        abs(other.y - critter.y) <= critter.perception
+        abs(other.x - critter.x) <= perception and
+        abs(other.y - critter.y) <= perception
     ]
 
     # Closest Predator Vector (distance, dx, dy, health) - for herbivores
@@ -55,9 +59,9 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
         visible_predators = [p for p in visible_critters if p.diet == DietType.CARNIVORE]
         if visible_predators:
             closest_predator = min(visible_predators, key=lambda p: abs(p.x - critter.x) + abs(p.y - critter.y))
-            dist = (abs(closest_predator.x - critter.x) + abs(closest_predator.y - critter.y)) / critter.perception
-            dx = (closest_predator.x - critter.x) / critter.perception
-            dy = (closest_predator.y - critter.y) / critter.perception
+            dist = (abs(closest_predator.x - critter.x) + abs(closest_predator.y - critter.y)) / perception
+            dx = (closest_predator.x - critter.x) / perception
+            dy = (closest_predator.y - critter.y) / perception
             health = closest_predator.health / closest_predator.max_health
             energy = closest_predator.energy / MAX_ENERGY
             closest_predator_vec = np.array([dist, dx, dy, health, energy], dtype=np.float32)
@@ -69,9 +73,9 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
         if visible_prey:
             # Find prey with the lowest health, as it's the "weakest"
             weakest_prey = min(visible_prey, key=lambda p: p.health)
-            dist = (abs(weakest_prey.x - critter.x) + abs(weakest_prey.y - critter.y)) / critter.perception
-            dx = (weakest_prey.x - critter.x) / critter.perception
-            dy = (weakest_prey.y - critter.y) / critter.perception
+            dist = (abs(weakest_prey.x - critter.x) + abs(weakest_prey.y - critter.y)) / perception
+            dx = (weakest_prey.x - critter.x) / perception
+            dy = (weakest_prey.y - critter.y) / perception
             health = weakest_prey.health / weakest_prey.max_health
             energy = weakest_prey.energy / MAX_ENERGY
             weakest_prey_vec = np.array([dist, dx, dy, health, energy], dtype=np.float32)
@@ -85,9 +89,9 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
         ]
         if potential_mates:
             closest_mate = min(potential_mates, key=lambda m: abs(m.x-critter.x) + abs(m.y-critter.y))
-            dist = (abs(closest_mate.x - critter.x) + abs(closest_mate.y - critter.y)) / critter.perception
-            dx = (closest_mate.x - critter.x) / critter.perception
-            dy = (closest_mate.y - critter.y) / critter.perception
+            dist = (abs(closest_mate.x - critter.x) + abs(closest_mate.y - critter.y)) / perception
+            dx = (closest_mate.x - critter.x) / perception
+            dy = (closest_mate.y - critter.y) / perception
             closest_mate_vec = np.array([dist, dx, dy], dtype=np.float32)
 
 

@@ -136,9 +136,8 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
         if critter.is_ghost:
             logger.info(f"Skipping update for ghost {critter.id}")
             continue
-        _run_critter_logic(critter, world, session, all_critters)
+        _run_critter_logic(critter, world, session, all_critters, agents)
 
-    global agents
     if agents:
         if len(agents[DietType.HERBIVORE].memory) > BATCH_SIZE:
             agents[DietType.HERBIVORE].replay(BATCH_SIZE)
@@ -171,6 +170,7 @@ def _run_critter_logic(
     world: World,
     session: Session,
     all_critters: List[Critter],
+    agents: Dict[DietType, DQNAgent],
 ):
     """
     The main AI dispatcher for a single critter's turn.
@@ -227,7 +227,6 @@ def _run_critter_logic(
 
     # --- Part 2: Get Action from the AI Brain ---
 
-    global agents
     agent = agents[critter.diet]
 
     state = np.reshape(get_state_for_critter(
@@ -371,8 +370,8 @@ def _run_critter_logic(
 
     elif action_type == ActionType.MOVE:
         if goal == GoalType.SURVIVE_DANGER:
-            predator = action.target_critter
-            logger.info(f"    fleeing from {predator.id}")
+            if action.target_critter:
+                logger.info(f"    fleeing from {action.target_critter.id}")
 
         _execute_move(
             critter,
@@ -407,8 +406,7 @@ def _run_critter_logic(
     reward = get_reward_for_goal(
         critter_before, critter_after, goal, successful, died)
 
-    action_index = agent.actions.index(goal)
-    agent.remember(state, action_index, reward, next_state, died)
+    agent.remember(state, goal, reward, next_state, died)
 
 
 def _update_tile_food(session, x: int, y: int, new_food_value: float):
