@@ -69,7 +69,7 @@ def find_path(
         # Check before we exceed our computation budget.
         if iteration_count > MAX_ITERATIONS:
             # The path is too complex, give up.
-            logger.warning(f"PAthfinding from {start_pos} to {end_pos} exceeded budget")
+            logger.warning(f"Pathfinding from {start_pos} to {end_pos} exceeded budget")
             return None
 
         iteration_count += 1

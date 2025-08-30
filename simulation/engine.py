@@ -2,14 +2,14 @@ import logging
 import random
 import copy
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from simulation.agent import DQNAgent
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
 from simulation.reward_function import get_reward_for_goal
 from simulation.state_space import get_state_for_critter
-from simulation.statistics import record_statistics
+from simulation.statistics import record_statistics, record_training_statistics
 from simulation.terrain_type import TerrainType
 from simulation.brain import (
     CRITICAL_HUNGER,
@@ -91,8 +91,9 @@ def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, D
     print(".", end="")
     logger.info("+++ Starting tick +++")
     _process_tile_regrowth(session)
-    _process_critter_ai(world, session, agents)
+    avg_rewards = _process_critter_ai(world, session, agents)
     record_statistics(session)
+    record_training_statistics(session, agents, avg_rewards)
     logger.info("+++ Ending tick +++")
     print("|", end="", flush=True)
 
@@ -124,19 +125,25 @@ def _process_tile_regrowth(session: Session):
     )
 
 
-def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, DQNAgent]):
+def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, DQNAgent]) -> Dict[DietType, float]:
     """Handles the state changes and actions for living critters"""
     all_critters = session.query(Critter).all()
 
+    rewards_this_tick: Dict[DietType, List[float]] = {
+        DietType.HERBIVORE: [], DietType.CARNIVORE: []}
+
     if not all_critters:
         logger.warning("No living critters found.")
-        return
+        return {DietType.HERBIVORE: 0, DietType.CARNIVORE: 0}
 
     for critter in all_critters:
         if critter.is_ghost:
             logger.info(f"Skipping update for ghost {critter.id}")
             continue
-        _run_critter_logic(critter, world, session, all_critters, agents)
+        reward = _run_critter_logic(
+            critter, world, session, all_critters, agents)
+        if reward is not None:
+            rewards_this_tick[critter.diet].append(reward)
 
     if agents:
         if len(agents[DietType.HERBIVORE].memory) > BATCH_SIZE:
@@ -146,6 +153,15 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
 
     logger.info(f"Processed AI for {len(all_critters)} critters.")
 
+    # Calculate and return average rewards
+    avg_rewards = {}
+    for diet, rewards in rewards_this_tick.items():
+        if rewards:
+            avg_rewards[diet] = sum(rewards) / len(rewards)
+        else:
+            avg_rewards[diet] = 0
+
+    return avg_rewards
 
 def _is_goal_satisfied(goal: GoalType, before: Critter, after: Critter) -> bool:
     """
@@ -165,17 +181,46 @@ def _is_goal_satisfied(goal: GoalType, before: Critter, after: Critter) -> bool:
     return False
 
 
+def _remember_experience(
+    agent: DQNAgent,
+    before: Critter,
+    after: Critter,
+    goal: GoalType,
+    died: bool,
+    world: World,
+    all_critters: List[Critter]
+) -> float:
+    """Helper function to calculate reward and store the experience in the agent's memory."""
+    state = np.reshape(get_state_for_critter(
+        before, world, all_critters), [1, -1])
+
+    if died:
+        next_state = np.zeros(state.shape)  # Use a zeroed-out terminal state
+    else:
+        next_state = np.reshape(get_state_for_critter(
+            after, world, all_critters), [1, -1])
+
+    successful = _is_goal_satisfied(goal, before, after)
+    reward = get_reward_for_goal(before, after,
+                                 goal, successful, died)
+
+    agent.remember(state, goal, reward, next_state, died)
+    return reward
+
+
 def _run_critter_logic(
     critter: Critter,
     world: World,
     session: Session,
     all_critters: List[Critter],
     agents: Dict[DietType, DQNAgent],
-):
+) -> Optional[float]:
     """
     The main AI dispatcher for a single critter's turn.
     It creates the appropriate AI brain, gets an action, and executes it.
+    Returns any calculated reward.
     """
+    agent = agents[critter.diet]
     critter_before = copy.deepcopy(critter)
 
     # --- Part 1: Universal State Updates (Health, Hunger, Death, etc.) ---
@@ -188,7 +233,9 @@ def _run_critter_logic(
         death_chance = (critter.age / critter.lifespan) * 0.1
         if random.random() < death_chance:
             _handle_death(critter, CauseOfDeath.OLD_AGE, session)
-            return
+            return _remember_experience(agent, critter_before, critter,
+                                        GoalType.IDLE, True, world,
+                                        all_critters)
 
     # A critter can heal if its basic food and water needs are met.
     if (
@@ -223,7 +270,8 @@ def _run_critter_logic(
             else CauseOfDeath.THIRST
         )
         _handle_death(critter, cause, session)
-        return
+        return _remember_experience(critter_before, critter, GoalType.IDLE,
+                                    True, world, all_critters)
 
     # --- Part 2: Get Action from the AI Brain ---
 
@@ -397,16 +445,9 @@ def _run_critter_logic(
     critter.hunger = min(critter.hunger + hunger_increase, MAX_HUNGER)
 
     # Remember what happened
-    critter_after = critter
-    next_state = np.reshape(get_state_for_critter(
-        critter_after, world, all_critters), [1, -1])
-    died = critter.is_ghost
+    return _remember_experience(agent, critter_before, critter, goal,
+                                critter.is_ghost, world, all_critters)
 
-    successful = _is_goal_satisfied(goal, critter_before, critter_after)
-    reward = get_reward_for_goal(
-        critter_before, critter_after, goal, successful, died)
-
-    agent.remember(state, goal, reward, next_state, died)
 
 
 def _update_tile_food(session, x: int, y: int, new_food_value: float):

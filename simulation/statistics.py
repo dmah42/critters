@@ -1,9 +1,11 @@
 import json
 import logging
 import math
+from typing import Dict
 import numpy as np
 
-from simulation.models import Critter, DietType, SimulationStats
+from simulation.agent import DQNAgent
+from simulation.models import Critter, DietType, SimulationStats, TrainingStats
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -54,11 +56,14 @@ def record_statistics(session: Session):
 
         stats_dict["ages"][c.age] = stats_dict["ages"].get(c.age, 0) + 1
         hunger_bin = int(math.floor(c.hunger))
-        stats_dict["hunger"][hunger_bin] = stats_dict["hunger"].get(hunger_bin, 0) + 1
+        stats_dict["hunger"][hunger_bin] = stats_dict["hunger"].get(
+            hunger_bin, 0) + 1
         thirst_bin = int(math.floor(c.thirst))
-        stats_dict["thirst"][thirst_bin] = stats_dict["thirst"].get(thirst_bin, 0) + 1
+        stats_dict["thirst"][thirst_bin] = stats_dict["thirst"].get(
+            thirst_bin, 0) + 1
         energy_bin = int(math.floor(c.energy))
-        stats_dict["energy"][energy_bin] = stats_dict["energy"].get(energy_bin, 0) + 1
+        stats_dict["energy"][energy_bin] = stats_dict["energy"].get(
+            energy_bin, 0) + 1
 
         if c.health > 70:
             stats_dict["health"]["Healthy"] += 1
@@ -100,7 +105,8 @@ def record_statistics(session: Session):
     )
 
     last_stat = (
-        session.query(SimulationStats).order_by(SimulationStats.tick.desc()).first()
+        session.query(SimulationStats).order_by(
+            SimulationStats.tick.desc()).first()
     )
     current_tick = (last_stat.tick + 1) if last_stat else 1
 
@@ -154,3 +160,24 @@ def record_statistics(session: Session):
     session.add(stats)
 
     logger.info(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
+
+
+def record_training_statistics(
+    session: Session,
+    agents: Dict[DietType, DQNAgent],
+    avg_rewards: Dict[DietType, float],
+):
+    """Records a snapshot of the training-specific statistics to the database."""
+    last_stat = (
+        session.query(TrainingStats).order_by(
+            TrainingStats.tick.desc()).first()
+    )
+    current_tick = (last_stat.tick + 1) if last_stat else 1
+    new_training_stats = TrainingStats(
+        tick=current_tick,
+        herbivore_epsilon=agents[DietType.HERBIVORE].epsilon,
+        carnivore_epsilon=agents[DietType.CARNIVORE].epsilon,
+        avg_reward_herbivore=avg_rewards.get(DietType.HERBIVORE, 0),
+        avg_reward_carnivore=avg_rewards.get(DietType.CARNIVORE, 0),
+    )
+    session.add(new_training_stats)

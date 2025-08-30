@@ -355,3 +355,16 @@ class SimulationStats(db.Model):
             else:
                 data[column.name] = value
         return data
+
+
+class TrainingStats(db.Model):
+    __tablename__ = 'training_stats'
+
+    tick = db.Column(db.Integer, primary_key=True)
+
+    herbivore_epsilon = db.Column(db.Float)
+    carnivore_epsilon = db.Column(db.Float)
+
+    avg_reward_herbivore = db.Column(db.Float)
+    avg_reward_carnivore = db.Column(db.Float)
+
