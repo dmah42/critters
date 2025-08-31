@@ -83,7 +83,7 @@ class DQNAgent:
             # Update the Q-value for the action we took
             target_f[0][action_index] = target
 
-            # Train the model on this corrected experience
+            # Train the model on this one corrected experience
             self.model.fit(state, target_f, epochs=1, verbose=self.verbose)
 
         if self.epsilon > self.epsilon_min:

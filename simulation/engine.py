@@ -91,9 +91,9 @@ def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, D
     print(".", end="")
     logger.info("+++ Starting tick +++")
     _process_tile_regrowth(session)
-    avg_rewards = _process_critter_ai(world, session, agents)
+    avg_rewards, avg_concordance = _process_critter_ai(world, session, agents)
     record_statistics(session)
-    record_training_statistics(session, agents, avg_rewards)
+    record_training_statistics(session, agents, avg_rewards, avg_concordance)
     logger.info("+++ Ending tick +++")
     print("|", end="", flush=True)
 
@@ -131,6 +131,8 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
 
     rewards_this_tick: Dict[DietType, List[float]] = {
         DietType.HERBIVORE: [], DietType.CARNIVORE: []}
+    concordance_this_tick: Dict[DietType, List[float]] = {
+        DietType.HERBIVORE: [], DietType.CARNIVORE: []}
 
     if not all_critters:
         logger.warning("No living critters found.")
@@ -140,10 +142,11 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
         if critter.is_ghost:
             logger.info(f"Skipping update for ghost {critter.id}")
             continue
-        reward = _run_critter_logic(
+        reward, concordance = _run_critter_logic(
             critter, world, session, all_critters, agents)
         if reward is not None:
             rewards_this_tick[critter.diet].append(reward)
+            concordance_this_tick[critter.diet].append(concordance)
 
     if agents:
         if len(agents[DietType.HERBIVORE].memory) > BATCH_SIZE:
@@ -154,14 +157,13 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
     logger.info(f"Processed AI for {len(all_critters)} critters.")
 
     # Calculate and return average rewards
-    avg_rewards = {}
-    for diet, rewards in rewards_this_tick.items():
-        if rewards:
-            avg_rewards[diet] = sum(rewards) / len(rewards)
-        else:
-            avg_rewards[diet] = 0
+    avg_rewards = {diet: sum(rewards) / len(rewards)
+                   if rewards else 0 for diet, rewards in rewards_this_tick.items()}
+    avg_concordance = {diet: sum(
+        checks) / len(checks) if checks else 0 for diet, checks in concordance_this_tick.items()}
 
-    return avg_rewards
+    return avg_rewards, avg_concordance
+
 
 def _is_goal_satisfied(goal: GoalType, before: Critter, after: Critter) -> bool:
     """
@@ -214,7 +216,7 @@ def _run_critter_logic(
     session: Session,
     all_critters: List[Critter],
     agents: Dict[DietType, DQNAgent],
-) -> Optional[float]:
+) -> tuple[Optional[float], bool]:
     """
     The main AI dispatcher for a single critter's turn.
     It creates the appropriate AI brain, gets an action, and executes it.
@@ -233,9 +235,9 @@ def _run_critter_logic(
         death_chance = (critter.age / critter.lifespan) * 0.1
         if random.random() < death_chance:
             _handle_death(critter, CauseOfDeath.OLD_AGE, session)
-            return _remember_experience(agent, critter_before, critter,
-                                        GoalType.IDLE, True, world,
-                                        all_critters)
+            return (_remember_experience(agent, critter_before, critter,
+                                         GoalType.IDLE, True, world,
+                                         all_critters), True)
 
     # A critter can heal if its basic food and water needs are met.
     if (
@@ -270,8 +272,8 @@ def _run_critter_logic(
             else CauseOfDeath.THIRST
         )
         _handle_death(critter, cause, session)
-        return _remember_experience(critter_before, critter, GoalType.IDLE,
-                                    True, world, all_critters)
+        return (_remember_experience(critter_before, critter, GoalType.IDLE,
+                                     True, world, all_critters), True)
 
     # --- Part 2: Get Action from the AI Brain ---
 
@@ -283,6 +285,9 @@ def _run_critter_logic(
 
     brain = create_ai_for_critter(critter, world, all_critters)
     action = brain.get_action_for_goal(goal)
+
+    rule_based_goal = brain._get_primary_goal()
+    concordance = (goal == rule_based_goal)
 
     if not action:
         raise RuntimeError(
@@ -445,9 +450,9 @@ def _run_critter_logic(
     critter.hunger = min(critter.hunger + hunger_increase, MAX_HUNGER)
 
     # Remember what happened
-    return _remember_experience(agent, critter_before, critter, goal,
-                                critter.is_ghost, world, all_critters)
-
+    return (_remember_experience(agent, critter_before, critter, goal,
+                                 critter.is_ghost, world, all_critters),
+            concordance)
 
 
 def _update_tile_food(session, x: int, y: int, new_food_value: float):
