@@ -30,7 +30,7 @@ class DQNAgent:
         self.model = self._build_model()
         self.weights_file = weights_file
 
-        self._load(weights_file)
+        self._load()
 
     def _build_model(self) -> keras.Model:
         """Builds the neural network for the Q-learning model."""

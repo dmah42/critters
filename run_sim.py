@@ -115,7 +115,7 @@ def main():
                     f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
 
             if tick % 1000 == 0:
-                print(f"\n--- Saing weights at tick {tick} ---")
+                print(f"\n--- Saving weights at tick {tick} ---")
                 agents[DietType.HERBIVORE].save()
                 agents[DietType.CARNIVORE].save()
 
