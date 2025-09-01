@@ -15,15 +15,16 @@ from simulation.state_space import get_state_for_critter
 from simulation.world import World
 
 
-HERBIVORE_WEIGHTS_FILE: str = "herbivore.weights.h5"
-CARNIVORE_WEIGHTS_FILE: str = "carnivore.weights.h5"
+DEFAULT_HERBIVORE_WEIGHTS_FILE: str = "herbivore.weights.h5"
+DEFAULT_CARNIVORE_WEIGHTS_FILE: str = "carnivore.weights.h5"
 NUM_TRAINING_TICKS: int = 100000
 
 
 logger = logging.getLogger(__name__)
 
 
-def _create_agents(session_maker: sessionmaker, training: bool) -> Dict[DietType, DQNAgent]:
+def _create_agents(session_maker: sessionmaker, training: bool,
+                   carnivore_weights: str, herbivore_weights: str) -> Dict[DietType, DQNAgent]:
     """Create an agent for each diet type"""
     session = session_maker()
     world = World(seed=Config.WORLD_SEED, session=session)
@@ -38,8 +39,8 @@ def _create_agents(session_maker: sessionmaker, training: bool) -> Dict[DietType
     state_size = len(sample_state)
 
     agents = {
-        DietType.HERBIVORE: DQNAgent(HERBIVORE_WEIGHTS_FILE, state_size, training=training, verbose=not training),
-        DietType.CARNIVORE: DQNAgent(CARNIVORE_WEIGHTS_FILE, state_size, training=training, verbose=not training),
+        DietType.HERBIVORE: DQNAgent(herbivore_weights, state_size, training=training, verbose=not training),
+        DietType.CARNIVORE: DQNAgent(carnivore_weights, state_size, training=training, verbose=not training),
     }
     logger.info("RL Agents Initialized.")
 
@@ -73,18 +74,26 @@ def main():
         action="store_true",
         help="Run in high-speed training mode and save the weights.",
     )
+    parser.add_argument("--carnivore-weights", type=str,
+                        default=DEFAULT_CARNIVORE_WEIGHTS_FILE,
+                        help="File path for carnivore model weights")
+    parser.add_argument("--herbivore-weights", type=str,
+                        default=DEFAULT_HERBIVORE_WEIGHTS_FILE,
+                        help="File path for herbivore model weights")
     args = parser.parse_args()
 
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     session_maker = sessionmaker(bind=engine)
 
     if args.train:
-      setup_logging(console_log_enabled=False, log_filename="")
+        setup_logging(console_log_enabled=False, log_filename="")
     else:
-      setup_logging(console_log_enabled=args.console_log,
-                    log_filename=args.log_file)
+        setup_logging(console_log_enabled=args.console_log,
+                      log_filename=args.log_file)
 
-    agents = _create_agents(session_maker, args.train)
+    agents = _create_agents(session_maker,
+                            args.train, args.carnivore_weights,
+                            args.herbivore_weights)
 
     if args.train:
         print(f"  Running simulation for {NUM_TRAINING_TICKS} ticks... ")
@@ -98,12 +107,17 @@ def main():
             start_time = time.time()
 
             tick += 1
-            if tick % 10 == 0:
+            if args.train and tick % 10 == 0:
                 print(f"\n--- Tick {tick} ---")
                 print(
                     f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")
                 print(
                     f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
+
+            if tick % 1000 == 0:
+                print(f"\n--- Saing weights at tick {tick} ---")
+                agents[DietType.HERBIVORE].save()
+                agents[DietType.CARNIVORE].save()
 
             if args.train and tick > NUM_TRAINING_TICKS:
                 break
@@ -127,16 +141,16 @@ def main():
 
             # Skip the delay if we're training.
             if not args.train:
-              time_taken = end_time - start_time
-              sleep_time = args.tick_timer - time_taken
+                time_taken = end_time - start_time
+                sleep_time = args.tick_timer - time_taken
 
-              if sleep_time > 0:
-                  time.sleep(args.tick_timer)
-              else:
-                  logging.warning(
-                      f"Tick processing ({time_taken:.2f}s) exceeded the "
-                      f"tick timer duration ({args.tick_timer}s)"
-                  )
+                if sleep_time > 0:
+                    time.sleep(args.tick_timer)
+                else:
+                    logging.warning(
+                        f"Tick processing ({time_taken:.2f}s) exceeded the "
+                        f"tick timer duration ({args.tick_timer}s)"
+                    )
     except KeyboardInterrupt:
         print("\nSimulation interrupted by user.")
     finally:

@@ -28,6 +28,7 @@ class DQNAgent:
         self.learning_rate: float = 0.001
 
         self.model = self._build_model()
+        self.weights_file = weights_file
 
         self._load(weights_file)
 
@@ -89,16 +90,16 @@ class DQNAgent:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def save(self, file_path: str):
+    def save(self):
       """Saves the current weights to a file."""
-      print(f"Saving weights to {file_path}")
-      self.model.save_weights(file_path)
+      print(f"Saving weights to {self.weights_file}")
+      self.model.save_weights(self.weights_file)
 
-    def _load(self, file_path: str):
+    def _load(self):
       """Loads the model weights from a file."""
       import os
-      if os.path.exists(file_path):
-        print(f"Loading weights from {file_path}")
-        self.model.load_weights(file_path)
+      if os.path.exists(self.weights_file):
+        print(f"Loading weights from {self.weights_file}")
+        self.model.load_weights(self.weights_file)
       else:
-        print(f"Weights file not found at {file_path}. Training from scratch.")
+        print(f"Weights file not found at {self.weights_file}. Training from scratch.")
