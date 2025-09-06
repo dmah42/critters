@@ -82,7 +82,7 @@ def main():
                         help="File path for herbivore model weights")
     args = parser.parse_args()
 
-    engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
+    engine = create_engine(Config.SQLALCHEMY_SIM_DATABASE_URI)
     session_maker = sessionmaker(bind=engine)
 
     if args.train:
@@ -114,7 +114,7 @@ def main():
                 print(
                     f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
 
-            if tick % 1000 == 0:
+            if tick % 100 == 0:
                 print(f"\n--- Saving weights at tick {tick} ---")
                 agents[DietType.HERBIVORE].save()
                 agents[DietType.CARNIVORE].save()
@@ -155,8 +155,8 @@ def main():
         print("\nSimulation interrupted by user.")
     finally:
         if args.train:
-            agents[DietType.HERBIVORE].save(HERBIVORE_WEIGHTS_FILE)
-            agents[DietType.CARNIVORE].save(CARNIVORE_WEIGHTS_FILE)
+            agents[DietType.HERBIVORE].save()
+            agents[DietType.CARNIVORE].save()
 
 
 if __name__ == "__main__":

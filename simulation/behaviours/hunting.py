@@ -137,19 +137,20 @@ class HuntingBehavior(ForagingBehavior):
                 best_target = self._find_best_target(
                     critter, nearby_herbivores)
 
-                # If prey is found, and we can find a path to it, MOVE to it.
-                end_pos = (best_target.x, best_target.y)
-                path = find_path(world, (critter.x, critter.y), end_pos)
+                if best_target:
+                  # If prey is found, and we can find a path to it, MOVE to it.
+                  end_pos = (best_target.x, best_target.y)
+                  path = find_path(world, (critter.x, critter.y), end_pos)
 
-                if path and len(path) > 1:
-                    next_step = path[1]
+                  if path and len(path) > 1:
+                      next_step = path[1]
 
-                    return AIAction(
-                        type=ActionType.MOVE,
-                        dx=next_step[0] - critter.x,
-                        dy=next_step[1] - critter.y,
-                        target=end_pos,
-                    )
+                      return AIAction(
+                          type=ActionType.MOVE,
+                          dx=next_step[0] - critter.x,
+                          dy=next_step[1] - critter.y,
+                          target=end_pos,
+                      )
             else:
                 # No prey in the ambush zone.  Time to wait...
                 return AIAction(type=ActionType.AMBUSH)

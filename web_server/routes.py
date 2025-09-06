@@ -15,6 +15,7 @@ from simulation.models import (
     Critter,
     DeadCritter,
     SimulationStats,
+    TrainingStats,
 )
 from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, MAX_HUNGER, MAX_THIRST
 
@@ -56,6 +57,11 @@ def stats():
         thirst_to_start_drinking=THIRST_TO_START_DRINKING,
         critical_thirst=CRITICAL_THIRST,
     )
+
+
+@main.route("/training")
+def training():
+    return render_template('training.html')
 
 
 @main.route("/api/player", methods=["POST"])
@@ -234,7 +240,8 @@ def get_world_critters_data():
     end_y = start_y + height
 
     critters_in_view = Critter.query.filter(
-        Critter.x.between(start_x, end_x - 1), Critter.y.between(start_y, end_y - 1)
+        Critter.x.between(
+            start_x, end_x - 1), Critter.y.between(start_y, end_y - 1)
     ).all()
     critter_data = [critter.to_dict() for critter in critters_in_view]
 
@@ -247,7 +254,8 @@ def get_stats_histor():
     limit = request.args.get("limit", 100, type=int)
 
     stats_history = (
-        SimulationStats.query.order_by(SimulationStats.tick.desc()).limit(limit).all()
+        SimulationStats.query.order_by(
+            SimulationStats.tick.desc()).limit(limit).all()
     )
 
     stats_history.reverse()
@@ -270,6 +278,17 @@ def get_death_stats():
     return jsonify(
         {cause.name: count for cause, count in death_counts if cause is not None}
     )
+
+
+@main.route("/api/training_stats/", methods=["GET"])
+def get_training_stats():
+    stats = (
+        db.session.query(TrainingStats).order_by(
+            TrainingStats.tick.desc()).limit(500).all()
+    )
+    stats.reverse()
+
+    return jsonify([s.to_dict() for s in stats])
 
 
 if __name__ == "__main__":

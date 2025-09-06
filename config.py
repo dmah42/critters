@@ -6,7 +6,11 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     # Database URI. SQLite file.
-    SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "app.db")
+    _SQLALCHEMY_DATABASE_URI_BASE = (
+        "sqlite:///" + os.path.join(basedir, "app.db")
+    )
+    SQLALCHEMY_DATABASE_URI = _SQLALCHEMY_DATABASE_URI_BASE + "?mode=ro"
+    SQLALCHEMY_SIM_DATABASE_URI = _SQLALCHEMY_DATABASE_URI_BASE
 
     # Disable change tracking.
     SQLALCHEMY_TRACK_MODIFICATIONS = False

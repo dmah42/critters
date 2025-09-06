@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Critter World - Training Stats</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static',
+             filename='css/stats.css') }}"
+    />
+  </head>
+  <body>
+    <div class="header-container">
+      <h1>Training Statistics</h1>
+      <a href="/" class="stats-button">View Map</a>
+      <a href="/stats" class="stats-button">View Statistics</a>
+    </div>
+
+    <div class="charts-container">
+      <div class="chart-row">
+        <div id="scorecard-container">
+          <h3>Latest Epsilon</h3>
+          <div id="scorecard-grid">
+            <div class="scorecard-title herbivore">Herbivore</div>
+            <div class="scorecard-value" id="herb-epsilon">--</div>
+
+            <div class="scorecard-title carnivore">Carnivore</div>
+            <div class="scorecard-value" id="carn-epsilon">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <h3>Average Reward</h3>
+        <canvas id="rewardChart"></canvas>
+      </div>
+      <div class="chart-row">
+        <h3>Concordance with Rule-Based AI (%)</h3>
+        <canvas id="concordanceChart"></canvas>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/training.js') }}"></script>
+  </body>
+</html>

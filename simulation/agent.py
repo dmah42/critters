@@ -24,7 +24,7 @@ class DQNAgent:
         self.epsilon_min: float = 0.01      # Minimum exploration rate
         # Start from random if we're training.
         self.epsilon: float = 1.0 if training else self.epsilon_min
-        self.epsilon_decay: float = 0.99995   # Rate at which to reduce exploration
+        self.epsilon_decay: float = 0.9999   # Rate at which to reduce exploration
         self.learning_rate: float = 0.001
 
         self.model = self._build_model()

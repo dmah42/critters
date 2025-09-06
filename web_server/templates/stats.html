@@ -1,158 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simulation Statistics</title>
+    <!-- 1. Import the Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static',
+             filename='css/stats.css') }}"
+    />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <title>Simulation Statistics</title>
-  <!-- 1. Import the Chart.js library -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f9;
-      color: #333;
-      align-items: center;
-      display: flex;
-      flex-direction: column;
-    }
-
-    h1,
-    h2 {
-      text-align: center;
-      color: #444;
-    }
-
-    .chart-container {
-      width: 80%;
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .header-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 20px;
-      /* Adds space between the title and the button */
-      width: 100%;
-    }
-
-    .stats-button {
-      padding: 8px 15px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      text-decoration: none;
-      font-size: 14px;
-      white-space: nowrap;
-      /* Prevents the text from wrapping */
-    }
-
-    .stats-button:hover {
-      background-color: #e9ecef;
-    }
-
-    /* --- Styles for Responsive Layout and Sizing --- */
-    .chart-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-
-    .chart-row>div {
-      flex: 1;
-      min-width: 250px;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="header-container">
-    <h1>Simulation Statistics</h1>
-    <a href="/" class="stats-button">View Map </a>
-  </div>
-
-  <div class="chart-container">
-    <h2>Population Over Time</h2>
-    <canvas id="populationChart"></canvas>
-  </div>
-
-  <div class="chart-container chart-row">
-    <div>
-      <h2>Goal distribution</h2>
-      <canvas id="goalChart"></canvas>
+  <body>
+    <div class="header-container">
+      <h1>Simulation Statistics</h1>
+      <a href="/" class="stats-button">View Map</a>
+      <a href="/training" class="stats-button">View Training Stats</a>
     </div>
-    <div>
-      <h2>Cause of Death (All Time)</h2>
-      <canvas id="deathChart"></canvas>
-    </div>
-  </div>
 
-  <div class="chart-container">
-    <h2>Basic needs distributions</h2>
-    <div class="chart-row">
+    <div class="chart-container">
+      <h2>Population Over Time</h2>
+      <canvas id="populationChart"></canvas>
+    </div>
+
+    <div class="chart-container chart-row">
       <div>
-        <h3>Health</h3>
-        <canvas id="healthChart"></canvas>
+        <h2>Goal distribution</h2>
+        <canvas id="goalChart"></canvas>
       </div>
       <div>
-        <h3>Energy</h3>
-        <canvas id="energyChart"></canvas>
+        <h2>Cause of Death (All Time)</h2>
+        <canvas id="deathChart"></canvas>
       </div>
     </div>
-    <div class="chart-row">
-      <div>
-        <h3>Hunger</h3>
-        <canvas id="hungerChart"></canvas>
+
+    <div class="chart-container">
+      <h2>Basic needs distributions</h2>
+      <div class="chart-row">
+        <div>
+          <h3>Health</h3>
+          <canvas id="healthChart"></canvas>
+        </div>
+        <div>
+          <h3>Energy</h3>
+          <canvas id="energyChart"></canvas>
+        </div>
       </div>
-      <div>
-        <h3>Thirst</h3>
-        <canvas id="thirstChart"></canvas>
+      <div class="chart-row">
+        <div>
+          <h3>Hunger</h3>
+          <canvas id="hungerChart"></canvas>
+        </div>
+        <div>
+          <h3>Thirst</h3>
+          <canvas id="thirstChart"></canvas>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="chart-container">
-    <h2>Genetic Trait Distributions Over Time</h2>
-    <div class="chart-row">
-      <div>
-        <h3>Speed</h3>
-        <canvas id="speedChart"></canvas>
-      </div>
-      <div>
-        <h3>Size</h3>
-        <canvas id="sizeChart"></canvas>
-      </div>
-      <div>
-        <h3>Metabolism</h3>
-        <canvas id="metabolismChart"></canvas>
-      </div>
-      <div>
-        <h3>Perception</h3>
-        <canvas id="perceptionChart"></canvas>
-      </div>
-      <div>
-        <h3>Commitment</h3>
-        <canvas id="commitmentChart"></canvas>
+    <div class="chart-container">
+      <h2>Genetic Trait Distributions Over Time</h2>
+      <div class="chart-row">
+        <div>
+          <h3>Speed</h3>
+          <canvas id="speedChart"></canvas>
+        </div>
+        <div>
+          <h3>Size</h3>
+          <canvas id="sizeChart"></canvas>
+        </div>
+        <div>
+          <h3>Metabolism</h3>
+          <canvas id="metabolismChart"></canvas>
+        </div>
+        <div>
+          <h3>Perception</h3>
+          <canvas id="perceptionChart"></canvas>
+        </div>
+        <div>
+          <h3>Commitment</h3>
+          <canvas id="commitmentChart"></canvas>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="chart-container">
-    <h2>Age Distribution</h2>
-    <canvas id="ageChart"></canvas>
-  </div>
+    <div class="chart-container">
+      <h2>Age Distribution</h2>
+      <canvas id="ageChart"></canvas>
+    </div>
 
-  <div id="stats-data" data-energy-to-start-resting="{{ energy_to_start_resting }}"
-    data-critical-energy="{{ critical_energy }}" data-hunger-to-start-foraging="{{ hunger_to_start_foraging }}"
-    data-critical-hunger="{{ critical_hunger }}" data-thirst-to-start-drinking="{{ thirst_to_start_drinking }}"
-    data-critical-thirst="{{ critical_thirst }}"></div>
-  <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
-</body>
-
+    <div
+      id="stats-data"
+      data-energy-to-start-resting="{{ energy_to_start_resting }}"
+      data-critical-energy="{{ critical_energy }}"
+      data-hunger-to-start-foraging="{{ hunger_to_start_foraging }}"
+      data-critical-hunger="{{ critical_hunger }}"
+      data-thirst-to-start-drinking="{{ thirst_to_start_drinking }}"
+      data-critical-thirst="{{ critical_thirst }}"
+    ></div>
+    <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+  </body>
 </html>
+

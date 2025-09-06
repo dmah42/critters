@@ -2,7 +2,7 @@ import logging
 import random
 import copy
 import numpy as np
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from simulation.agent import DQNAgent
 from simulation.goal_type import GoalType
@@ -91,9 +91,14 @@ def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, D
     print(".", end="")
     logger.info("+++ Starting tick +++")
     _process_tile_regrowth(session)
+    session.commit()
+
     avg_rewards, avg_concordance = _process_critter_ai(world, session, agents)
+    session.commit()
+
     record_statistics(session)
     record_training_statistics(session, agents, avg_rewards, avg_concordance)
+    session.commit()
     logger.info("+++ Ending tick +++")
     print("|", end="", flush=True)
 
@@ -125,7 +130,8 @@ def _process_tile_regrowth(session: Session):
     )
 
 
-def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, DQNAgent]) -> Dict[DietType, float]:
+def _process_critter_ai(world: World, session: Session, agents: Dict[DietType,
+                                                                     DQNAgent]) -> Tuple[Dict[DietType, float], Dict[DietType, float]]:
     """Handles the state changes and actions for living critters"""
     all_critters = session.query(Critter).all()
 

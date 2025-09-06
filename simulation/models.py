@@ -66,9 +66,11 @@ class Player(db.Model):
     __tablename__ = "player"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), index=True, unique=True, nullable=False)
+    username = db.Column(db.String(64), index=True,
+                         unique=True, nullable=False)
 
-    critters = db.relationship("Critter", back_populates="owner", lazy="dynamic")
+    critters = db.relationship(
+        "Critter", back_populates="owner", lazy="dynamic")
     dead_critters = db.relationship(
         "DeadCritter", back_populates="owner", lazy="dynamic"
     )
@@ -99,10 +101,14 @@ class Critter(db.Model):
 
     # Genetics
     age = db.Column(db.Integer, nullable=False, default=0, server_default="0")
-    speed = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
-    size = db.Column(db.Float, nullable=False, default=5.0, server_default="5.0")
-    metabolism = db.Column(db.Float, nullable=False, default=1.0, server_default="1.0")
-    perception = db.Column(db.Float, nullable=False, default=8.0, server_default="8.0")
+    speed = db.Column(db.Float, nullable=False,
+                      default=5.0, server_default="5.0")
+    size = db.Column(db.Float, nullable=False,
+                     default=5.0, server_default="5.0")
+    metabolism = db.Column(db.Float, nullable=False,
+                           default=1.0, server_default="1.0")
+    perception = db.Column(db.Float, nullable=False,
+                           default=8.0, server_default="8.0")
     lifespan = db.Column(
         db.Integer, nullable=False, default=2000, server_default="2000"
     )
@@ -127,11 +133,14 @@ class Critter(db.Model):
     # Avoid breeding too often
     breeding_cooldown = db.Column(db.Integer, default=0)
 
-    player_id = db.Column(db.Integer, db.ForeignKey("player.id"), nullable=True)
+    player_id = db.Column(
+        db.Integer, db.ForeignKey("player.id"), nullable=True)
     owner = db.relationship("Player", back_populates="critters")
 
-    parent_one_id = db.Column(db.Integer, db.ForeignKey("critter.id"), nullable=False)
-    parent_two_id = db.Column(db.Integer, db.ForeignKey("critter.id"), nullable=False)
+    parent_one_id = db.Column(
+        db.Integer, db.ForeignKey("critter.id"), nullable=False)
+    parent_two_id = db.Column(
+        db.Integer, db.ForeignKey("critter.id"), nullable=False)
 
     ai_state = db.Column(
         db.Enum(AIState),
@@ -145,7 +154,8 @@ class Critter(db.Model):
     @property
     def children(self):
         return Critter.query.filter(
-            (Critter.parent_one_id == self.id) | (Critter.parent_two_id == self.id)
+            (Critter.parent_one_id == self.id) | (
+                Critter.parent_two_id == self.id)
         ).all()
 
     @property
@@ -224,18 +234,21 @@ class DeadCritter(db.Model):
     cause = db.Column(db.Enum(CauseOfDeath))
 
     # genes snapshot
-    diet = db.Column(db.Enum(DietType), nullable=False, server_default=DietType.HERBIVORE.value)
+    diet = db.Column(db.Enum(DietType), nullable=False,
+                     server_default=DietType.HERBIVORE.value)
     speed = db.Column(db.Float)
     size = db.Column(db.Float)
 
     # player owner
-    player_id = db.Column(db.Integer, db.ForeignKey("player.id"), nullable=True)
+    player_id = db.Column(
+        db.Integer, db.ForeignKey("player.id"), nullable=True)
     owner = db.relationship("Player", back_populates="dead_critters")
 
     parent_one_id = db.Column(db.Integer)
     parent_two_id = db.Column(db.Integer)
 
-    time_of_death = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    time_of_death = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     children = db.relationship(
         "Critter", secondary="dead_critter_children_association", lazy="subquery"
@@ -282,7 +295,8 @@ class TileState(db.Model):
 class SimulationStats(db.Model):
     __tablename__ = "simulation_stats"
     tick = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     population = db.Column(db.Integer)
     herbivore_population = db.Column(db.Integer)
@@ -370,3 +384,10 @@ class TrainingStats(db.Model):
 
     avg_concordance_herbivore = db.Column(db.Float)
     avg_concordance_carnivore = db.Column(db.Float)
+
+    def to_dict(self):
+        data = {}
+        for column in self.__table__.columns:
+            value = getattr(self, column.name)
+            data[column.name] = value
+        return data

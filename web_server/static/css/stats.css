@@ -1,0 +1,107 @@
+body {
+  font-family: sans-serif;
+  background-color: #f4f4f9;
+  color: #333;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2 {
+  text-align: center;
+  color: #444;
+}
+
+.chart-container {
+  width: 80%;
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  /* Adds space between the title and the button */
+  width: 100%;
+}
+
+.stats-button {
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  color: #333;
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+  /* Prevents the text from wrapping */
+}
+
+.stats-button:hover {
+  background-color: #e9ecef;
+}
+
+/* --- Styles for Responsive Layout and Sizing --- */
+.chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.chart-row > div {
+  flex: 1;
+  min-width: 250px;
+}
+
+#scorecard-container {
+  flex: 0.5; /* Makes the scorecard take up less horizontal space */
+  padding: 10px 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  text-align: center; /* Center the title */
+}
+
+#scorecard-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 15px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.scorecard-title {
+  grid-column: 1 / -1;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-top: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.scorecard-title.herbivore {
+  color: #4b_b_0_b0; /* Teal-like color */
+}
+
+.scorecard-title.carnivore {
+  color: #ff_63_84; /* Reddish color */
+}
+
+.scorecard-label {
+  font-weight: bold;
+  text-align: right;
+  color: #666;
+}
+
+.scorecard-value {
+  font-family: monospace;
+  font-size: 1.1em;
+  text-align: left;
+}
