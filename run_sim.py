@@ -4,14 +4,14 @@ import logging
 import os
 import time
 import traceback
-from typing import Dict
+from typing import Any, Dict
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from config import Config
 from seasons import season_manager
 from simulation.agent import DQNAgent
-from simulation.engine import run_simulation_tick
+from simulation.engine import run_simulation_tick, training_group_size
 from simulation.logger import setup_logging
 from simulation.models import Critter, DietType
 from simulation.state_space import get_state_for_critter
@@ -26,19 +26,23 @@ _SIM_STATE_FILE = "sim_state.json"
 logger = logging.getLogger(__name__)
 
 
-def _save_sim_state(tick: int):
-  state = {"tick": tick}
-  with open(_SIM_STATE_FILE, "w") as f:
-    json.dump(state, f)
+def _save_sim_state(tick: int, agents: Dict[DietType, DQNAgent]):
+    state = {
+        "tick": tick,
+        "herbivore_epsilon": agents[DietType.HERBIVORE].epsilon if DietType.HERBIVORE in agents else 1.0,
+        "carnivore_epsilon": agents[DietType.CARNIVORE].epsilon if DietType.CARNIVORE in agents else 1.0
+        }
+    with open(_SIM_STATE_FILE, "w") as f:
+        json.dump(state, f)
 
 
-def _load_sim_state() -> int:
-  if os.path.exists(_SIM_STATE_FILE):
-    with open(_SIM_STATE_FILE, "r") as f:
-      state = json.load(f)
-      loaded_tick = state.get("tick", 0)
-      return loaded_tick
-  return 0
+def _load_sim_state() -> Dict[str, Any]:
+    if os.path.exists(_SIM_STATE_FILE):
+        with open(_SIM_STATE_FILE, "r") as f:
+            state = json.load(f)
+            return state
+    return {
+        "tick": 0, "herbivore_epsilon": 1.0, "carnivore_epsilon": 1.0}
 
 
 def _create_agents(session_maker: sessionmaker, training: bool,
@@ -92,6 +96,8 @@ def main():
         action="store_true",
         help="Run in high-speed training mode and save the weights.",
     )
+    parser.add_argument("--training-group-size", type=int, default=32,
+                        help="The number of critters to train each tick per diet.")
     parser.add_argument("--carnivore-weights", type=str,
                         default=DEFAULT_CARNIVORE_WEIGHTS_FILE,
                         help="File path for carnivore model weights")
@@ -99,6 +105,9 @@ def main():
                         default=DEFAULT_HERBIVORE_WEIGHTS_FILE,
                         help="File path for herbivore model weights")
     args = parser.parse_args()
+
+    global training_group_size
+    training_group_size = args.training_group_size
 
     engine = create_engine(Config.SQLALCHEMY_SIM_DATABASE_URI)
     session_maker = sessionmaker(bind=engine)
@@ -119,13 +128,19 @@ def main():
         print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
 
-    tick: int = _load_sim_state()
+    sim_state = _load_sim_state()
+    tick: int = sim_state.get("tick", 0)
+
+    if agents and args.train:
+        agents[DietType.HERBIVORE].epsilon = sim_state.get("herbivore_epsilon", 1.0)
+        agents[DietType.CARNIVORE].epsilon = sim_state.get("carnivore_epsilon", 1.0)
+
     try:
         while True:
             start_time = time.time()
 
             tick += 1
-            _save_sim_state(tick)
+            _save_sim_state(tick, agents)
 
             if args.train and tick % 10 == 0:
                 print(f"\n--- Tick {tick} ---")
@@ -178,7 +193,7 @@ def main():
         if args.train:
             agents[DietType.HERBIVORE].save()
             agents[DietType.CARNIVORE].save()
-        _save_sim_state(tick)
+        _save_sim_state(tick, agents)
 
 
 if __name__ == "__main__":

@@ -86,6 +86,14 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 64
 
+training_group_size = 32
+
+# Store the training index for each diet
+_training_indices = {
+    DietType.HERBIVORE: 0,
+    DietType.CARNIVORE: 0,
+}
+
 
 def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, DQNAgent]):
     """Process one tick of the world simulation. Called periodically."""
@@ -154,7 +162,34 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
         return ({DietType.HERBIVORE: 0, DietType.CARNIVORE: 0},
                 {DietType.HERBIVORE: 0, DietType.CARNIVORE: 0})
 
-    for critter in all_critters:
+    critters_by_diet: Dict[DietType, List[Critter]] = {
+        DietType.HERBIVORE: [],
+        DietType.CARNIVORE: [],
+    }
+    for c in all_critters:
+      critters_by_diet[c.diet].append(c)
+
+    critters_to_process = []
+    for diet, critters in critters_by_diet.items():
+        if not critters:
+            continue
+
+        start_index = _training_indices[diet]
+        end_index = start_index + training_group_size
+
+        # Get the slice for this tick
+        selected_critters = critters[start_index:end_index]
+
+        if end_index > len(critters):
+            remaining = end_index - len(critters)
+            selected_critters.extend(critters[0:remaining])
+            _training_indices[diet] = remaining
+        else:
+            _training_indices[diet] = end_index % len(critters)
+
+        critters_to_process.extend(selected_critters)
+
+    for critter in critters_to_process:
         if critter.is_ghost:
             logger.info(f"Skipping update for ghost {critter.id}")
             continue
