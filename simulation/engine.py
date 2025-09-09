@@ -4,6 +4,7 @@ import copy
 import numpy as np
 from typing import Dict, List, Optional, Tuple
 
+from seasons import Season, season_manager
 from simulation.agent import DQNAgent
 from simulation.goal_type import GoalType
 from simulation.mapping import GOAL_TO_STATE_MAP
@@ -93,7 +94,8 @@ def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, D
     _process_tile_regrowth(session)
     session.commit()
 
-    avg_rewards, avg_concordance = _process_critter_ai(world, session, agents)
+    avg_rewards, avg_concordance = _process_critter_ai(
+        world, session, agents)
     session.commit()
 
     record_statistics(session)
@@ -108,6 +110,11 @@ def _process_tile_regrowth(session: Session):
     Finds all depleted grass tiles and handles regrowth.
     If a tile regrows completely, remove the record.
     """
+
+    if season_manager.season == Season.WINTER:
+        # Skip tile regrowth for winter
+        return
+
     depleted_tiles = (
         session.query(TileState)
         .filter(TileState.food_available < DEFAULT_GRASS_FOOD)
@@ -117,7 +124,10 @@ def _process_tile_regrowth(session: Session):
     tiles_to_delete = []
 
     for tile in depleted_tiles:
-        tile.food_available += GRASS_REGROWTH_RATE
+        growth_rate = GRASS_REGROWTH_RATE
+        if season_manager.season == Season.SPRING:
+            growth_rate *= 2.0
+        tile.food_available += growth_rate
 
         if tile.food_available >= DEFAULT_GRASS_FOOD:
             tiles_to_delete.append(tile)
@@ -130,8 +140,7 @@ def _process_tile_regrowth(session: Session):
     )
 
 
-def _process_critter_ai(world: World, session: Session, agents: Dict[DietType,
-                                                                     DQNAgent]) -> Tuple[Dict[DietType, float], Dict[DietType, float]]:
+def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, DQNAgent]) -> Tuple[Dict[DietType, float], Dict[DietType, float]]:
     """Handles the state changes and actions for living critters"""
     all_critters = session.query(Critter).all()
 
@@ -142,7 +151,8 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType,
 
     if not all_critters:
         logger.warning("No living critters found.")
-        return {DietType.HERBIVORE: 0, DietType.CARNIVORE: 0}
+        return ({DietType.HERBIVORE: 0, DietType.CARNIVORE: 0},
+                {DietType.HERBIVORE: 0, DietType.CARNIVORE: 0})
 
     for critter in all_critters:
         if critter.is_ghost:

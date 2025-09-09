@@ -1,5 +1,7 @@
 import argparse
+import json
 import logging
+import os
 import time
 import traceback
 from typing import Dict
@@ -7,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from config import Config
+from seasons import season_manager
 from simulation.agent import DQNAgent
 from simulation.engine import run_simulation_tick
 from simulation.logger import setup_logging
@@ -18,9 +21,24 @@ from simulation.world import World
 DEFAULT_HERBIVORE_WEIGHTS_FILE: str = "herbivore.weights.h5"
 DEFAULT_CARNIVORE_WEIGHTS_FILE: str = "carnivore.weights.h5"
 NUM_TRAINING_TICKS: int = 100000
-
+_SIM_STATE_FILE = "sim_state.json"
 
 logger = logging.getLogger(__name__)
+
+
+def _save_sim_state(tick: int):
+  state = {"tick": tick}
+  with open(_SIM_STATE_FILE, "w") as f:
+    json.dump(state, f)
+
+
+def _load_sim_state() -> int:
+  if os.path.exists(_SIM_STATE_FILE):
+    with open(_SIM_STATE_FILE, "r") as f:
+      state = json.load(f)
+      loaded_tick = state.get("tick", 0)
+      return loaded_tick
+  return 0
 
 
 def _create_agents(session_maker: sessionmaker, training: bool,
@@ -101,12 +119,14 @@ def main():
         print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
 
-    tick: int = 0
+    tick: int = _load_sim_state()
     try:
         while True:
             start_time = time.time()
 
             tick += 1
+            _save_sim_state(tick)
+
             if args.train and tick % 10 == 0:
                 print(f"\n--- Tick {tick} ---")
                 print(
@@ -122,6 +142,7 @@ def main():
             if args.train and tick > NUM_TRAINING_TICKS:
                 break
 
+            season_manager.update(tick)
             session = session_maker()
             world = World(seed=Config.WORLD_SEED, session=session)
 
@@ -157,6 +178,7 @@ def main():
         if args.train:
             agents[DietType.HERBIVORE].save()
             agents[DietType.CARNIVORE].save()
+        _save_sim_state(tick)
 
 
 if __name__ == "__main__":

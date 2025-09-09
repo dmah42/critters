@@ -157,3 +157,18 @@ canvas {
   margin-right: 8px;
   flex-shrink: 0;
 }
+.season-spring {
+    background-color: #f0fff0; /* Honeydew */
+}
+
+.season-summer {
+    background-color: #fffacd; /* LemonChiffon */
+}
+
+.season-autumn {
+    background-color: #faf0e6; /* Linen */
+}
+
+.season-winter {
+    background-color: #f0f8ff; /* AliceBlue */
+}

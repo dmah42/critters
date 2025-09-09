@@ -163,6 +163,23 @@ async function fetchAndDisplayEvents() {
   }
 }
 
+async function updateSeasonDisplay() {
+  try {
+    const response = await fetch('/api/world/season');
+    if (!response.ok) {
+      throw new Error('${response.status}')
+    }
+    const data = await response.json();
+    const seasonDisplay = document.getElementById('season-display');
+    if (seasonDisplay) {
+      seasonDisplay.textContent = data.name;
+      document.body.className = `season-${data.name.toLowerCase()}`;
+    }
+  } catch (error) {
+    console.error("Could not fetch season data: ", error);
+  }
+}
+
 function updateStatsPanel() {
   console.log("Updating stats panel for:", selectedCritter);
 
@@ -364,6 +381,8 @@ async function handleLiveUpdate() {
   } catch (error) {
     console.error(error);
   }
+
+  updateSeasonDisplay();
 }
 
 function animationLoop() {

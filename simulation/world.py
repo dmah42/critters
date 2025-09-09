@@ -5,6 +5,7 @@ import noise
 
 from sqlalchemy.orm import Session
 
+from seasons import Season, season_manager
 from simulation.models import TileState
 from simulation.terrain_type import TerrainType
 
@@ -55,6 +56,9 @@ def get_energy_cost(start_tile: TileData, end_tile: TileData) -> float:
         energy_cost += height_diff * UPHILL_ENERGY_MULTIPLIER
     elif height_diff < 0:
         energy_cost += height_diff * DOWNHILL_ENERGY_MULTIPLIER
+
+    if season_manager.season == Season.WINTER:
+      energy_cost *= 2.0
 
     return energy_cost
 

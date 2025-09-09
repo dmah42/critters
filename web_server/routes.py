@@ -1,6 +1,7 @@
 from flask import Response, request, jsonify, Blueprint, render_template
 from sqlalchemy import func
 from config import Config
+from seasons import season_manager
 from simulation.brain import (
     CRITICAL_ENERGY,
     CRITICAL_HUNGER,
@@ -246,6 +247,12 @@ def get_world_critters_data():
     critter_data = [critter.to_dict() for critter in critters_in_view]
 
     return jsonify({"critters": critter_data})
+
+
+@main.route("/api/world/season", methods=["GET"])
+def get_season():
+  """Returns the current season."""
+  return jsonify({"name": season_manager.season.name.title()})
 
 
 @main.route("/api/stats/history", methods=["GET"])

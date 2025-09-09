@@ -13,6 +13,7 @@ from simulation.models import (
     Event,
     SimulationStats,
     TileState,
+    TrainingStats,
 )
 
 
@@ -219,6 +220,7 @@ if __name__ == "__main__":
             db.session.query(DeadCritter).delete()
             db.session.query(TileState).delete()
             db.session.query(SimulationStats).delete()
+            db.session.query(TrainingStats).delete()
             db.session.query(CritterEvent).delete()
             db.session.commit()
             print("All data cleared")
