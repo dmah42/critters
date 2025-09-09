@@ -230,7 +230,7 @@ function updateStatsPanel() {
       }, ${selectedCritter.y})</p>
             <p><span class="stat-label">Velocity:</span> (${selectedCritter.vx
       }, ${selectedCritter.vy})</p>
-            
+
             <!-- Section 3: Basic Info (Genetics) -->
             <h3>Genetics</h3>
             <p><span class="stat-label">ID:</span> ${selectedCritter.id}</p>
