@@ -208,3 +208,5 @@ __marimo__/
 
 app.db
 app.db-journal
+
+sim_state.json
