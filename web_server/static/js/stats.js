@@ -247,9 +247,11 @@ async function fetchAndDrawHistoryCharts() {
 
     const latestStat = history[history.length - 1];
 
+    const ticks = history.map((s) => s.world_tick);
+
     // --- Population Chart (Stacked Area) ---
     if (populationChart) {
-      populationChart.data.labels = history.map((s) => s.tick);
+      populationChart.data.labels = ticks;
       populationChart.data.datasets[0].data = history.map(
         (s) => s.herbivore_population
       );
@@ -264,7 +266,7 @@ async function fetchAndDrawHistoryCharts() {
       populationChart = new Chart(popCtx, {
         type: "line",
         data: {
-          labels: history.map((s) => s.tick),
+          labels: ticks,
           datasets: [
             {
               label: "Herbivores",
@@ -481,9 +483,6 @@ async function fetchAndDrawHistoryCharts() {
       "Goal Distribution",
       goalColors
     );
-
-    // -- Genetic distribution charts
-    const ticks = history.map((s) => s.tick);
 
     // Prepare Speed Data
     const herbSpeed = {

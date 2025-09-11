@@ -295,6 +295,8 @@ class TileState(db.Model):
 class SimulationStats(db.Model):
     __tablename__ = "simulation_stats"
     tick = db.Column(db.Integer, primary_key=True)
+    world_tick = db.Column(db.Integer, nullable=False,
+                           index=True, default=0, server_default="0")
     timestamp = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc))
 

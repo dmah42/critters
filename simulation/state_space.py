@@ -53,7 +53,7 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
         abs(other.y - critter.y) <= perception
     ]
 
-    # Closest Predator Vector (distance, dx, dy, health) - for herbivores
+    # Closest Predator Vector (distance, dx, dy, health, energy) - for herbivores
     closest_predator_vec = np.zeros(5, dtype=np.float32)
     if critter.diet == DietType.HERBIVORE:
         visible_predators = [p for p in visible_critters if p.diet == DietType.CARNIVORE]
@@ -66,7 +66,7 @@ def get_state_for_critter(critter: Critter, world: World, all_critters: List[Cri
             energy = closest_predator.energy / MAX_ENERGY
             closest_predator_vec = np.array([dist, dx, dy, health, energy], dtype=np.float32)
 
-    # Weakest Prey Vector (distance, dx, dy, health) - for carnivores
+    # Weakest Prey Vector (distance, dx, dy, health, energy) - for carnivores
     weakest_prey_vec = np.zeros(5, dtype=np.float32)
     if critter.diet == DietType.CARNIVORE:
         visible_prey = [p for p in visible_critters if p.diet == DietType.HERBIVORE]

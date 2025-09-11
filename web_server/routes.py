@@ -1,3 +1,6 @@
+from collections import Counter
+from itertools import groupby
+import json
 from flask import Response, request, jsonify, Blueprint, render_template
 from sqlalchemy import func
 from config import Config
@@ -251,23 +254,133 @@ def get_world_critters_data():
 
 @main.route("/api/world/season", methods=["GET"])
 def get_season():
-  """Returns the current season."""
-  return jsonify({"name": season_manager.season.name.title()})
+    """Returns the current season."""
+    return jsonify({"name": season_manager.season.name.title()})
 
 
 @main.route("/api/stats/history", methods=["GET"])
-def get_stats_histor():
+def get_stats_history():
     """Returns a history of simulation stats"""
-    limit = request.args.get("limit", 100, type=int)
+    limit = request.args.get("limit", 2000, type=int)
 
     stats_history = (
         SimulationStats.query.order_by(
             SimulationStats.tick.desc()).limit(limit).all()
     )
 
+    if not stats_history:
+        return jsonify([])
+
     stats_history.reverse()
 
-    return jsonify([s.to_dict() for s in stats_history])
+    aggregated_stats = []
+
+    for world_tick, group in groupby(stats_history, key=lambda s: s.world_tick):
+        group_stats = list(group)
+        num_stats_in_group = len(group_stats)
+        if num_stats_in_group == 0:
+            continue
+        last_stat_in_group = group_stats[-1]
+
+        distributions = {
+            "herbivore_age": Counter(), "carnivore_age": Counter(),
+            "herbivore_health": Counter(), "carnivore_health": Counter(),
+            "herbivore_hunger": Counter(), "carnivore_hunger": Counter(),
+            "herbivore_thirst": Counter(), "carnivore_thirst": Counter(),
+            "herbivore_energy": Counter(), "carnivore_energy": Counter(),
+            "goal": Counter()
+        }
+
+        for stat in group_stats:
+            distributions["herbivore_age"].update(
+                json.loads(stat.herbivore_age_distribution or '{}'))
+            distributions["carnivore_age"].update(
+                json.loads(stat.carnivore_age_distribution or '{}'))
+            distributions["herbivore_health"].update(
+                json.loads(stat.herbivore_health_distribution or '{}'))
+            distributions["carnivore_health"].update(
+                json.loads(stat.carnivore_health_distribution or '{}'))
+            distributions["herbivore_hunger"].update(
+                json.loads(stat.herbivore_hunger_distribution or '{}'))
+            distributions["carnivore_hunger"].update(
+                json.loads(stat.carnivore_hunger_distribution or '{}'))
+            distributions["herbivore_thirst"].update(
+                json.loads(stat.herbivore_thirst_distribution or '{}'))
+            distributions["carnivore_thirst"].update(
+                json.loads(stat.carnivore_thirst_distribution or '{}'))
+            distributions["herbivore_energy"].update(
+                json.loads(stat.herbivore_energy_distribution or '{}'))
+            distributions["carnivore_energy"].update(
+                json.loads(stat.carnivore_energy_distribution or '{}'))
+            distributions["goal"].update(
+                json.loads(stat.goal_distribution or '{}'))
+
+        for dist in distributions.values():
+            for key in dist:
+                dist[key] //= num_stats_in_group
+
+        aggregated_entry = {
+            "world_tick": world_tick,
+            "tick": last_stat_in_group.tick,  # Use the last tick as representative
+
+            # Take the maximum of the populations
+            "population": max(s.population for s in group_stats),
+            "herbivore_population": max(s.herbivore_population for s in group_stats),
+            "carnivore_population": max(s.carnivore_population for s in group_stats),
+
+            # Use the merged distributions
+            "herbivore_age_distribution": distributions["herbivore_age"],
+            "carnivore_age_distribution": distributions["carnivore_age"],
+            "herbivore_health_distribution": distributions["herbivore_health"],
+            "carnivore_health_distribution": distributions["carnivore_health"],
+            "herbivore_hunger_distribution": distributions["herbivore_hunger"],
+            "carnivore_hunger_distribution": distributions["carnivore_hunger"],
+            "herbivore_thirst_distribution": distributions["herbivore_thirst"],
+            "carnivore_thirst_distribution": distributions["carnivore_thirst"],
+            "herbivore_energy_distribution": distributions["herbivore_energy"],
+            "carnivore_energy_distribution": distributions["carnivore_energy"],
+            "goal_distribution": distributions["goal"],
+
+            # For quartiles, taking the last value is the most representative
+            # of the state at the end of that world tick.
+            "herbivore_speed_q1": last_stat_in_group.herbivore_speed_q1,
+            "herbivore_speed_median": last_stat_in_group.herbivore_speed_median,
+            "herbivore_speed_q3": last_stat_in_group.herbivore_speed_q3,
+            "carnivore_speed_q1": last_stat_in_group.carnivore_speed_q1,
+            "carnivore_speed_median": last_stat_in_group.carnivore_speed_median,
+            "carnivore_speed_q3": last_stat_in_group.carnivore_speed_q3,
+
+            "herbivore_size_q1": last_stat_in_group.herbivore_size_q1,
+            "herbivore_size_median": last_stat_in_group.herbivore_size_median,
+            "herbivore_size_q3": last_stat_in_group.herbivore_size_q3,
+            "carnivore_size_q1": last_stat_in_group.carnivore_size_q1,
+            "carnivore_size_median": last_stat_in_group.carnivore_size_median,
+            "carnivore_size_q3": last_stat_in_group.carnivore_size_q3,
+
+            "herbivore_metabolism_q1": last_stat_in_group.herbivore_metabolism_q1,
+            "herbivore_metabolism_median": last_stat_in_group.herbivore_metabolism_median,
+            "herbivore_metabolism_q3": last_stat_in_group.herbivore_metabolism_q3,
+            "carnivore_metabolism_q1": last_stat_in_group.carnivore_metabolism_q1,
+            "carnivore_metabolism_median": last_stat_in_group.carnivore_metabolism_median,
+            "carnivore_metabolism_q3": last_stat_in_group.carnivore_metabolism_q3,
+
+            "herbivore_perception_q1": last_stat_in_group.herbivore_perception_q1,
+            "herbivore_perception_median": last_stat_in_group.herbivore_perception_median,
+            "herbivore_perception_q3": last_stat_in_group.herbivore_perception_q3,
+            "carnivore_perception_q1": last_stat_in_group.carnivore_perception_q1,
+            "carnivore_perception_median": last_stat_in_group.carnivore_perception_median,
+            "carnivore_perception_q3": last_stat_in_group.carnivore_perception_q3,
+
+            "herbivore_commitment_q1": last_stat_in_group.herbivore_commitment_q1,
+            "herbivore_commitment_median": last_stat_in_group.herbivore_commitment_median,
+            "herbivore_commitment_q3": last_stat_in_group.herbivore_commitment_q3,
+            "carnivore_commitment_q1": last_stat_in_group.carnivore_commitment_q1,
+            "carnivore_commitment_median": last_stat_in_group.carnivore_commitment_median,
+            "carnivore_commitment_q3": last_stat_in_group.carnivore_commitment_q3,
+        }
+        aggregated_stats.append(aggregated_entry)
+
+    return jsonify(aggregated_stats)
 
 
 @main.route("/api/stats/deaths", methods=["GET"])

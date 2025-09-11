@@ -57,7 +57,8 @@ def _create_agents(session_maker: sessionmaker, training: bool,
             "No living critters with which to initialize RL agents.")
         return {}
 
-    sample_state = get_state_for_critter(all_critters[0], world, all_critters)
+    sample_critter = all_critters[0]
+    sample_state = get_state_for_critter(sample_critter, world, all_critters)
     state_size = len(sample_state)
 
     agents = {
@@ -157,8 +158,17 @@ def main():
             if args.train and tick > NUM_TRAINING_TICKS:
                 break
 
-            season_manager.update(tick)
             session = session_maker()
+
+            population_size = session.query(Critter).count()
+            batch_size = args.training_group_size
+
+            if batch_size > 0 and population_size > 0:
+                world_tick = int(tick * population_size / batch_size)
+            else:
+                world_tick = tick
+
+            season_manager.update(world_tick)
             world = World(seed=Config.WORLD_SEED, session=session)
 
             try:
