@@ -13,7 +13,7 @@ from seasons import season_manager
 from simulation.agent import DQNAgent
 from simulation.engine import run_simulation_tick, training_group_size
 from simulation.logger import setup_logging
-from simulation.models import Critter, DietType
+from simulation.models import Critter, DietType, TrainingStats
 from simulation.state_space import get_state_for_critter
 from simulation.world import World
 
@@ -21,28 +21,28 @@ from simulation.world import World
 DEFAULT_HERBIVORE_MODEL_FILE: str = "herbivore.model.keras"
 DEFAULT_CARNIVORE_MODEL_FILE: str = "carnivore.model.keras"
 NUM_TRAINING_TICKS: int = 100000
-_SIM_STATE_FILE = "sim_state.json"
 
 logger = logging.getLogger(__name__)
 
 
-def _save_sim_state(tick: int, agents: Dict[DietType, DQNAgent]):
-    state = {
-        "tick": tick,
-        "herbivore_epsilon": agents[DietType.HERBIVORE].epsilon if DietType.HERBIVORE in agents else 1.0,
-        "carnivore_epsilon": agents[DietType.CARNIVORE].epsilon if DietType.CARNIVORE in agents else 1.0
+def _get_sim_state(session: sessionmaker) -> Dict[str, Any]:
+    """
+    Queries the database for the most recent tick and epsilon values to enable
+    clean restarting of the simulation.
+    """
+    db_session = session()
+    latest_stats = db_session.query(TrainingStats).order_by(TrainingStats.tick.desc()).first()
+    db_session.close()
+
+    if latest_stats:
+        return {
+            "tick": latest_stats.tick,
+            "herbivore_epsilon": latest_stats.herbivore_epsilon,
+            "carnivore_epsilon": latest_stats.carnivore_epsilon,
         }
-    with open(_SIM_STATE_FILE, "w") as f:
-        json.dump(state, f)
-
-
-def _load_sim_state() -> Dict[str, Any]:
-    if os.path.exists(_SIM_STATE_FILE):
-        with open(_SIM_STATE_FILE, "r") as f:
-            state = json.load(f)
-            return state
-    return {
-        "tick": 0, "herbivore_epsilon": 1.0, "carnivore_epsilon": 1.0}
+    else:
+        # Default starting values if the database is empty
+        return {"tick": 0, "herbivore_epsilon": 1.0, "carnivore_epsilon": 1.0}
 
 
 def _create_agents(session_maker: sessionmaker, training: bool,
@@ -114,7 +114,7 @@ def main():
     session_maker = sessionmaker(bind=engine)
 
     if args.train:
-        setup_logging(console_log_enabled=False, log_filename="")
+        setup_logging(console_log_enabled=False, log_filename=args.log_file)
     else:
         setup_logging(console_log_enabled=args.console_log,
                       log_filename=args.log_file)
@@ -130,19 +130,21 @@ def main():
         print(f"Starting simulation loop with a {args.tick_timer}s tick... ")
     print("  Ctrl+C to exit.")
 
-    sim_state = _load_sim_state()
+    sim_state = _get_sim_state(session_maker)
+
     tick: int = sim_state.get("tick", 0)
 
     if agents and args.train:
-        agents[DietType.HERBIVORE].epsilon = sim_state.get("herbivore_epsilon", 1.0)
-        agents[DietType.CARNIVORE].epsilon = sim_state.get("carnivore_epsilon", 1.0)
+        agents[DietType.HERBIVORE].epsilon = sim_state.get(
+            "herbivore_epsilon", 1.0)
+        agents[DietType.CARNIVORE].epsilon = sim_state.get(
+            "carnivore_epsilon", 1.0)
 
     try:
         while True:
             start_time = time.time()
 
             tick += 1
-            _save_sim_state(tick, agents)
 
             if tick % 100 == 0:
                 print(f"\n--- Saving weights at tick {tick} ---")
@@ -173,7 +175,7 @@ def main():
             world = World(seed=Config.WORLD_SEED, session=session)
 
             try:
-                run_simulation_tick(world, session, agents)
+                run_simulation_tick(tick, world_tick, world, session, agents)
                 session.commit()
             except Exception as e:
                 logging.error(f"An error occurred: {e}")
@@ -204,7 +206,6 @@ def main():
         if args.train:
             agents[DietType.HERBIVORE].save()
             agents[DietType.CARNIVORE].save()
-        _save_sim_state(tick, agents)
 
 
 if __name__ == "__main__":

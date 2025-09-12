@@ -95,7 +95,7 @@ _training_indices = {
 }
 
 
-def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, DQNAgent]):
+def run_simulation_tick(tick: int, world_tick: int, world: World, session: Session, agents: Dict[DietType, DQNAgent]):
     """Process one tick of the world simulation. Called periodically."""
     print(".", end="")
     logger.info("+++ Starting tick +++")
@@ -106,8 +106,9 @@ def run_simulation_tick(world: World, session: Session, agents: Dict[DietType, D
         world, session, agents)
     session.commit()
 
-    record_statistics(session)
-    record_training_statistics(session, agents, avg_rewards, avg_concordance)
+    record_statistics(session, tick, world_tick)
+    record_training_statistics(
+        session, tick, agents, avg_rewards, avg_concordance)
     session.commit()
     logger.info("+++ Ending tick +++")
     print("|", end="", flush=True)
@@ -167,7 +168,7 @@ def _process_critter_ai(world: World, session: Session, agents: Dict[DietType, D
         DietType.CARNIVORE: [],
     }
     for c in all_critters:
-      critters_by_diet[c.diet].append(c)
+        critters_by_diet[c.diet].append(c)
 
     critters_to_process = []
     for diet, critters in critters_by_diet.items():

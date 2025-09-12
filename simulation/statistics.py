@@ -19,7 +19,7 @@ def _get_percentiles(critter_list, trait_name):
     return q1, median, q3
 
 
-def record_statistics(session: Session):
+def record_statistics(session: Session, tick: int, world_tick: int):
     """Calculates and saves the current sim stats"""
     critters = session.query(Critter).all()
     population = len(critters)
@@ -104,14 +104,9 @@ def record_statistics(session: Session):
         carnivores, "perception"
     )
 
-    last_stat = (
-        session.query(SimulationStats).order_by(
-            SimulationStats.tick.desc()).first()
-    )
-    current_tick = (last_stat.tick + 1) if last_stat else 1
-
     stats = SimulationStats(
-        tick=current_tick,
+        tick=tick,
+        world_tick=world_tick,
         population=population,
         herbivore_population=herbivore_stats["count"],
         carnivore_population=carnivore_stats["count"],
@@ -159,23 +154,19 @@ def record_statistics(session: Session):
     )
     session.add(stats)
 
-    logger.info(f"  Recorded stats for tick {current_tick}: {stats.to_dict()}")
+    logger.info(f"  Recorded stats for tick {tick} ({world_tick}): {stats.to_dict()}")
 
 
 def record_training_statistics(
     session: Session,
+    tick: int,
     agents: Dict[DietType, DQNAgent],
     avg_rewards: Dict[DietType, float],
     avg_concordance: Dict[DietType, float],
 ):
     """Records a snapshot of the training-specific statistics to the database."""
-    last_stat = (
-        session.query(TrainingStats).order_by(
-            TrainingStats.tick.desc()).first()
-    )
-    current_tick = (last_stat.tick + 1) if last_stat else 1
     new_training_stats = TrainingStats(
-        tick=current_tick,
+        tick=tick,
         herbivore_epsilon=agents[DietType.HERBIVORE].epsilon,
         carnivore_epsilon=agents[DietType.CARNIVORE].epsilon,
         avg_reward_herbivore=avg_rewards.get(DietType.HERBIVORE, 0),
