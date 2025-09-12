@@ -5,12 +5,13 @@ import tensorflow as tf
 
 from collections import deque
 from tensorflow import keras
+from tensorflow.keras.models import load_model
 
 
 class DQNAgent:
     """A Deep Q-Network agent that learns to choose goals for a critter."""
 
-    def __init__(self, weights_file: str, state_size: int, training: bool, verbose: bool):
+    def __init__(self, model_file: str, state_size: int, training: bool, verbose: bool):
         self.state_size = state_size
         self.actions = list(GoalType)
         self.action_size = len(GoalType)
@@ -27,8 +28,7 @@ class DQNAgent:
         self.epsilon_decay: float = 0.99995   # Rate at which to reduce exploration
         self.learning_rate: float = 0.001
 
-        self.model = self._build_model()
-        self.weights_file = weights_file
+        self.model_file = model_file
 
         self._load()
 
@@ -91,15 +91,21 @@ class DQNAgent:
             self.epsilon *= self.epsilon_decay
 
     def save(self):
-      """Saves the current weights to a file."""
-      print(f"Saving weights to {self.weights_file}")
-      self.model.save_weights(self.weights_file)
+        """Saves the current model to a file."""
+        print(f"Saving model to {self.model_file}")
+        self.model.summary()
+        self.model.save(self.model_file)
 
     def _load(self):
-      """Loads the model weights from a file."""
-      import os
-      if os.path.exists(self.weights_file):
-        print(f"Loading weights from {self.weights_file}")
-        self.model.load_weights(self.weights_file)
-      else:
-        print(f"Weights file not found at {self.weights_file}. Training from scratch.")
+        """Loads the model from a file."""
+        import os
+        if os.path.exists(self.model_file):
+            print(f"Loading model from {self.model_file}")
+            self.model = load_model(self.model_file)
+        else:
+            print(
+                f"Model file not found at {self.model_file}. Training from scratch.")
+            self.model = self._build_model()
+
+        self.model.summary()
+

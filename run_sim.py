@@ -18,8 +18,8 @@ from simulation.state_space import get_state_for_critter
 from simulation.world import World
 
 
-DEFAULT_HERBIVORE_WEIGHTS_FILE: str = "herbivore.weights.h5"
-DEFAULT_CARNIVORE_WEIGHTS_FILE: str = "carnivore.weights.h5"
+DEFAULT_HERBIVORE_MODEL_FILE: str = "herbivore.model.keras"
+DEFAULT_CARNIVORE_MODEL_FILE: str = "carnivore.model.keras"
 NUM_TRAINING_TICKS: int = 100000
 _SIM_STATE_FILE = "sim_state.json"
 
@@ -46,7 +46,7 @@ def _load_sim_state() -> Dict[str, Any]:
 
 
 def _create_agents(session_maker: sessionmaker, training: bool,
-                   carnivore_weights: str, herbivore_weights: str) -> Dict[DietType, DQNAgent]:
+                   carnivore_model: str, herbivore_model: str) -> Dict[DietType, DQNAgent]:
     """Create an agent for each diet type"""
     session = session_maker()
     world = World(seed=Config.WORLD_SEED, session=session)
@@ -62,8 +62,8 @@ def _create_agents(session_maker: sessionmaker, training: bool,
     state_size = len(sample_state)
 
     agents = {
-        DietType.HERBIVORE: DQNAgent(herbivore_weights, state_size, training=training, verbose=not training),
-        DietType.CARNIVORE: DQNAgent(carnivore_weights, state_size, training=training, verbose=not training),
+        DietType.HERBIVORE: DQNAgent(herbivore_model, state_size, training=training, verbose=not training),
+        DietType.CARNIVORE: DQNAgent(carnivore_model, state_size, training=training, verbose=not training),
     }
     logger.info("RL Agents Initialized.")
 
@@ -99,11 +99,11 @@ def main():
     )
     parser.add_argument("--training-group-size", type=int, default=32,
                         help="The number of critters to train each tick per diet.")
-    parser.add_argument("--carnivore-weights", type=str,
-                        default=DEFAULT_CARNIVORE_WEIGHTS_FILE,
-                        help="File path for carnivore model weights")
-    parser.add_argument("--herbivore-weights", type=str,
-                        default=DEFAULT_HERBIVORE_WEIGHTS_FILE,
+    parser.add_argument("--carnivore-model", type=str,
+                        default=DEFAULT_CARNIVORE_MODEL_FILE,
+                        help="File path for carnivore model")
+    parser.add_argument("--herbivore-model", type=str,
+                        default=DEFAULT_HERBIVORE_MODEL_FILE,
                         help="File path for herbivore model weights")
     args = parser.parse_args()
 
@@ -120,8 +120,9 @@ def main():
                       log_filename=args.log_file)
 
     agents = _create_agents(session_maker,
-                            args.train, args.carnivore_weights,
-                            args.herbivore_weights)
+                            args.train,
+                            args.carnivore_model,
+                            args.herbivore_model)
 
     if args.train:
         print(f"  Running simulation for {NUM_TRAINING_TICKS} ticks... ")
@@ -143,13 +144,6 @@ def main():
             tick += 1
             _save_sim_state(tick, agents)
 
-            if args.train and tick % 10 == 0:
-                print(f"\n--- Tick {tick} ---")
-                print(
-                    f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")
-                print(
-                    f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
-
             if tick % 100 == 0:
                 print(f"\n--- Saving weights at tick {tick} ---")
                 agents[DietType.HERBIVORE].save()
@@ -161,12 +155,19 @@ def main():
             session = session_maker()
 
             population_size = session.query(Critter).count()
-            batch_size = args.training_group_size
+            batch_size = args.training_group_size * 2  # Include both diet types
 
             if batch_size > 0 and population_size > 0:
-                world_tick = int(tick * population_size / batch_size)
+                world_tick = int(tick * batch_size / population_size)
             else:
                 world_tick = tick
+
+            if args.train and tick % 10 == 0:
+                print(f"\n--- Tick {tick} (World tick) {world_tick} ---")
+                print(
+                    f"Herbivore Epsilon: {agents[DietType.HERBIVORE].epsilon:.3f}")
+                print(
+                    f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
 
             season_manager.update(world_tick)
             world = World(seed=Config.WORLD_SEED, session=session)

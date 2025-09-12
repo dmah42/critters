@@ -261,17 +261,25 @@ def get_season():
 @main.route("/api/stats/history", methods=["GET"])
 def get_stats_history():
     """Returns a history of simulation stats"""
-    limit = request.args.get("limit", 2000, type=int)
+    latest_world_tick_query = db.session.query(
+        func.max(SimulationStats.world_tick))
+    latest_world_tick = latest_world_tick_query.scalar()
+
+    if latest_world_tick is None:
+        return jsonify([])
+
+    history_length = 200
+    start_world_tick = max(0, latest_world_tick - history_length)
 
     stats_history = (
-        SimulationStats.query.order_by(
-            SimulationStats.tick.desc()).limit(limit).all()
+        SimulationStats.query
+        .filter(SimulationStats.world_tick.between(start_world_tick, latest_world_tick))
+        .order_by(SimulationStats.tick)
+        .all()
     )
 
     if not stats_history:
         return jsonify([])
-
-    stats_history.reverse()
 
     aggregated_stats = []
 
