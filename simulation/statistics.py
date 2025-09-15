@@ -154,7 +154,8 @@ def record_statistics(session: Session, tick: int, world_tick: int):
     )
     session.add(stats)
 
-    logger.info(f"  Recorded stats for tick {tick} ({world_tick}): {stats.to_dict()}")
+    logger.info(
+        f"  Recorded stats for tick {tick} ({world_tick}): {stats.to_dict()}")
 
 
 def record_training_statistics(

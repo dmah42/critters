@@ -28,9 +28,17 @@ class DQNAgent:
         self.epsilon_decay: float = 0.99995   # Rate at which to reduce exploration
         self.learning_rate: float = 0.001
 
+        # Update the target network every few ticks
+        self.update_target_freq = 100
+        self.training_step_counter = 0
+
         self.model_file = model_file
 
         self._load()
+
+        self.target_model = self._build_model()
+        self._update_target_model()
+
 
     def _build_model(self) -> keras.Model:
         """Builds the neural network for the Q-learning model."""
@@ -45,6 +53,12 @@ class DQNAgent:
             optimizer=keras.optimizers.Adam(learning_rate=self.learning_rate)
         )
         return model
+
+
+    def _update_target_model(self):
+        """Copies weights from the main model to the target model"""
+        self.target_model.set_weights(self.model.get_weights())
+
 
     def remember(self, state, goal: GoalType, reward, next_state, died):
         """Stores an experience tuple"""
@@ -74,10 +88,10 @@ class DQNAgent:
         for state, action_index, reward, next_state, done in minibatch:
             target = reward
             if not done:
-                # Predict the future reward and add it to the current reward
-                q_next = np.amax(self.model.predict(next_state,
-                                                    verbose=self.verbose)[0])
-                target = reward + self.gamma * q_next
+                # Predict the future reward and add it to the current reward using
+                # the target model.
+                target = (reward + self.gamma *
+                          np.amax(self.target_model.predict(next_state, verbose=0)[0]))
 
             # Get the model's current prediction for the Q-values of the state
             target_f = self.model.predict(state, verbose=self.verbose)
@@ -87,13 +101,17 @@ class DQNAgent:
             # Train the model on this one corrected experience
             self.model.fit(state, target_f, epochs=1, verbose=self.verbose)
 
+            self.training_step_counter += 1
+            if self.training_step_counter >= self.update_target_freq:
+                self._update_target_model()
+                self.training_step_counter = 0
+
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
     def save(self):
         """Saves the current model to a file."""
         print(f"Saving model to {self.model_file}")
-        self.model.summary()
         self.model.save(self.model_file)
 
     def _load(self):
@@ -108,3 +126,4 @@ class DQNAgent:
             self.model = self._build_model()
 
         self.model.summary()
+

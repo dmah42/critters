@@ -4,7 +4,6 @@ import json
 from flask import Response, request, jsonify, Blueprint, render_template
 from sqlalchemy import func
 from config import Config
-from seasons import season_manager
 from simulation.brain import (
     CRITICAL_ENERGY,
     CRITICAL_HUNGER,
@@ -20,6 +19,7 @@ from simulation.models import (
     DeadCritter,
     SimulationStats,
     TrainingStats,
+    WorldState,
 )
 from simulation.engine import DEFAULT_GRASS_FOOD, MAX_ENERGY, MAX_HUNGER, MAX_THIRST
 
@@ -255,7 +255,9 @@ def get_world_critters_data():
 @main.route("/api/world/season", methods=["GET"])
 def get_season():
     """Returns the current season."""
-    return jsonify({"name": season_manager.season.name.title()})
+    season_state = db.session.query(WorldState).filter_by(key='season').first()
+    season_name = season_state.value.title() if season_state else 'Spring'
+    return jsonify({"name": season_name})
 
 
 @main.route("/api/stats/history", methods=["GET"])

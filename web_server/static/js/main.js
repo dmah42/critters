@@ -342,6 +342,8 @@ async function handleManualUpdate() {
         critter: critter,
       };
     }
+
+    updateSeasonDisplay();
   } catch (error) {
     console.error(error);
   }

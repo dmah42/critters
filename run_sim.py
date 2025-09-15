@@ -171,7 +171,7 @@ def main():
                 print(
                     f"Carnivore Epsilon: {agents[DietType.CARNIVORE].epsilon:.3f}")
 
-            season_manager.update(world_tick)
+            season_manager.update(session, world_tick)
             world = World(seed=Config.WORLD_SEED, session=session)
 
             try:
