@@ -398,4 +398,3 @@ class WorldState(db.Model):
     __tablename__ = 'world_state'
     key = db.Column(db.String(255), primary_key=True)
     value = db.Column(db.String(255))
-

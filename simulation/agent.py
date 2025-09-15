@@ -126,4 +126,3 @@ class DQNAgent:
             self.model = self._build_model()
 
         self.model.summary()
-
