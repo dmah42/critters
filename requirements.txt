@@ -3,4 +3,4 @@ Flask-SQLAlchemy
 Flask-Migrate
 noise
 numpy
-tensorflow
+tf-nightly[and-cuda]
